@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
-const { createOrUpdateMentorProfile, getMentorProfileById, getMyMentorProfile } = require('../controllers/mentorProfile.controller');
+const { createOrUpdateMentorProfile, getMentorProfileById, getMyMentorProfile, getAllMentorProfiles } = require('../controllers/mentorProfile.controller');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -22,6 +22,8 @@ const upload = multer({ storage });
 
 // Create/update mentor profile
 router.post('/profile', authenticate, upload.single('headshot'), createOrUpdateMentorProfile);
+// Get all mentor profiles (public)
+router.get('/profiles', getAllMentorProfiles);
 // Get public mentor profile
 router.get('/profile/:id', getMentorProfileById);
 // Get logged-in mentor's profile

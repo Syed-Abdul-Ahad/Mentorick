@@ -7,9 +7,6 @@ import Button from "../../components/shared/Button";
 import FormInput from "../../components/shared/FormInput";
 import AuthFormLayout from "../../components/shared/AuthFormLayout";
 import AuthRightSection from "../../components/shared/AuthRightSection";
-import { HiOutlineEye, HiOutlineEyeSlash } from 'react-icons/hi2';
-import toast from 'react-hot-toast';
-import Toast from '../../components/shared/Toast';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -22,7 +19,6 @@ const Signup = () => {
   const [passwordValid, setPasswordValid] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showPassword, setShowPassword] = useState(false);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -52,18 +48,16 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!agreeToTerms) {
-      toast.error("Please agree to the Terms of Service and Privacy Policy");
+      alert("Please agree to the Terms of Service and Privacy Policy");
       return;
     }
 
     const isPasswordValid = validatePassword(formData.password);
     if (!isPasswordValid) {
       setPasswordValid(false);
-      toast.error("Password must be at least 6 characters with one uppercase letter and one number");
       return;
     }
 
-    const loadingToast = toast.loading('Creating your account...');
     setLoading(true);
     setError(null);
 
@@ -80,10 +74,8 @@ const Signup = () => {
     try {
       const response = await authService.register(userData);
       dispatch(setUser(response.user));
-      toast.success('Account created successfully! Welcome!', { id: loadingToast });
       navigate('/dashboard');
     } catch (error) {
-      toast.error(error.message || 'Registration failed', { id: loadingToast });
       setError(error.message || 'Registration failed');
     } finally {
       setLoading(false);
@@ -92,7 +84,6 @@ const Signup = () => {
 
   return (
     <div className="min-h-screen flex">
-      <Toast />
       <AuthFormLayout
         title="Create your account"
         subtitle="Join our mentoring community"
@@ -136,53 +127,19 @@ const Signup = () => {
           />
 
           {/* Password Field */}
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                placeholder="Create a password"
-                className={`w-full px-3 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
-                  !passwordValid && formData.password
-                    ? "border-red-300 focus:ring-red-500"
-                    : "border-gray-300 focus:ring-primary-500"
-                }`}
-                required
-              />
-              <button
-                type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <HiOutlineEyeSlash className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                ) : (
-                  <HiOutlineEye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                )}
-              </button>
-            </div>
-            {!passwordValid && formData.password && (
-              <p className="text-sm text-red-600 mt-1">
-                Password does not meet requirements
-              </p>
-            )}
-            {passwordValid && formData.password && (
-              <p className="text-sm text-green-600 mt-1">
-                ✓ Password meets all requirements
-              </p>
-            )}
-            {!formData.password && (
-              <p className="text-sm text-gray-500 mt-1">
-                Must be at least 6 characters with 1 uppercase letter and 1 number
-              </p>
-            )}
-          </div>
+          <FormInput
+            type="password"
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleInputChange}
+            placeholder="Create a password"
+            label="Password"
+            required
+            error={!passwordValid && formData.password ? "Password does not meet requirements" : null}
+            success={passwordValid && formData.password ? "✓ Password meets all requirements" : null}
+            helpText={!formData.password ? "Must be at least 6 characters with 1 uppercase letter and 1 number" : null}
+          />
 
           {/* Terms and Privacy Checkbox */}
           <div className="flex items-start">

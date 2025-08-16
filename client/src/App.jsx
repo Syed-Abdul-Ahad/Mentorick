@@ -11,8 +11,10 @@ import Login from "./pages/login/Login";
 import Signup from "./pages/signup/Signup";
 import MentorSignup from "./pages/signup/MentorSignup";
 import Dashboard from "./pages/dashboard/Dashboard";
+import NotFound from "./pages/NotFound";
 import MentorProfileForm from "./pages/profile/MentorProfileForm";
 import MentorPublicProfile from "./pages/profile/MentorPublicProfile";
+import Homepage from "./pages/Homepage";
 
 function AuthenticatedApp() {
   const dispatch = useDispatch();
@@ -67,16 +69,22 @@ function AuthenticatedApp() {
     <BrowserRouter>
       <Routes>
         {/* Public routes */}
+        <Route path="/" 
+            element={
+            isAuthenticated ? <Homepage /> : <Navigate to="/login" />
+          }
+          // element={<Homepage />}
+        />
         <Route
           path="/login"
           element={
-            isAuthenticated ? <Navigate to="/dashboard" /> : <Login />
+            isAuthenticated ? <Navigate to="/Homepage" /> : <Login />
           }
         />
         <Route
           path="/signup"
           element={
-            isAuthenticated ? <Navigate to="/dashboard" /> : <Signup />
+            isAuthenticated ? <Navigate to="/Homepage" /> : <Signup />
           }
         />
         <Route
@@ -105,16 +113,14 @@ function AuthenticatedApp() {
 
         {/* Default redirects */}
         <Route
-          path="/"
+          path="/home"
           element={
-            <Navigate to={isAuthenticated ? "/dashboard" : "/login"} />
+            isAuthenticated ? <Homepage /> : <Navigate to="/login" />
           }
         />
         <Route
           path="*"
-          element={
-            <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-          }
+          element={<NotFound />}
         />
       </Routes>
     </BrowserRouter>

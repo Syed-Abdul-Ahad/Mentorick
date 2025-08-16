@@ -112,6 +112,57 @@ class UserService extends ApiService {
   }
 }
 
+class MentorService extends ApiService {
+  constructor() {
+    super('/mentor-profiles');
+  }
+
+  // Get all mentor profiles
+  async getAllMentors() {
+    try {
+      const response = await apiClient.get('/mentor/profiles');
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Get mentor profile by ID
+  async getMentorById(mentorId) {
+    try {
+      const response = await apiClient.get(`/mentor/profile/${mentorId}`);
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Get my mentor profile (authenticated)
+  async getMyProfile() {
+    try {
+      const response = await apiClient.get('/mentor/my-profile');
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Create or update mentor profile
+  async createOrUpdateProfile(profileData) {
+    try {
+      const response = await apiClient.post('/mentor/profile', profileData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+}
+
 // Export service instances
 export const authService = new AuthService();
 export const userService = new UserService();
+export const mentorService = new MentorService();
