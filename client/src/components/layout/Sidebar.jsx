@@ -6,16 +6,17 @@ import {
   AiOutlineSetting, 
   AiOutlineBarChart,
   AiOutlineMenu,
-  AiOutlineClose
+  AiOutlineClose,
+  AiOutlineTeam
 } from 'react-icons/ai';
 
-const Sidebar = () => {
+const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigation = [
     { name: 'Profile', href: '/profile', icon: AiOutlineUser },
     { name: 'Home', href: '/', icon: AiOutlineHome },
+    { name: 'Mentors', href: '/mentors', icon: AiOutlineTeam },
     { name: 'Session Settings', href: '/sessions', icon: AiOutlineSetting },
     { name: 'Dashboard', href: '/dashboard', icon: AiOutlineBarChart },
   ];
@@ -24,20 +25,6 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="bg-white p-2 rounded-lg shadow-lg"
-        >
-          {isMobileMenuOpen ? (
-            <AiOutlineClose className="h-6 w-6" />
-          ) : (
-            <AiOutlineMenu className="h-6 w-6" />
-          )}
-        </button>
-      </div>
-
       {/* Sidebar */}
       <div className={`
         fixed left-0 top-0 h-full w-48 bg-white shadow-lg z-40 transform transition-transform duration-300 ease-in-out
@@ -65,7 +52,7 @@ const Sidebar = () => {
                   className={`
                     flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                     ${isActive(item.href)
-                      ? 'bg-primary-50 text-primary-600 border-r-2 border-primary-600'
+                      ? 'bg-primary-50 text-primary-600 hover:bg-primary-100'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }
                   `}

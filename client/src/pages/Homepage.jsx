@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/layout/MainLayout";
 import Button from "../components/shared/Button";
 import MentorSlider from "../components/shared/MentorSlider";
+import Footer from "../components/shared/Footer";
 import { PiBriefcaseLight } from "react-icons/pi";
 import {
   AiOutlineSearch,
@@ -17,21 +19,34 @@ import {
   AiOutlineBgColors,
   AiOutlineDown,
 } from "react-icons/ai";
+import {
+  FaCcVisa,
+  FaCcMastercard,
+  FaCcAmex,
+  FaCcPaypal,
+  FaCcApplePay,
+  FaGooglePay,
+  FaInstagram,
+  FaYoutube,
+  FaFacebook,
+  FaLinkedin,
+  FaGoogle,
+  FaMicrosoft,
+  FaAmazon,
+  FaApple,
+  FaTwitter,
+  FaSlack,
+} from "react-icons/fa";
+import { SiShopify, SiStripe, SiSalesforce, SiAdobe } from "react-icons/si";
 
 const Homepage = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("rating");
   const [email, setEmail] = useState("");
   const [openFaq, setOpenFaq] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const categories = [
-    "All",
-    "Business",
-    "Design",
-    "Technology",
-    "Marketing",
-    "Finance",
-  ];
 
   const faqs = [
     {
@@ -107,15 +122,18 @@ const Homepage = () => {
   ];
 
   return (
-    <MainLayout>
+    <MainLayout 
+      isMobileMenuOpen={isMobileMenuOpen} 
+      setIsMobileMenuOpen={setIsMobileMenuOpen}
+    >
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-30 overflow-x-hidden">
+      <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
+            {/* Logo - left side */}
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <div className="w-6 h-6 bg-primary-500 rounded"></div>
-                <span className="font-bold text-lg">Mentorick</span>
+                <span className="font-bold text-lg text-primary-600">Mentorick</span>
               </div>
             </div>
 
@@ -128,11 +146,20 @@ const Homepage = () => {
                   placeholder="Skip the struggle, search your mentor"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             </div>
 
+            {/* Right side - Login button and hamburger */}
             <div className="flex items-center space-x-2 md:space-x-4">
               {/* Desktop Sort Dropdown */}
               <select
@@ -143,6 +170,7 @@ const Homepage = () => {
                 <option value="rating">Sort By Rating</option>
                 <option value="price">Sort By Price</option>
                 <option value="experience">Sort By Experience</option>
+                <option value="name">Sort By Name</option>
               </select>
 
               {/* Desktop Mission Link */}
@@ -156,6 +184,18 @@ const Homepage = () => {
               <Button variant="solid" size="sm">
                 Login
               </Button>
+
+              {/* Mobile hamburger menu - right of login */}
+              <div className="md:hidden">
+                <button 
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="p-2 rounded-md text-gray-400 hover:text-gray-500"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -168,8 +208,16 @@ const Homepage = () => {
                 placeholder="Search your mentor"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -193,19 +241,51 @@ const Homepage = () => {
             variant="solid"
             size="lg"
             className="mb-8 bg-primary-500 hover:bg-primary-600 text-sm"
+            onClick={() => navigate('/mentors')}
           >
             Find My Mentor
           </Button>
 
-          <div className="flex flex-wrap justify-center gap-2 mt-8">
-            {categories.map((category) => (
-              <button
-                key={category}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
-              >
-                {category}
-              </button>
-            ))}
+          {/* Company Logos Carousel */}
+          <div className="mt-5">
+            <div className="overflow-hidden">
+              <div className="flex animate-scroll space-x-8">
+                {/* First set of logos */}
+                <div className="flex items-center space-x-8 min-w-max">
+                  <FaGoogle className="h-8 w-8 text-blue-500" />
+                  <FaMicrosoft className="h-8 w-8 text-blue-600" />
+                  <FaAmazon className="h-8 w-8 text-orange-500" />
+                  <FaApple className="h-8 w-8 text-gray-700" />
+                  <FaInstagram className="h-8 w-8 text-pink-500" />
+                  <FaYoutube className="h-8 w-8 text-red-500" />
+                  <FaFacebook className="h-8 w-8 text-blue-600" />
+                  <FaLinkedin className="h-8 w-8 text-blue-700" />
+                  <FaTwitter className="h-8 w-8 text-blue-400" />
+                  <SiShopify className="h-8 w-8 text-green-600" />
+                  <SiStripe className="h-8 w-8 text-purple-600" />
+                  <SiSalesforce className="h-8 w-8 text-blue-500" />
+                  <SiAdobe className="h-8 w-8 text-red-600" />
+                  <FaSlack className="h-8 w-8 text-purple-500" />
+                </div>
+                {/* Duplicate set for seamless loop */}
+                <div className="flex items-center space-x-8 min-w-max">
+                  <FaGoogle className="h-8 w-8 text-blue-500" />
+                  <FaMicrosoft className="h-8 w-8 text-blue-600" />
+                  <FaAmazon className="h-8 w-8 text-orange-500" />
+                  <FaApple className="h-8 w-8 text-gray-700" />
+                  <FaInstagram className="h-8 w-8 text-pink-500" />
+                  <FaYoutube className="h-8 w-8 text-red-500" />
+                  <FaFacebook className="h-8 w-8 text-blue-600" />
+                  <FaLinkedin className="h-8 w-8 text-blue-700" />
+                  <FaTwitter className="h-8 w-8 text-blue-400" />
+                  <SiShopify className="h-8 w-8 text-green-600" />
+                  <SiStripe className="h-8 w-8 text-purple-600" />
+                  <SiSalesforce className="h-8 w-8 text-blue-500" />
+                  <SiAdobe className="h-8 w-8 text-red-600" />
+                  <FaSlack className="h-8 w-8 text-purple-500" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -238,12 +318,13 @@ const Homepage = () => {
       {/* Mentor Slider */}
       <section className="bg-gray-50 py-16">
         <div className=" max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <MentorSlider />
+          <MentorSlider searchQuery={searchQuery} sortBy={sortBy} />
           <div className="flex justify-center">
             <Button
               variant="solid"
               size="lg"
               className="mb-8 bg-primary-500 hover:bg-primary-600 mt-10 text-sm"
+              onClick={() => navigate('/mentors')}
             >
               Find My Mentor
             </Button>
@@ -315,12 +396,13 @@ const Homepage = () => {
       {/* Mentor Slider */}
       <section className="bg-gray-50 py-16">
         <div className=" max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <MentorSlider />
+          <MentorSlider searchQuery={searchQuery} sortBy={sortBy} />
           <div className="flex justify-center">
             <Button
               variant="solid"
               size="lg"
               className="mb-8 bg-primary-500 hover:bg-primary-600 mt-10 text-sm"
+              onClick={() => navigate('/mentors')}
             >
               Find My Mentor
             </Button>
@@ -420,12 +502,13 @@ const Homepage = () => {
 
       <section className="bg-gray-50 py-16">
         <div className=" max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <MentorSlider />
+          <MentorSlider searchQuery={searchQuery} sortBy={sortBy} />
           <div className="flex justify-center">
             <Button
               variant="solid"
               size="lg"
               className="mb-8 bg-primary-500 hover:bg-primary-600 mt-10 text-sm"
+              onClick={() => navigate('/mentors')}
             >
               Find My Mentor
             </Button>
@@ -644,9 +727,6 @@ const Homepage = () => {
             
             {/* Call to Action */}
             <div className="pt-8 animate-fade-in-delayed">
-              <p className="text-lg md:text-xl text-primary-100 mb-6 max-w-2xl mx-auto">
-                Join thousands who've transformed their lives through mentorship
-              </p>
               <Button
                 variant="solid"
                 size="lg"
@@ -758,9 +838,9 @@ const Homepage = () => {
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               Skip 18 months of trial & error
             </h2>
-            <h3 className="text-2xl md:text-3xl font-semibold text-primary-600 mb-6">
+            {/* <h3 className="text-2xl md:text-3xl font-semibold text-primary-600 mb-6">
               … in 40 minutes!
-            </h3>
+            </h3> */}
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               They've done what you're trying to do. Now, they'll show you how.
             </p>
@@ -859,12 +939,12 @@ const Homepage = () => {
       {/* CTA Strip */}
       <section className="bg-primary-500 py-16 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-8">
+          <h2 className="text-3xl font-bold mb-4">
             They've done what you're trying to do
           </h2>
 
           <div className="flex flex-wrap justify-center gap-4">
-            Get access. Get unstuck. Get ahead.
+            <i>Get access. Get unstuck. Get ahead.</i> 
           </div>
         </div>
       </section>
@@ -938,111 +1018,14 @@ const Homepage = () => {
               variant="solid"
               className="bg-primary-500 hover:bg-primary-600"
             >
-              Subscribe
+              Yay, Get me in!
             </Button>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-6 h-6 bg-primary-500 rounded"></div>
-                <span className="font-bold text-lg">Mentorick</span>
-              </div>
-              <p className="text-gray-400 text-sm">
-                Connecting ambitious individuals with world-class mentors for
-                transformative 1:1 guidance.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>
-                  <a href="#" className="hover:text-white">
-                    About Us
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Our Mission
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Careers
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Press
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Help Center
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Contact Us
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Privacy Policy
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Terms of Service
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Connect</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Twitter
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    LinkedIn
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Instagram
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Facebook
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>&copy; 2024 Mentorick. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </MainLayout>
   );
 };

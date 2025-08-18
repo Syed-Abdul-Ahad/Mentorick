@@ -1,10 +1,13 @@
 import React from 'react';
 import Sidebar from './Sidebar';
 
-const MainLayout = ({ children }) => {
+const MainLayout = ({ children, isMobileMenuOpen, setIsMobileMenuOpen }) => {
   return (
     <div className="min-h-screen bg-white">
-      <Sidebar />
+      <Sidebar 
+        isMobileMenuOpen={isMobileMenuOpen} 
+        setIsMobileMenuOpen={setIsMobileMenuOpen} 
+      />
       
       {/* Main content area */}
       <div className="lg:ml-48">

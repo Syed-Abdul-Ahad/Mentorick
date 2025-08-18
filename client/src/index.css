@@ -205,3 +205,17 @@ body {
 .animation-delay-2000 {
   animation-delay: 2s;
 }
+
+/* Company logos scrolling animation */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll 13s linear infinite;
+}

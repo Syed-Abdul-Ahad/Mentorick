@@ -5,7 +5,7 @@ import { AiOutlineLeft, AiOutlineRight } from 'react-icons/ai';
 import { mentorService } from '../../api/services';
 import currencyService from '../../api/currencyService';
 
-const MentorSlider = ({ mentors = [] }) => {
+const MentorSlider = ({ mentors = [], searchQuery = "", sortBy = "rating" }) => {
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -64,6 +64,11 @@ const MentorSlider = ({ mentors = [] }) => {
       setLoading(false);
     }
   }, []);
+
+  // Reset slider index when search or sort changes
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [searchQuery, sortBy]);
   
   // Mock data as fallback
   const mockMentors = [
@@ -106,11 +111,42 @@ const MentorSlider = ({ mentors = [] }) => {
   ];
 
   // Use provided mentors, fetched mentors, or fallback to mock data
-  const displayMentors = mentors.length > 0 
+  const baseMentors = mentors.length > 0 
     ? mentors 
     : fetchedMentors.length > 0 
       ? fetchedMentors 
       : mockMentors;
+
+  // Filter mentors based on search query
+  const filteredMentors = baseMentors.filter(mentor => {
+    if (!searchQuery) return true;
+    
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      mentor.name.toLowerCase().includes(searchLower) ||
+      mentor.title.toLowerCase().includes(searchLower) ||
+      mentor.tags.some(tag => tag.toLowerCase().includes(searchLower))
+    );
+  });
+
+  // Sort mentors based on sortBy option
+  const displayMentors = [...filteredMentors].sort((a, b) => {
+    switch (sortBy) {
+      case 'price':
+        // Extract price value and sort by it
+        const priceA = parseFloat(a.price.replace(/[$\/\w]/g, ''));
+        const priceB = parseFloat(b.price.replace(/[$\/\w]/g, ''));
+        return priceA - priceB;
+      case 'experience':
+        // Sort by title/experience level (assuming more experienced have longer titles)
+        return b.title.length - a.title.length;
+      case 'name':
+        return a.name.localeCompare(b.name);
+      case 'rating':
+      default:
+        return b.rating - a.rating;
+    }
+  });
 
   // Calculate how many cards to show based on screen size
   const getCardsToShow = () => {
@@ -211,6 +247,13 @@ const MentorSlider = ({ mentors = [] }) => {
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+        </div>
+      ) : displayMentors.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="text-gray-500 text-lg mb-2">No mentors found</div>
+          <div className="text-gray-400 text-sm">
+            {searchQuery ? `Try adjusting your search for "${searchQuery}"` : "Try changing your filters"}
+          </div>
         </div>
       ) : (
         <>
