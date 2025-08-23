@@ -162,7 +162,145 @@ class MentorService extends ApiService {
   }
 }
 
+class AvailabilityService extends ApiService {
+  constructor() {
+    super('/availability');
+  }
+
+  // Get mentor availability (public)
+  async getMentorAvailability(mentorId, timezone = null) {
+    try {
+      const params = timezone ? { timezone } : {};
+      const response = await apiClient.get(`/availability/${mentorId}`, { params });
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Get available time slots for booking (public)
+  async getAvailableSlots(mentorId, date, timezone = null, sessionType = '1:1') {
+    try {
+      const params = { date, sessionType };
+      if (timezone) params.timezone = timezone;
+      
+      const response = await apiClient.get(`/availability/${mentorId}/slots`, { params });
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Get my availability (mentor only)
+  async getMyAvailability() {
+    try {
+      const response = await apiClient.get('/availability/my/availability');
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Create availability (mentor only)
+  async createAvailability(availabilityData) {
+    try {
+      const response = await apiClient.post('/availability', availabilityData);
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Update availability (mentor only)
+  async updateAvailability(availabilityId, availabilityData) {
+    try {
+      const response = await apiClient.put(`/availability/${availabilityId}`, availabilityData);
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Delete availability (mentor only)
+  async deleteAvailability(availabilityId) {
+    try {
+      const response = await apiClient.delete(`/availability/${availabilityId}`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+}
+
+class BookingService extends ApiService {
+  constructor() {
+    super('/bookings');
+  }
+
+  // Create a new booking
+  async createBooking(bookingData) {
+    try {
+      const response = await apiClient.post('/bookings', bookingData);
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Get my bookings
+  async getMyBookings(params = {}) {
+    try {
+      const response = await apiClient.get('/bookings/my-bookings', { params });
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Get mentor's upcoming sessions
+  async getMentorUpcomingSessions() {
+    try {
+      const response = await apiClient.get('/bookings/mentor/upcoming');
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Get specific booking
+  async getBooking(bookingId) {
+    try {
+      const response = await apiClient.get(`/bookings/${bookingId}`);
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Cancel booking
+  async cancelBooking(bookingId, reason = '') {
+    try {
+      const response = await apiClient.put(`/bookings/${bookingId}/cancel`, { reason });
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Update booking status (mentor only)
+  async updateBookingStatus(bookingId, statusData) {
+    try {
+      const response = await apiClient.put(`/bookings/${bookingId}/status`, statusData);
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+}
+
 // Export service instances
 export const authService = new AuthService();
 export const userService = new UserService();
 export const mentorService = new MentorService();
+export const availabilityService = new AvailabilityService();
+export const bookingService = new BookingService();

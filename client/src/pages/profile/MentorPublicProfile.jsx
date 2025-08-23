@@ -1,19 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { FaLinkedin, FaTwitter, FaInstagram} from 'react-icons/fa';
 import { CiGlobe } from "react-icons/ci";
 import { HiOutlineUsers, HiOutlineStar, HiOutlineTrendingUp, HiOutlineBriefcase, HiOutlineClock, HiOutlineHeart, HiOutlineUser } from 'react-icons/hi';
 import { BiHappyBeaming } from "react-icons/bi";
 import apiClient from '../../api/axiosConfig';
 import currencyService from '../../api/currencyService';
+import { useUser } from '../../store/hooks';
+import BookingCalendar from '../../components/booking/BookingCalendar';
+import Toast from '../../components/shared/Toast';
 
 
 const MentorPublicProfile = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const user = useUser();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [convertedSessions, setConvertedSessions] = useState([]);
   const [pricesLoading, setPricesLoading] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -71,7 +78,31 @@ const MentorPublicProfile = () => {
     };
     fetchProfile();
   }, [id]);
-  console.log("Fetched profile:", profile);
+
+  const handleBookSession = () => {
+    if (!user) {
+      // Redirect to login if not authenticated
+      navigate('/login');
+      return;
+    }
+
+    if (user.role === 'mentor') {
+      showToast('You cannot book a session with yourself', 'error');
+      return;
+    }
+
+    setShowBookingModal(true);
+  };
+
+  const handleBookingSuccess = (booking) => {
+    setShowBookingModal(false);
+    showToast('Session booked successfully! Check your dashboard for details.');
+  };
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 5000);
+  };
 
   if (loading) {
     return (
@@ -342,13 +373,57 @@ const MentorPublicProfile = () => {
 
             {/* Book Session CTA */}
             <div className="bg-white rounded-xl shadow-sm p-6">
-              <button className="w-full bg-primary text-white font-semibold py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors mb-3">
+              <button 
+                onClick={handleBookSession}
+                className="w-full bg-primary text-white font-semibold py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors mb-3"
+              >
                 Book a Session
               </button>
+              <p className="text-xs text-gray-500 text-center">
+                {user ? 'Choose your preferred time slot' : 'Login required to book sessions'}
+              </p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Booking Modal */}
+      {showBookingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Book Session with {profile?.fullName}
+              </h2>
+              <button
+                onClick={() => setShowBookingModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-0">
+              <BookingCalendar
+                mentorId={id}
+                mentorName={profile?.fullName}
+                onBookingSuccess={handleBookingSuccess}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ show: false, message: '', type: 'success' })}
+        />
+      )}
     </div>
   );
 };
