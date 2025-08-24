@@ -15,7 +15,7 @@ const BookingCalendar = ({ mentorId, mentorName, onBookingSuccess }) => {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [sessionType, setSessionType] = useState('1:1');
+  const [duration, setDuration] = useState(60); // Default 60 minutes
   const [notes, setNotes] = useState('');
   const [userTimezone] = useState(getUserTimezone());
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
@@ -24,7 +24,7 @@ const BookingCalendar = ({ mentorId, mentorName, onBookingSuccess }) => {
     if (selectedDate) {
       fetchAvailableSlots();
     }
-  }, [selectedDate, sessionType, mentorId]);
+  }, [selectedDate, duration, mentorId]);
 
   const fetchAvailableSlots = async () => {
     try {
@@ -33,15 +33,17 @@ const BookingCalendar = ({ mentorId, mentorName, onBookingSuccess }) => {
         mentorId,
         selectedDate,
         userTimezone,
-        sessionType
+        duration
       );
       
-      // Filter out past slots
-      const currentSlots = response.slots.filter(slot => 
-        !isTimeSlotInPast(selectedDate, slot.startTime, userTimezone)
-      );
-      
-      setAvailableSlots(currentSlots);
+      if (response && response.slots) {
+        // Filter out past slots
+        const currentSlots = response.slots.filter(slot => 
+          !isTimeSlotInPast(selectedDate, slot.startTime, userTimezone)
+        );
+        
+        setAvailableSlots(currentSlots);
+      }
     } catch (error) {
       console.error('Error fetching available slots:', error);
       showToast('Failed to load available slots', 'error');
@@ -66,8 +68,7 @@ const BookingCalendar = ({ mentorId, mentorName, onBookingSuccess }) => {
         availabilityId: selectedSlot.availabilityId,
         scheduledDate: selectedDate,
         startTime: selectedSlot.originalStartTime || selectedSlot.startTime,
-        duration: selectedSlot.duration,
-        sessionType,
+        duration: duration,
         notes,
         menteeTimezone: userTimezone,
       };
@@ -131,36 +132,49 @@ const BookingCalendar = ({ mentorId, mentorName, onBookingSuccess }) => {
         </div>
 
         <div className="p-6">
-          {/* Session Type Selection */}
+          {/* Duration Selection */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Session Type
+              Session Duration
             </label>
             <div className="flex space-x-4">
               <label className="flex items-center">
                 <input
                   type="radio"
-                  value="1:1"
-                  checked={sessionType === '1:1'}
-                  onChange={(e) => setSessionType(e.target.value)}
+                  value="30"
+                  checked={duration === 30}
+                  onChange={(e) => setDuration(parseInt(e.target.value))}
                   className="mr-2 text-primary-600 focus:ring-primary-500"
                 />
                 <span className="text-sm">
-                  1:1 Session
-                  <span className="text-gray-500 block text-xs">Private mentoring session</span>
+                  30 minutes
+                  <span className="text-gray-500 block text-xs">Quick session</span>
                 </span>
               </label>
               <label className="flex items-center">
                 <input
                   type="radio"
-                  value="mega"
-                  checked={sessionType === 'mega'}
-                  onChange={(e) => setSessionType(e.target.value)}
+                  value="60"
+                  checked={duration === 60}
+                  onChange={(e) => setDuration(parseInt(e.target.value))}
                   className="mr-2 text-primary-600 focus:ring-primary-500"
                 />
                 <span className="text-sm">
-                  Mega Session
-                  <span className="text-gray-500 block text-xs">Group mentoring session</span>
+                  60 minutes
+                  <span className="text-gray-500 block text-xs">Standard session</span>
+                </span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="90"
+                  checked={duration === 90}
+                  onChange={(e) => setDuration(parseInt(e.target.value))}
+                  className="mr-2 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-sm">
+                  90 minutes
+                  <span className="text-gray-500 block text-xs">Extended session</span>
                 </span>
               </label>
             </div>
@@ -267,13 +281,7 @@ const BookingCalendar = ({ mentorId, mentorName, onBookingSuccess }) => {
               </div>
               <div>
                 <span className="text-sm font-medium text-gray-700">Duration: </span>
-                <span className="text-sm text-gray-900">{selectedSlot.duration} minutes</span>
-              </div>
-              <div>
-                <span className="text-sm font-medium text-gray-700">Type: </span>
-                <span className="text-sm text-gray-900">
-                  {sessionType === '1:1' ? '1:1 Session' : 'Mega Session'}
-                </span>
+                <span className="text-sm text-gray-900">{duration} minutes</span>
               </div>
             </div>
 

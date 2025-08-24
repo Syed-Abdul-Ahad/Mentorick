@@ -27,12 +27,6 @@ const availabilitySchema = new mongoose.Schema({
     required: [true, 'Timezone is required'],
     default: 'UTC',
   },
-  slotDuration: {
-    type: Number, // Duration in minutes
-    required: [true, 'Slot duration is required'],
-    enum: [15, 30, 60, 90, 120], // Available slot durations
-    default: 60,
-  },
   isActive: {
     type: Boolean,
     default: true,

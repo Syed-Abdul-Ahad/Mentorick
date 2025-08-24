@@ -38,7 +38,7 @@ const bookingSchema = new mongoose.Schema({
   },
   sessionType: {
     type: String,
-    enum: ['1:1', 'mega'],
+    enum: ['1:1'],
     required: [true, 'Session type is required'],
     default: '1:1',
   },
@@ -60,7 +60,7 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     maxlength: [500, 'Notes cannot exceed 500 characters'],
   },
-  // For Mega Sessions - track all participants
+  // For future use if needed
   participants: [{
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -78,9 +78,9 @@ const bookingSchema = new mongoose.Schema({
   }],
   maxParticipants: {
     type: Number,
-    default: 1, // 1 for 1:1 sessions
+    default: 1, // Always 1 for 1:1 sessions
     min: 1,
-    max: 100,
+    max: 1,
   },
   // Payment related fields (for future use)
   paymentStatus: {
@@ -126,8 +126,7 @@ const bookingSchema = new mongoose.Schema({
 bookingSchema.index({ 
   mentor: 1, 
   scheduledDate: 1, 
-  startTime: 1, 
-  sessionType: 1 
+  startTime: 1
 });
 
 // Index for efficient querying
@@ -151,53 +150,41 @@ bookingSchema.virtual('endDateTime').get(function() {
 });
 
 // Method to check if booking slot is available for 1:1 sessions
-bookingSchema.statics.isSlotAvailable = async function(mentorId, date, startTime, endTime, sessionType = '1:1') {
-  if (sessionType === 'mega') {
-    // For mega sessions, check if there's room for more participants
-    const existingBooking = await this.findOne({
-      mentor: mentorId,
-      scheduledDate: date,
-      startTime,
-      endTime,
-      sessionType: 'mega',
-      status: { $nin: ['cancelled', 'no-show'] }
-    });
+bookingSchema.statics.isSlotAvailable = async function(mentorId, date, startTime, endTime) {
+  // For 1:1 sessions, check if slot overlaps with any existing booking
+  // Convert times to minutes for easier comparison
+  const requestedStart = timeToMinutes(startTime);
+  const requestedEnd = timeToMinutes(endTime);
+  
+  const existingBookings = await this.find({
+    mentor: mentorId,
+    scheduledDate: date,
+    status: { $nin: ['cancelled', 'no-show'] }
+  });
 
-    if (existingBooking) {
-      return existingBooking.participants.length < existingBooking.maxParticipants;
+  // Check for any overlapping bookings
+  for (const booking of existingBookings) {
+    const bookingStart = timeToMinutes(booking.startTime);
+    const bookingEnd = timeToMinutes(booking.endTime);
+    
+    // Check if there's any overlap
+    if (requestedStart < bookingEnd && requestedEnd > bookingStart) {
+      return false; // Slot is not available due to overlap
     }
-    return true;
-  } else {
-    // For 1:1 sessions, check if slot is completely free
-    const existingBooking = await this.findOne({
-      mentor: mentorId,
-      scheduledDate: date,
-      startTime,
-      status: { $nin: ['cancelled', 'no-show'] }
-    });
-
-    return !existingBooking;
   }
+
+  return true; // No overlapping bookings found
 };
 
-// Method to add participant to mega session
+// Helper function to convert time string to minutes
+function timeToMinutes(timeStr) {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+// Method to add participant (not used for 1:1 sessions)
 bookingSchema.methods.addParticipant = function(userId) {
-  if (this.sessionType !== 'mega') {
-    throw new Error('Can only add participants to mega sessions');
-  }
-
-  if (this.participants.length >= this.maxParticipants) {
-    throw new Error('Session is full');
-  }
-
-  // Check if user is already a participant
-  const existingParticipant = this.participants.find(p => p.user.toString() === userId.toString());
-  if (existingParticipant) {
-    throw new Error('User is already registered for this session');
-  }
-
-  this.participants.push({ user: userId });
-  return this.save();
+  throw new Error('Cannot add participants to 1:1 sessions');
 };
 
 // Pre-save middleware to set end time based on duration

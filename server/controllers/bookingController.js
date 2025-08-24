@@ -13,11 +13,18 @@ const createBooking = async (req, res, next) => {
       scheduledDate,
       startTime,
       duration,
-      sessionType = '1:1',
       notes,
       menteeTimezone = 'UTC',
     } = req.body;
 
+    // Validate duration
+    const validDurations = [30, 60, 90];
+    if (!validDurations.includes(duration)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Duration must be 30, 60, or 90 minutes',
+      });
+    }
     // Find mentor profile using user ID
     const mentorProfile = await MentorProfile.findOne({ user: mentorId });
     if (!mentorProfile) {
@@ -46,8 +53,7 @@ const createBooking = async (req, res, next) => {
       mentorProfile._id,
       new Date(scheduledDate),
       startTime,
-      endTime,
-      sessionType
+      endTime
     );
 
     if (!isAvailable) {
@@ -67,45 +73,15 @@ const createBooking = async (req, res, next) => {
       startTime,
       endTime, // Include calculated endTime
       duration,
-      sessionType,
+      sessionType: '1:1', // Always 1:1
       notes,
       mentorTimezone,
       menteeTimezone,
-      maxParticipants: sessionType === 'mega' ? 10 : 1, // Default max for mega sessions
+      maxParticipants: 1, // Always 1 for 1:1 sessions
     };
 
-    let booking;
-
-    if (sessionType === 'mega') {
-      // Check if mega session already exists for this slot
-      const existingMegaSession = await Booking.findOne({
-        mentor: mentorProfile._id,
-        scheduledDate: new Date(scheduledDate),
-        startTime,
-        sessionType: 'mega',
-        status: { $nin: ['cancelled', 'no-show'] }
-      });
-
-      if (existingMegaSession) {
-        // Add participant to existing mega session
-        try {
-          await existingMegaSession.addParticipant(req.user.id);
-          booking = existingMegaSession;
-        } catch (error) {
-          return res.status(400).json({
-            status: 'error',
-            message: error.message,
-          });
-        }
-      } else {
-        // Create new mega session
-        bookingData.participants = [{ user: req.user.id }];
-        booking = await Booking.create(bookingData);
-      }
-    } else {
-      // Create 1:1 session
-      booking = await Booking.create(bookingData);
-    }
+    // Create 1:1 session
+    const booking = await Booking.create(bookingData);
 
     // Populate booking with mentor and mentee details
     await booking.populate([
@@ -156,14 +132,8 @@ const getMyBookings = async (req, res, next) => {
       }
       filter.mentor = mentor._id;
     } else {
-      // For mentees, also check if they're participants in mega sessions
-      filter.$or = [
-        { mentee: req.user.id },
-        { 
-          sessionType: 'mega',
-          'participants.user': req.user.id 
-        }
-      ];
+      // For mentees, show only their bookings
+      filter.mentee = req.user.id;
     }
 
     // Status filter
@@ -256,9 +226,7 @@ const getBooking = async (req, res, next) => {
     const mentorProfile = await MentorProfile.findOne({ user: req.user.id });
     const isUserAuthorized = 
       booking.mentee._id.toString() === req.user.id.toString() ||
-      (mentorProfile && booking.mentor._id.toString() === mentorProfile._id.toString()) ||
-      (booking.sessionType === 'mega' && 
-       booking.participants.some(p => p.user._id.toString() === req.user.id.toString()));
+      (mentorProfile && booking.mentor._id.toString() === mentorProfile._id.toString());
 
     if (!isUserAuthorized) {
       return res.status(403).json({
@@ -297,9 +265,7 @@ const cancelBooking = async (req, res, next) => {
     const mentorProfile = await MentorProfile.findOne({ user: req.user.id });
     const isUserAuthorized = 
       booking.mentee.toString() === req.user.id.toString() ||
-      (mentorProfile && booking.mentor.toString() === mentorProfile._id.toString()) ||
-      (booking.sessionType === 'mega' && 
-       booking.participants.some(p => p.user.toString() === req.user.id.toString()));
+      (mentorProfile && booking.mentor.toString() === mentorProfile._id.toString());
 
     if (!isUserAuthorized) {
       return res.status(403).json({
@@ -323,26 +289,11 @@ const cancelBooking = async (req, res, next) => {
       });
     }
 
-    // For mega sessions, remove participant instead of cancelling entire session
-    if (booking.sessionType === 'mega' && booking.mentee.toString() !== req.user.id.toString()) {
-      booking.participants = booking.participants.filter(
-        p => p.user.toString() !== req.user.id.toString()
-      );
-      
-      // If no participants left, cancel the session
-      if (booking.participants.length === 0) {
-        booking.status = 'cancelled';
-        booking.cancelledBy = req.user.id;
-        booking.cancellationReason = reason;
-        booking.cancelledAt = new Date();
-      }
-    } else {
-      // Cancel the booking
-      booking.status = 'cancelled';
-      booking.cancelledBy = req.user.id;
-      booking.cancellationReason = reason;
-      booking.cancelledAt = new Date();
-    }
+    // Cancel the 1:1 booking
+    booking.status = 'cancelled';
+    booking.cancelledBy = req.user.id;
+    booking.cancellationReason = reason;
+    booking.cancelledAt = new Date();
 
     await booking.save();
 

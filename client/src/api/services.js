@@ -179,9 +179,9 @@ class AvailabilityService extends ApiService {
   }
 
   // Get available time slots for booking (public)
-  async getAvailableSlots(mentorId, date, timezone = null, sessionType = '1:1') {
+  async getAvailableSlots(mentorId, date, timezone = null, duration = 60) {
     try {
-      const params = { date, sessionType };
+      const params = { date, duration };
       if (timezone) params.timezone = timezone;
       
       const response = await apiClient.get(`/availability/${mentorId}/slots`, { params });
@@ -298,9 +298,87 @@ class BookingService extends ApiService {
   }
 }
 
+// Mega Session Service
+class MegaSessionService extends ApiService {
+  constructor() {
+    super('/mega-sessions');
+  }
+
+  // Get all mega sessions (public)
+  async getAllMegaSessions(params = {}) {
+    try {
+      const response = await apiClient.get('/mega-sessions', { params });
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Get mega session by ID (public)
+  async getMegaSession(id) {
+    try {
+      const response = await apiClient.get(`/mega-sessions/${id}`);
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Create mega session (admin only)
+  async createMegaSession(sessionData) {
+    try {
+      const response = await apiClient.post('/mega-sessions', sessionData);
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Join mega session
+  async joinMegaSession(sessionId) {
+    try {
+      const response = await apiClient.put(`/mega-sessions/${sessionId}/join`);
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Leave mega session
+  async leaveMegaSession(sessionId) {
+    try {
+      const response = await apiClient.put(`/mega-sessions/${sessionId}/leave`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Update mega session status (admin only)
+  async updateMegaSessionStatus(sessionId, statusData) {
+    try {
+      const response = await apiClient.put(`/mega-sessions/${sessionId}/status`, statusData);
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Get mentor's mega sessions
+  async getMentorMegaSessions() {
+    try {
+      const response = await apiClient.get('/mega-sessions/mentor/my-sessions');
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+}
+
 // Export service instances
 export const authService = new AuthService();
 export const userService = new UserService();
 export const mentorService = new MentorService();
 export const availabilityService = new AvailabilityService();
 export const bookingService = new BookingService();
+export const megaSessionService = new MegaSessionService();

@@ -15,7 +15,6 @@ const AvailabilityCalendar = () => {
     startTime: '09:00',
     endTime: '17:00',
     timezone: getUserTimezone(),
-    slotDuration: 60,
     isRecurring: true,
     specificDate: '',
   });
@@ -23,14 +22,6 @@ const AvailabilityCalendar = () => {
 
   const daysOfWeek = [
     'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
-  ];
-
-  const slotDurations = [
-    { value: 15, label: '15 minutes' },
-    { value: 30, label: '30 minutes' },
-    { value: 60, label: '1 hour' },
-    { value: 90, label: '1.5 hours' },
-    { value: 120, label: '2 hours' },
   ];
 
   useEffect(() => {
@@ -184,7 +175,7 @@ const AvailabilityCalendar = () => {
                             {formatTimeWithTimezone(slot.endTime, slot.timezone)}
                           </p>
                           <p className="text-gray-600 text-xs">
-                            {slot.slotDuration}min slots
+                            Available for 30, 60, or 90 min sessions
                           </p>
                         </div>
                         <div className="flex space-x-1">
@@ -297,24 +288,6 @@ const AvailabilityCalendar = () => {
                   onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                   required
                 />
-              </div>
-
-              {/* Slot Duration */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Slot Duration
-                </label>
-                <select
-                  value={formData.slotDuration}
-                  onChange={(e) => setFormData({ ...formData, slotDuration: parseInt(e.target.value) })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                >
-                  {slotDurations.map((duration) => (
-                    <option key={duration.value} value={duration.value}>
-                      {duration.label}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               {/* Timezone */}

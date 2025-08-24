@@ -5,7 +5,14 @@ export { default as apiClient } from './axiosConfig';
 export { default as ApiService } from './ApiService';
 
 // Export specific services
-export { authService, userService, mentorService, availabilityService, bookingService } from './services';
+export { 
+  authService, 
+  userService, 
+  mentorService, 
+  availabilityService, 
+  bookingService, 
+  megaSessionService 
+} from './services';
 
 // Export everything for convenience
 export * from './services';

@@ -57,12 +57,22 @@ const getMentorAvailability = async (req, res, next) => {
 const getAvailableSlots = async (req, res, next) => {
   try {
     const { mentorId } = req.params; // This is actually the user ID
-    const { date, timezone = 'UTC', sessionType = '1:1' } = req.query;
+    const { date, timezone = 'UTC', duration = 60 } = req.query;
 
     if (!date) {
       return res.status(400).json({
         status: 'error',
         message: 'Date is required',
+      });
+    }
+
+    // Validate duration
+    const validDurations = [30, 60, 90];
+    const selectedDuration = parseInt(duration);
+    if (!validDurations.includes(selectedDuration)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Duration must be 30, 60, or 90 minutes',
       });
     }
 
@@ -78,6 +88,13 @@ const getAvailableSlots = async (req, res, next) => {
     const targetDate = new Date(date);
     const dayOfWeek = targetDate.getDay();
 
+    console.log('Debug info:', {
+      targetDate,
+      dayOfWeek,
+      mentorProfileId: mentorProfile._id,
+      selectedDuration
+    });
+
     // Get mentor's availability for that day using mentorProfile._id
     const availability = await Availability.find({
       mentor: mentorProfile._id,
@@ -85,13 +102,15 @@ const getAvailableSlots = async (req, res, next) => {
         { dayOfWeek, isRecurring: true },
         { 
           specificDate: { 
-            $gte: new Date(targetDate.setHours(0,0,0,0)), 
-            $lt: new Date(targetDate.setHours(23,59,59,999)) 
+            $gte: new Date(new Date(date).setHours(0,0,0,0)), 
+            $lt: new Date(new Date(date).setHours(23,59,59,999)) 
           } 
         }
       ],
       isActive: true
     });
+
+    console.log('Found availability:', availability.length, availability);
 
     if (availability.length === 0) {
       return res.status(200).json({
@@ -103,31 +122,35 @@ const getAvailableSlots = async (req, res, next) => {
       });
     }
 
-    // Generate time slots based on availability
+    // Generate time slots based on availability and selected duration
     const allSlots = [];
     
     for (const avail of availability) {
-      const slots = generateTimeSlots(avail.startTime, avail.endTime, avail.slotDuration);
+      console.log('Processing availability:', avail.startTime, 'to', avail.endTime);
+      const slots = generateTimeSlotsWithDuration(avail.startTime, avail.endTime, selectedDuration);
+      console.log('Generated slots:', slots.length, slots);
       
       // Check each slot against existing bookings using mentorProfile._id
       for (const slot of slots) {
+        const endTimeStr = minutesToTime(timeToMinutes(slot.startTime) + selectedDuration);
         const isAvailable = await Booking.isSlotAvailable(
-          mentorProfile._id, 
-          targetDate, 
-          slot.startTime, 
-          slot.endTime, 
-          sessionType
+          mentorProfile._id,
+          new Date(date),
+          slot.startTime,
+          endTimeStr
         );
 
         allSlots.push({
           startTime: slot.startTime,
-          endTime: slot.endTime,
-          duration: avail.slotDuration,
+          endTime: endTimeStr,
+          duration: selectedDuration,
           available: isAvailable,
           availabilityId: avail._id,
         });
       }
     }
+
+    console.log('Total slots generated:', allSlots.length);
 
     // Sort slots by time
     allSlots.sort((a, b) => a.startTime.localeCompare(b.startTime));
@@ -136,7 +159,8 @@ const getAvailableSlots = async (req, res, next) => {
       status: 'success',
       data: {
         slots: allSlots,
-        date: targetDate,
+        date: new Date(date),
+        duration: selectedDuration,
         mentor: {
           id: mentorProfile._id,
           userId: mentorId,
@@ -171,17 +195,14 @@ const createAvailability = async (req, res, next) => {
       });
     }
 
-    const { 
+      const { 
       dayOfWeek, 
       startTime, 
       endTime, 
       timezone = 'UTC', 
-      slotDuration = 60,
       specificDate,
       isRecurring = true 
-    } = req.body;
-
-    // Validate time format
+    } = req.body;    // Validate time format
     if (!isValidTimeFormat(startTime) || !isValidTimeFormat(endTime)) {
       return res.status(400).json({
         status: 'error',
@@ -223,7 +244,6 @@ const createAvailability = async (req, res, next) => {
       startTime,
       endTime,
       timezone,
-      slotDuration,
       isRecurring,
     };
 
@@ -286,7 +306,7 @@ const updateAvailability = async (req, res, next) => {
       });
     }
 
-    const { startTime, endTime, timezone, slotDuration, isActive } = req.body;
+    const { startTime, endTime, timezone, isActive } = req.body;
 
     // Validate time format if provided
     if (startTime && !isValidTimeFormat(startTime)) {
@@ -434,6 +454,24 @@ function generateTimeSlots(startTime, endTime, slotDuration) {
     });
     
     currentTime += slotDuration;
+  }
+
+  return slots;
+}
+
+function generateTimeSlotsWithDuration(startTime, endTime, duration) {
+  const slots = [];
+  let currentTime = timeToMinutes(startTime);
+  const endTimeMinutes = timeToMinutes(endTime);
+
+  while (currentTime + duration <= endTimeMinutes) {
+    const startTimeStr = minutesToTime(currentTime);
+    
+    slots.push({
+      startTime: startTimeStr,
+    });
+    
+    currentTime += 30; // Generate slots every 30 minutes for flexibility
   }
 
   return slots;

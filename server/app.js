@@ -15,6 +15,7 @@ const menteeProfileRoutes = require('./routes/menteeProfileRoutes');
 const sessionRoutes = require('./routes/sessionRoutes');
 const availabilityRoutes = require('./routes/availabilityRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
+const megaSessionRoutes = require('./routes/megaSessionRoutes');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -83,6 +84,7 @@ app.use('/api/mentee', menteeProfileRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/availability', availabilityRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/mega-sessions', megaSessionRoutes);
 
 // Error handling middleware (must be last)
 app.use(notFound);
