@@ -11,11 +11,14 @@ import Login from "./pages/login/Login";
 import Signup from "./pages/signup/Signup";
 import MentorSignup from "./pages/signup/MentorSignup";
 import Dashboard from "./pages/dashboard/Dashboard";
+import Sessions from "./pages/Sessions";
+import MyBookings from "./pages/MyBookings";
 import NotFound from "./pages/NotFound";
 import MentorProfileForm from "./pages/profile/MentorProfileForm";
 import MentorPublicProfile from "./pages/profile/MentorPublicProfile";
 import Homepage from "./pages/Homepage";
 import Mentors from "./pages/Mentors";
+import MegaSessions from "./components/mega-sessions/MegaSessions";
 
 function AuthenticatedApp() {
   const dispatch = useDispatch();
@@ -103,6 +106,20 @@ function AuthenticatedApp() {
             isAuthenticated ? <Dashboard /> : <Navigate to="/login" />
           }
         />
+        {/* Sessions page (mentor only) */}
+        <Route
+          path="/sessions"
+          element={
+            isAuthenticated ? <Sessions /> : <Navigate to="/login" />
+          }
+        />
+        {/* My Bookings page (both mentors and mentees) */}
+        <Route
+          path="/my-bookings"
+          element={
+            isAuthenticated ? <MyBookings /> : <Navigate to="/login" />
+          }
+        />
         {/* Mentor profile edit (mentor only) */}
         <Route
           path="/profile/edit"
@@ -119,6 +136,10 @@ function AuthenticatedApp() {
           element={
             isAuthenticated ? <Homepage /> : <Navigate to="/login" />
           }
+        />
+        <Route
+          path="/mega-session"
+          element={<MegaSessions />}
         />
         <Route
           path="*"

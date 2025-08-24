@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useUser } from '../../store/hooks';
 import { 
   AiOutlineHome, 
   AiOutlineUser, 
@@ -7,19 +8,40 @@ import {
   AiOutlineBarChart,
   AiOutlineMenu,
   AiOutlineClose,
-  AiOutlineTeam
+  AiOutlineTeam,
+  AiOutlineCalendar,
+  AiOutlineClockCircle
 } from 'react-icons/ai';
 
 const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const location = useLocation();
+  const user = useUser();
 
-  const navigation = [
-    { name: 'Profile', href: '/profile', icon: AiOutlineUser },
-    { name: 'Home', href: '/', icon: AiOutlineHome },
-    { name: 'Mentors', href: '/mentors', icon: AiOutlineTeam },
-    { name: 'Session Settings', href: '/sessions', icon: AiOutlineSetting },
-    { name: 'Dashboard', href: '/dashboard', icon: AiOutlineBarChart },
-  ];
+  // Different navigation based on user role
+  const getNavigation = () => {
+    const baseNavigation = [
+      { name: 'Profile', href: '/profile', icon: AiOutlineUser },
+      { name: 'Home', href: '/', icon: AiOutlineHome },
+      { name: 'Mentors', href: '/mentors', icon: AiOutlineTeam },
+    ];
+
+    if (user?.role === 'mentor') {
+      return [
+        ...baseNavigation,
+        { name: 'Session Settings', href: '/sessions', icon: AiOutlineSetting },
+        { name: 'My Bookings', href: '/my-bookings', icon: AiOutlineCalendar },
+        { name: 'Dashboard', href: '/dashboard', icon: AiOutlineBarChart },
+      ];
+    } else {
+      return [
+        ...baseNavigation,
+        { name: 'My Sessions', href: '/my-bookings', icon: AiOutlineClockCircle },
+        { name: 'Dashboard', href: '/dashboard', icon: AiOutlineBarChart },
+      ];
+    }
+  };
+
+  const navigation = getNavigation();
 
   const isActive = (path) => location.pathname === path;
 
