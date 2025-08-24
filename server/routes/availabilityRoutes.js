@@ -2,6 +2,7 @@ const express = require('express');
 const {
   getMentorAvailability,
   getAvailableSlots,
+  checkCustomSlot,
   createAvailability,
   updateAvailability,
   deleteAvailability,
@@ -14,6 +15,7 @@ const router = express.Router();
 // Public routes
 router.get('/:mentorId', getMentorAvailability);
 router.get('/:mentorId/slots', getAvailableSlots);
+router.post('/:mentorId/check-slot', checkCustomSlot);
 
 // Protected routes
 router.use(authenticate); // All routes below require authentication

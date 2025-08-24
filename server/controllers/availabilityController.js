@@ -116,51 +116,40 @@ const getAvailableSlots = async (req, res, next) => {
       return res.status(200).json({
         status: 'success',
         data: {
-          slots: [],
+          availability: [],
+          existingBookings: [],
           message: 'No availability for this date',
         },
       });
     }
 
-    // Generate time slots based on availability and selected duration
-    const allSlots = [];
-    
-    for (const avail of availability) {
-      console.log('Processing availability:', avail.startTime, 'to', avail.endTime);
-      const slots = generateTimeSlotsWithDuration(avail.startTime, avail.endTime, selectedDuration);
-      console.log('Generated slots:', slots.length, slots);
-      
-      // Check each slot against existing bookings using mentorProfile._id
-      for (const slot of slots) {
-        const endTimeStr = minutesToTime(timeToMinutes(slot.startTime) + selectedDuration);
-        const isAvailable = await Booking.isSlotAvailable(
-          mentorProfile._id,
-          new Date(date),
-          slot.startTime,
-          endTimeStr
-        );
+    // Get existing bookings for this mentor on this date
+    const existingBookings = await Booking.find({
+      mentor: mentorProfile._id,
+      scheduledDate: new Date(date),
+      status: { $nin: ['cancelled', 'no-show'] }
+    }).select('startTime endTime duration');
 
-        allSlots.push({
-          startTime: slot.startTime,
-          endTime: endTimeStr,
-          duration: selectedDuration,
-          available: isAvailable,
-          availabilityId: avail._id,
-        });
-      }
-    }
-
-    console.log('Total slots generated:', allSlots.length);
-
-    // Sort slots by time
-    allSlots.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    console.log('Found availability:', availability.length, availability);
+    console.log('Existing bookings:', existingBookings.length, existingBookings);
 
     res.status(200).json({
       status: 'success',
       data: {
-        slots: allSlots,
+        availability: availability.map(avail => ({
+          id: avail._id,
+          startTime: avail.startTime,
+          endTime: avail.endTime,
+          dayOfWeek: avail.dayOfWeek,
+          isRecurring: avail.isRecurring,
+          specificDate: avail.specificDate
+        })),
+        existingBookings: existingBookings.map(booking => ({
+          startTime: booking.startTime,
+          endTime: booking.endTime,
+          duration: booking.duration
+        })),
         date: new Date(date),
-        duration: selectedDuration,
         mentor: {
           id: mentorProfile._id,
           userId: mentorId,
@@ -438,6 +427,109 @@ const getMyAvailability = async (req, res, next) => {
   }
 };
 
+// @desc    Check if a custom time slot is available
+// @route   POST /api/availability/:mentorId/check-slot
+// @access  Public
+const checkCustomSlot = async (req, res, next) => {
+  try {
+    const { mentorId } = req.params;
+    const { date, startTime, duration } = req.body;
+
+    if (!date || !startTime || !duration) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Date, start time, and duration are required',
+      });
+    }
+
+    // Validate duration
+    const validDurations = [30, 60, 90];
+    const selectedDuration = parseInt(duration);
+    if (!validDurations.includes(selectedDuration)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Duration must be 30, 60, or 90 minutes',
+      });
+    }
+
+    // Calculate end time
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = startMinutes + selectedDuration;
+    const endTime = minutesToTime(endMinutes);
+
+    // Find mentor profile
+    const mentorProfile = await MentorProfile.findOne({ user: mentorId });
+    if (!mentorProfile) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Mentor not found',
+      });
+    }
+
+    const targetDate = new Date(date);
+    const dayOfWeek = targetDate.getDay();
+
+    // Check if mentor has availability for this time window
+    const availability = await Availability.find({
+      mentor: mentorProfile._id,
+      $or: [
+        { dayOfWeek, isRecurring: true },
+        { 
+          specificDate: { 
+            $gte: new Date(new Date(date).setHours(0,0,0,0)), 
+            $lt: new Date(new Date(date).setHours(23,59,59,999)) 
+          } 
+        }
+      ],
+      isActive: true
+    });
+
+    let isWithinAvailability = false;
+    let availabilityId = null;
+
+    // Check if the requested time falls within any availability window
+    for (const avail of availability) {
+      const availStart = timeToMinutes(avail.startTime);
+      const availEnd = timeToMinutes(avail.endTime);
+      
+      if (startMinutes >= availStart && endMinutes <= availEnd) {
+        isWithinAvailability = true;
+        availabilityId = avail._id;
+        break;
+      }
+    }
+
+    if (!isWithinAvailability) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Requested time is outside mentor availability',
+      });
+    }
+
+    // Check if slot conflicts with existing bookings
+    const isAvailable = await Booking.isSlotAvailable(
+      mentorProfile._id,
+      new Date(date),
+      startTime,
+      endTime
+    );
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        available: isAvailable,
+        startTime,
+        endTime,
+        duration: selectedDuration,
+        availabilityId,
+        message: isAvailable ? 'Slot is available' : 'Slot conflicts with existing booking',
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Helper functions
 function generateTimeSlots(startTime, endTime, slotDuration) {
   const slots = [];
@@ -495,6 +587,7 @@ function isValidTimeFormat(timeStr) {
 module.exports = {
   getMentorAvailability,
   getAvailableSlots,
+  checkCustomSlot,
   createAvailability,
   updateAvailability,
   deleteAvailability,

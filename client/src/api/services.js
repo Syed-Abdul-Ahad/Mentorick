@@ -191,6 +191,16 @@ class AvailabilityService extends ApiService {
     }
   }
 
+  // Check if a custom time slot is available (public)
+  async checkCustomSlot(mentorId, slotData) {
+    try {
+      const response = await apiClient.post(`/availability/${mentorId}/check-slot`, slotData);
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   // Get my availability (mentor only)
   async getMyAvailability() {
     try {
