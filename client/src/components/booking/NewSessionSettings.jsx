@@ -128,120 +128,113 @@ const SessionSettings = () => {
   }, {});
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+      <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Session Settings</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Session Settings</h1>
             <p className="text-gray-600">Manage your availability and session preferences</p>
           </div>
           <Button
             onClick={() => setShowForm(true)}
-            className="mt-4 sm:mt-0 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-semibold shadow-md transition-all duration-200"
+            className="mt-4 sm:mt-0 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200"
           >
-            <span className="mr-2">+</span>
             Add Availability
           </Button>
         </div>
       </div>
 
-      {/* Availability Overview */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-        <div className="flex items-center mb-6">
-          <div className="bg-primary-100 p-3 rounded-lg mr-4">
-            <span className="text-2xl">📅</span>
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Weekly Schedule</h2>
-            <p className="text-gray-600">Your recurring availability for each day of the week</p>
-          </div>
+      {/* Weekly Schedule Section */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <h2 className="text-lg font-semibold text-gray-900">Weekly Schedule</h2>
+          <p className="text-sm text-gray-600 mt-1">Your recurring availability for each day of the week</p>
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-            <span className="ml-3 text-gray-600 text-lg">Loading availability...</span>
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <span className="ml-3 text-gray-600">Loading availability...</span>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {daysOfWeek.map((day, index) => (
-              <div
-                key={day}
-                className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200 hover:shadow-md transition-all duration-200"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-lg text-gray-900">{day}</h3>
-                  <span className="text-2xl">
-                    {index === 0 && '☀️'}
-                    {index === 1 && '🌟'}
-                    {index === 2 && '🔥'}
-                    {index === 3 && '🌿'}
-                    {index === 4 && '🌙'}
-                    {index === 5 && '🎉'}
-                    {index === 6 && '🏖️'}
-                  </span>
-                </div>
-                
-                {groupedAvailability[day]?.length > 0 ? (
-                  <div className="space-y-3">
-                    {groupedAvailability[day].map((slot) => (
-                      <div
-                        key={slot._id}
-                        className={`bg-white rounded-lg p-4 border-l-4 transition-all duration-200 ${
-                          slot.isActive
-                            ? 'border-l-green-500 shadow-sm hover:shadow-md'
-                            : 'border-l-gray-400 opacity-60'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="font-semibold text-gray-900">
-                            {formatTimeWithTimezone(slot.startTime, slot.timezone)} - {formatTimeWithTimezone(slot.endTime, slot.timezone)}
-                          </div>
-                          <div className="flex items-center space-x-1">
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {daysOfWeek.map((day, index) => (
+                <div
+                  key={day}
+                  className="border border-gray-200 rounded-lg p-4 bg-white hover:border-gray-300 transition-colors duration-200"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-gray-900">{day}</h3>
+                  </div>
+                  
+                  {groupedAvailability[day]?.length > 0 ? (
+                    <div className="space-y-3">
+                      {groupedAvailability[day].map((slot) => (
+                        <div
+                          key={slot._id}
+                          className={`bg-gray-50 rounded-lg p-3 border transition-all duration-200 ${
+                            slot.isActive
+                              ? 'border-green-200 bg-green-50'
+                              : 'border-gray-200 opacity-60'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-sm font-medium text-gray-900">
+                              {formatTimeWithTimezone(slot.startTime, slot.timezone)} - {formatTimeWithTimezone(slot.endTime, slot.timezone)}
+                            </div>
                             <button
                               onClick={() => handleToggleActive(slot)}
-                              className={`w-8 h-8 rounded-full transition-colors duration-200 ${
+                              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors duration-200 ${
                                 slot.isActive
-                                  ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                                  : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                                  ? 'bg-green-500 text-white hover:bg-green-600'
+                                  : 'bg-gray-300 text-gray-600 hover:bg-gray-400'
                               }`}
                               title={slot.isActive ? 'Disable' : 'Enable'}
                             >
                               {slot.isActive ? '✓' : '○'}
                             </button>
                           </div>
+                          
+                          <div className="text-xs text-gray-500 mb-3">
+                            Timezone: {slot.timezone}
+                          </div>
+                          
+                          <div className="text-xs text-gray-600 mb-2">
+                            Available for 30, 60, or 90 min sessions
+                          </div>
+                          
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleEdit(slot)}
+                              className="flex-1 bg-white text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs font-medium transition-colors duration-200 border border-blue-200"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(slot._id)}
+                              className="flex-1 bg-white text-red-600 hover:bg-red-50 px-2 py-1 rounded text-xs font-medium transition-colors duration-200 border border-red-200"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
-                        
-                        <div className="text-sm text-gray-500 mb-3">
-                          Timezone: {slot.timezone}
-                        </div>
-                        
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleEdit(slot)}
-                            className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(slot._id)}
-                            className="flex-1 bg-red-50 text-red-600 hover:bg-red-100 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
-                          >
-                            Delete
-                          </button>
-                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <div className="w-8 h-8 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="text-gray-400 text-4xl mb-2">📅</div>
-                    <p className="text-gray-500 text-sm">No availability set</p>
-                  </div>
-                )}
-              </div>
-            ))}
+                      <p className="text-gray-500 text-sm">No availability set</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -249,9 +242,9 @@ const SessionSettings = () => {
       {/* Add/Edit Availability Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">
+              <h3 className="text-xl font-semibold text-gray-900">
                 {editingSlot ? 'Edit Availability' : 'Add Availability'}
               </h3>
               <button
@@ -264,16 +257,16 @@ const SessionSettings = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {/* Day of Week */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Day of Week
                 </label>
                 <select
                   value={formData.dayOfWeek}
                   onChange={(e) => setFormData({ ...formData, dayOfWeek: parseInt(e.target.value) })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
                   required
                 >
                   {daysOfWeek.map((day, index) => (
@@ -317,11 +310,11 @@ const SessionSettings = () => {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-3 rounded-lg font-semibold transition-all duration-200"
+                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2 px-4 rounded-lg font-medium transition-all duration-200"
                 >
                   {loading ? (
                     <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                       Saving...
                     </div>
                   ) : (
@@ -331,7 +324,7 @@ const SessionSettings = () => {
                 <Button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-semibold transition-all duration-200"
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg font-medium transition-all duration-200"
                 >
                   Cancel
                 </Button>

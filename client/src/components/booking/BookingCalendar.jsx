@@ -182,10 +182,14 @@ const BookingCalendar = ({ mentorId, mentorName, onBookingSuccess }) => {
     for (let i = 0; i < 30; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
+      const isToday = i === 0;
       dates.push({
         value: date.toISOString().split('T')[0],
         label: formatDateInTimezone(date, userTimezone),
-        day: date.toLocaleDateString('en-US', { weekday: 'short' })
+        day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        dayName: date.toLocaleDateString('en-US', { weekday: 'long' }),
+        dayShort: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        isToday: isToday
       });
     }
     return dates;
@@ -199,7 +203,7 @@ const BookingCalendar = ({ mentorId, mentorName, onBookingSuccess }) => {
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {/* Header */}
-        <div className="bg-primary-50 px-6 py-4 border-b">
+        <div className="bg-primary-50 px-6 py-4 border-b border-gray-200">
           <h3 className="text-xl font-semibold text-primary-800">
             Book a Session with {mentorName}
           </h3>
@@ -273,12 +277,12 @@ const BookingCalendar = ({ mentorId, mentorName, onBookingSuccess }) => {
                       : 'bg-white text-gray-700 border-gray-300 hover:border-primary-300 hover:bg-primary-50'
                   }`}
                 >
-                  <div className="font-medium">{date.dayName}</div>
-                  <div className="text-xs">
+                  <div className="font-medium text-xs mb-1">{date.dayShort}</div>
+                  <div className="text-lg font-bold">
                     {new Date(date.value).getDate()}
                   </div>
                   {date.isToday && (
-                    <div className="text-xs text-primary-600 font-medium">Today</div>
+                    <div className="text-xs font-medium mt-1">Today</div>
                   )}
                 </button>
               ))}
@@ -363,7 +367,7 @@ const BookingCalendar = ({ mentorId, mentorName, onBookingSuccess }) => {
                         : 'bg-red-50 border border-red-200 text-red-800'
                     }`}>
                       <div className="font-medium">
-                        {slotStatus.available ? '✅ Slot Available' : '❌ Slot Not Available'}
+                        {slotStatus.available ? 'Slot Available' : 'Slot Not Available'}
                       </div>
                       <div className="text-sm mt-1">
                         {formatTimeWithTimezone(customStartTime, userTimezone)} - {formatTimeWithTimezone(slotStatus.endTime, userTimezone)} ({duration} minutes)
