@@ -175,13 +175,14 @@ const Homepage = () => {
 
               {/* Desktop Mission Link */}
               <a
-                href="#"
-                className="hidden lg:block text-sm text-gray-600 hover:text-gray-900"
+                href="/our-why"
+                target="_blank"
+                className="hidden lg:block text-sm text-primary-600 hover:text-gray-900"
               >
-                Our Mission
+                Our 'Why'
               </a>
 
-              <Button variant="solid" size="sm">
+              <Button onClick={() => navigate('/login')} variant="solid" size="sm">
                 Login
               </Button>
 
@@ -291,23 +292,23 @@ const Homepage = () => {
       </section>
 
       {/* Value Proposition Section */}
-      <section className="bg-primary-50 py-10">
+      <section className="bg-primary-600 py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="animate-fade-in-up">
             <p className="text-xl md:text-4xl lg:text-5xl font-bold text-gray-800 leading-tight">
-              <span className="inline-block animate-slide-in-left">
+              <span className="inline-block bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 bg-clip-text text-transparent animate-shimmer">
                 Unlimited 1:1 video calls.
               </span>
               <br />
-              <span className="inline-block animate-slide-in-right text-primary-500 font-extrabold">
+              <span className="inline-block animate-slide-in-right text-white font-extrabold">
                 Personalised advice.
               </span>
               <br />
-              <span className="inline-block animate-slide-in-left text-gray-800 font-extrabold">
+              <span className="inline-block bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 bg-clip-text text-transparent animate-shimmer">
                 World-class leaders.
               </span>
               <br />
-              <span className="inline-block animate-slide-in-right text-primary-500 mt-2">
+              <span className="inline-block animate-slide-in-right text-white mt-2">
                 All in 1 place.
               </span>
             </p>
@@ -333,37 +334,37 @@ const Homepage = () => {
       </section>
 
       {/* Become investor-ready section */}
-      <section className="bg-white py-16">
+      <section className="bg-primary-600 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-5">
+          <h2 className="text-3xl font-bold text-center mb-5 text-white">
             Become investor-ready, launch-ready, or scale-ready
           </h2>
-          <h3 className="text-xl font-bold text-center mb-12">
+          <h3 className="text-xl font-bold text-center mb-12 text-white">
             Get advised by people who’ve:
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
-                <AiOutlineCheck className="h-6 w-6 text-primary-500 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">
+                <AiOutlineCheck className="h-6 w-6 text-accent-500 mt-0.5 flex-shrink-0" />
+                <span className="text-white">
                   Built 7–9 figure businesses
                 </span>
               </div>
               <div className="flex items-start space-x-3">
-                <AiOutlineCheck className="h-6 w-6 text-primary-500 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">
+                <AiOutlineCheck className="h-6 w-6 text-accent-500 mt-0.5 flex-shrink-0" />
+                <span className="text-white">
                   Impacted lives through content
                 </span>
               </div>
               <div className="flex items-start space-x-3">
-                <AiOutlineCheck className="h-6 w-6 text-primary-500 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">
+                <AiOutlineCheck className="h-6 w-6 text-accent-500 mt-0.5 flex-shrink-0" />
+                <span className="text-white">
                   Founded and served unicorns
                 </span>
               </div>
               <div className="flex items-start space-x-3">
-                <AiOutlineCheck className="h-6 w-6 text-primary-500 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">
+                <AiOutlineCheck className="h-6 w-6 text-accent-500 mt-0.5 flex-shrink-0" />
+                <span className="text-white">
                   Navigated life-altering decisions
                 </span>
               </div>
@@ -371,20 +372,20 @@ const Homepage = () => {
 
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
-                <AiOutlineCheck className="h-6 w-6 text-primary-500 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">
+                <AiOutlineCheck className="h-6 w-6 text-accent-500 mt-0.5 flex-shrink-0" />
+                <span className="text-white">
                   Funded and made winning $M exits
                 </span>
               </div>
               <div className="flex items-start space-x-3">
-                <AiOutlineCheck className="h-6 w-6 text-primary-500 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">
+                <AiOutlineCheck className="h-6 w-6 text-accent-500 mt-0.5 flex-shrink-0" />
+                <span className="text-white">
                   Transformed the world and will now do yours
                 </span>
               </div>
               <div className="flex items-start space-x-3">
-                <AiOutlineCheck className="h-6 w-6 text-primary-500 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">
+                <AiOutlineCheck className="h-6 w-6 text-accent-500 mt-0.5 flex-shrink-0" />
+                <span className="text-white">
                   Transformed the world and will now do yours
                 </span>
               </div>
@@ -458,15 +459,15 @@ const Homepage = () => {
       </section>
 
       {/* Three Feature Cards */}
-      <section className="bg-white py-16">
+      <section className="bg-primary-600 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AiOutlineTeam className="h-8 w-8 text-primary-500" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Find a mentor</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl text-white font-semibold mb-2">Find a mentor</h3>
+              <p className="text-white">
                 Pick a time that matches you both and find the perfect match for
                 your needs
               </p>
@@ -476,10 +477,10 @@ const Homepage = () => {
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AiOutlineVideoCamera className="h-8 w-8 text-primary-500" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">
+              <h3 className="text-xl text-white font-semibold mb-2">
                 Jump on a 1:1 video call
               </h3>
-              <p className="text-gray-600">
+              <p className="text-white">
                 Leave with clarity + direction, schedule and attend personalized
                 video sessions
               </p>
@@ -489,10 +490,10 @@ const Homepage = () => {
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AiOutlineStar className="h-8 w-8 text-primary-500" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">
+              <h3 className="text-xl text-white font-semibold mb-2">
                 Review your session
               </h3>
-              <p className="text-gray-600">
+              <p className="text-white">
                 Get actionable insights and feedback to accelerate your growth
               </p>
             </div>
@@ -689,48 +690,42 @@ const Homepage = () => {
       </section>
 
       {/* Motivational Statement Section */}
-      <section className="relative bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 py-20 overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
-        </div>
-        
+      <section className="relative bg-gradient-to-b py-10 overflow-hidden bg-primary-100">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="space-y-8">
             {/* First Statement */}
             <div className="animate-fade-in-up">
-              <h2 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight">
+              <h2 className="text-2xl md:text-4xl lg:text-5xl font-extraboldtext-gray-700 leading-tight">
                 That's not all.
               </h2>
-              <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-primary-100 mt-4 animate-bounce-subtle">
+              <p className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-700 mt-4 animate-bounce-subtle">
                 We're just starting!
               </p>
             </div>
             
-            {/* Divider */}
+            {/* Divider
             <div className="flex items-center justify-center space-x-4 my-8">
-              <div className="w-16 h-0.5 bg-white opacity-50"></div>
-              <div className="w-4 h-4 bg-white rounded-full opacity-75 animate-ping"></div>
-              <div className="w-16 h-0.5 bg-white opacity-50"></div>
-            </div>
+              <div className="w-16 h-0.5 bg-gray-600 opacity-50"></div>
+              <div className="w-4 h-4 bg-gray-600 rounded-full opacity-75 animate-ping"></div>
+              <div className="w-16 h-0.5 bg-gray-600 opacity-50"></div>
+            </div> */}
             
             {/* Second Statement */}
             <div className="animate-slide-in-scale">
-              <h3 className="text-3xl md:text-5xl lg:text-6xl font-black text-white leading-tight">
+              <h3 className="text-2xl md:text-3xl lg:text-5xl font-black text-gray-700 leading-tight">
                 This Is Bigger Than
               </h3>
-              <span className="text-4xl md:text-6xl lg:text-7xl font-black bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 bg-clip-text text-transparent animate-shimmer">
+              <span className="text-2xl md:text-3xl lg:text-5xl font-black bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 bg-clip-text text-transparent animate-shimmer">
                 You Think
               </span>
             </div>
             
             {/* Call to Action */}
-            <div className="pt-8 animate-fade-in-delayed">
+            <div className="pt-4 animate-fade-in-delayed">
               <Button
                 variant="solid"
                 size="lg"
-                className="bg-primary-900 text-primary-600 hover:bg-gray-100 font-bold px-8 py-4 text-lg shadow-2xl transform hover:scale-105 transition-all duration-300"
+                className="bg-primary-500 text-primary-600 hover:bg-gray-100 font-bold px-4 py-2 text-lg shadow-2xl transform hover:scale-105 transition-all duration-300"
               >
                 Start Your Journey Now
               </Button>
@@ -944,7 +939,9 @@ const Homepage = () => {
           </h2>
 
           <div className="flex flex-wrap justify-center gap-4">
-            <i>Get access. Get unstuck. Get ahead.</i> 
+            <button className="bg-gray-50 animate-bounce-subtle text-primary-500 font-semibold py-2 px-4 border border-primary-500 rounded-lg shadow-sm hover:bg-primary-500 hover:text-white transition duration-200">Get access.</button>
+            <button className="bg-gray-50 animate-bounce-subtle text-primary-500 font-semibold py-2 px-4 border border-primary-500 rounded-lg shadow-sm hover:bg-primary-500 hover:text-white transition duration-200">Get unstuck</button>
+            <button className="bg-gray-50 animate-bounce-subtle text-primary-500 font-semibold py-2 px-4 border border-primary-500 rounded-lg shadow-sm hover:bg-primary-500 hover:text-white transition duration-200">Get ahead</button>
           </div>
         </div>
       </section>

@@ -18,6 +18,7 @@ import MentorProfileForm from "./pages/profile/MentorProfileForm";
 import MentorPublicProfile from "./pages/profile/MentorPublicProfile";
 import Homepage from "./pages/Homepage";
 import Mentors from "./pages/Mentors";
+import OurWhy from "./pages/OurWhy";
 import MegaSessions from "./components/mega-sessions/MegaSessions";
 
 function AuthenticatedApp() {
@@ -80,6 +81,7 @@ function AuthenticatedApp() {
           element={<Homepage />}
         />
         <Route path="/mentors" element={<Mentors />} />
+        <Route path="/our-why" element={<OurWhy />} />
         <Route
           path="/login"
           element={

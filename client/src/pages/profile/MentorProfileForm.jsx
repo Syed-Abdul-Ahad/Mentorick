@@ -280,7 +280,7 @@ const MentorProfileForm = () => {
                     value={form.title}
                     onChange={handleChange}
                     className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="Your professional title"
+                    placeholder="(E.g. Serial Entrepreneur | CEO XYZ  | Brand Strategist | Ex-Google | 3x Founder)"
                     required
                   />
                 </div>
@@ -297,7 +297,7 @@ const MentorProfileForm = () => {
                   onChange={handleChange}
                   rows={4}
                   className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                  placeholder="Tell us about your experience and expertise"
+                  placeholder="World already knows but would be awesome to write here about who you are, what you've built, achieved, or are known for. Include credibility points — e.g. companies founded, investments, exits, awards, publications, etc. Add something human at the end if you like (e.g. what drives you, what excites you, or something personal)"
                   maxLength={120 * 8}
                   required
                 />
@@ -318,7 +318,7 @@ const MentorProfileForm = () => {
                 <div className="space-y-3">
                   <input
                     type="text"
-                    placeholder="Add your expertise areas"
+                    placeholder="Please list 4–8 topics you are open to mentoring on"
                     className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' && e.target.value.trim()) {
@@ -460,7 +460,7 @@ const MentorProfileForm = () => {
                   onChange={handleChange}
                   rows={3}
                   className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                  placeholder="Describe your ideal mentee"
+                  placeholder="Describe your ideal mentee (e.g. early-stage founders, solopreneurs scaling past 1 crore, creatives building global agencies, etc.)"
                 />
               </div>
 
@@ -476,7 +476,7 @@ const MentorProfileForm = () => {
                   onChange={handleChange}
                   rows={3}
                   className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                  placeholder="Share your social impact goals"
+                  placeholder="This entails whether you’ll be donating some share of your session earnings to any charitable causes. (e.g., 30% of the proceeds will be donated to The Citizens Foundation)"
                 />
               </div>
 
@@ -492,7 +492,7 @@ const MentorProfileForm = () => {
                   onChange={handleChange}
                   rows={3}
                   className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                  placeholder="Share something interesting about yourself"
+                  placeholder="Something human or unique that gives your profile personality."
                 />
               </div>
             </div>

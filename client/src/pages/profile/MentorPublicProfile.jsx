@@ -172,7 +172,7 @@ const MentorPublicProfile = () => {
                   <p className="text-lg text-primary font-medium mb-3">
                     {profile.title}
                   </p>
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                  {/* <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                     <div className="flex items-center">
                       <HiOutlineUsers className="mr-2" />
                       <span>500+ Mentees</span>
@@ -185,7 +185,7 @@ const MentorPublicProfile = () => {
                       <CiGlobe className="mr-2 text-gray-600" />
                       <span>{profile.languages?.length || 0} Languages</span>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
 

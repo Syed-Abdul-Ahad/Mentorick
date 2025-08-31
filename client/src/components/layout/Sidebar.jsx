@@ -10,7 +10,7 @@ import {
   AiOutlineClose,
   AiOutlineTeam,
   AiOutlineCalendar,
-  AiOutlineClockCircle
+  AiOutlineClockCircle,
 } from 'react-icons/ai';
 
 const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
@@ -20,7 +20,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   // Different navigation based on user role
   const getNavigation = () => {
     const baseNavigation = [
-      { name: 'Profile', href: '/profile', icon: AiOutlineUser },
+      { name: 'Profile', href: '/profile/edit', icon: AiOutlineUser },
       { name: 'Home', href: '/', icon: AiOutlineHome },
       { name: 'Mentors', href: '/mentors', icon: AiOutlineTeam },
     ];

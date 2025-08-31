@@ -294,24 +294,7 @@ const Mentors = () => {
                 >
                   <AiOutlineMenu className="h-6 w-6" />
                 </button>
-                <h1 className="text-2xl font-bold text-gray-900 ml-2 lg:ml-0">Find Your Perfect Mentor</h1>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="hidden md:flex items-center space-x-2">
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    className={`p-2 rounded-lg ${viewMode === "grid" ? "bg-primary-100 text-primary-600" : "text-gray-600 hover:bg-gray-100"}`}
-                  >
-                    <BsGrid3X3Gap className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode("list")}
-                    className={`p-2 rounded-lg ${viewMode === "list" ? "bg-primary-100 text-primary-600" : "text-gray-600 hover:bg-gray-100"}`}
-                  >
-                    <BsListUl className="w-5 h-5" />
-                  </button>
-                </div>
+                <h1 className="text-2xl font-bold text-gray-900 ml-2 lg:ml-0">Mentorick</h1>
               </div>
             </div>
           </div>
