@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FaLinkedin, FaTwitter, FaInstagram} from 'react-icons/fa';
 import { CiGlobe } from "react-icons/ci";
 import { HiOutlineUsers, HiOutlineStar, HiOutlineTrendingUp, HiOutlineBriefcase, HiOutlineClock, HiOutlineHeart, HiOutlineUser } from 'react-icons/hi';
+import { AiOutlineDown } from 'react-icons/ai';
 import { BiHappyBeaming } from "react-icons/bi";
 import apiClient from '../../api/axiosConfig';
 import currencyService from '../../api/currencyService';
@@ -21,6 +23,58 @@ const MentorPublicProfile = () => {
   const [pricesLoading, setPricesLoading] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [openFaq, setOpenFaq] = useState(null);
+
+  const faqs = [
+    {
+      question: "How does a 1:1 video session actually work?",
+      answer: "You start by exploring our global roster of trusted mentors. Once you find someone aligned with your goals, simply pick a time and book your session. At your scheduled slot, you'll join a private Google video call where you can ask your questions and get laser-focused guidance that fits your needs."
+    },
+    {
+      question: "What's the usual duration of a session?",
+      answer: "Most mentors offer flexible time slots—typically 20, 40, or 60 minutes. You'll be able to choose the length that suits your goals best during the booking process."
+    },
+    {
+      question: "Is 20 minutes really enough to get value?",
+      answer: "Absolutely. You can have major breakthroughs even in short sessions. Whether it's clarity on your next big move, refining your pitch, or validating a strategy, the world-class mentors know how to make every minute count."
+    },
+    {
+      question: "Can I meet the same mentor more than once?",
+      answer: "Yes, and it's recommended too. Pro tip: for ongoing support, reserve multiple sessions ahead of time through bundles to avoid missing already limited slots that run out quickly. Several mentees maintain long-term mentor relationships to receive consistent guidance through regular check-ins."
+    },
+    {
+      question: "What time zone are the sessions displayed in?",
+      answer: "All session times automatically convert to your local time zone. No need to calculate time differences, we've handled that for you."
+    },
+    {
+      question: "Do you accept mentees from outside my country?",
+      answer: "Definitely. Mentorick is built for a global audience. Whether you're in Karachi, New York, Dubai, London, or Sydney, you can book sessions with world-class mentors across industries."
+    },
+    {
+      question: "What if a mentor's calendar is full?",
+      answer: "Some mentors have limited availability due to high demand. If you see \"Sold Out,\" check back soon. Many mentors open new slots weekly or monthly."
+    },
+    {
+      question: "How often do mentors update their schedules?",
+      answer: "It varies by mentor. Some release new times every week, while others drop fresh availability once a month. If someone you're eyeing is booked up, we suggest subscribing to our newsletter or checking in regularly to stay updated."
+    },
+    {
+      question: "Can I cancel or reschedule my session?",
+      answer: "Yes. You can cancel or reschedule anytime via your dashboard. Just make sure to do so before a 24hrs window. Our full policy is outlined on the site."
+    },
+    {
+      question: "How do I schedule a session with a mentor?",
+      answer: "Simply browse our mentor directory, select a mentor whose expertise aligns with your goals, choose an available time slot, and book your session—all through our user-friendly platform."
+    },
+    {
+      question: "What topics can I discuss with a mentor?",
+      answer: "You can seek advice on a wide range of topics, including but not limited to: Entrepreneurship, startups, investments, funding, and scaling; Career development and transitions; Marketing and branding strategies; Product development and innovation; Leadership and team management; Personal growth and mindset."
+    },
+    {
+      question: "Is international booking supported?",
+      answer: "Yes, Mentorick supports mentees worldwide. Session times are displayed in your local timezone, and payments can be made using major debit/credit cards in USD."
+    }
+  ];
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -386,6 +440,53 @@ const MentorPublicProfile = () => {
           </div>
         </div>
       </div>
+
+      {/* FAQ Section */}
+      <section className="bg-white py-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center mb-12">
+            Frequently Asked Questions
+          </h2>
+
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <span className="font-medium">{faq.question}</span>
+                  <motion.div
+                    animate={{ rotate: openFaq === index ? 180 : 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                  >
+                    <AiOutlineDown className="h-5 w-5" />
+                  </motion.div>
+                </button>
+                <AnimatePresence>
+                  {openFaq === index && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ 
+                        duration: 0.3, 
+                        ease: "easeInOut",
+                        opacity: { duration: 0.2 }
+                      }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-6 pb-4">
+                        <p className="text-gray-700 leading-relaxed">{faq.answer}</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Booking Modal */}
       {showBookingModal && (
