@@ -164,44 +164,30 @@ class MentorService extends ApiService {
 
 class AvailabilityService extends ApiService {
   constructor() {
-    super('/availability');
+    super('/mentor/availability');
   }
 
-  // Get mentor availability (public)
-  async getMentorAvailability(mentorId, timezone = null) {
+  // Get my availability (mentor only) - NEW FORMAT
+  async getAvailability() {
     try {
-      const params = timezone ? { timezone } : {};
-      const response = await apiClient.get(`/availability/${mentorId}`, { params });
+      const response = await apiClient.get('/availability/date');
       return response.data.data;
     } catch (error) {
       throw this.handleError(error);
     }
   }
 
-  // Get available time slots for booking (public)
-  async getAvailableSlots(mentorId, date, timezone = null, duration = 60) {
+  // Save complete availability (mentor only) - NEW FORMAT
+  async saveAvailability(availabilityData) {
     try {
-      const params = { date, duration };
-      if (timezone) params.timezone = timezone;
-      
-      const response = await apiClient.get(`/availability/${mentorId}/slots`, { params });
+      const response = await apiClient.post('/availability/my/full-schedule', availabilityData);
       return response.data.data;
     } catch (error) {
       throw this.handleError(error);
     }
   }
 
-  // Check if a custom time slot is available (public)
-  async checkCustomSlot(mentorId, slotData) {
-    try {
-      const response = await apiClient.post(`/availability/${mentorId}/check-slot`, slotData);
-      return response.data.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  // Get my availability (mentor only)
+  // Legacy methods for backward compatibility
   async getMyAvailability() {
     try {
       const response = await apiClient.get('/availability/my/availability');
@@ -211,17 +197,17 @@ class AvailabilityService extends ApiService {
     }
   }
 
-  // Create availability (mentor only)
+  // Create availability (mentor only) - Legacy
   async createAvailability(availabilityData) {
     try {
-      const response = await apiClient.post('/availability', availabilityData);
+      const response = await apiClient.post('/mentor/availability/date', availabilityData);
       return response.data.data;
     } catch (error) {
       throw this.handleError(error);
     }
   }
 
-  // Update availability (mentor only)
+  // Update availability (mentor only) - Legacy
   async updateAvailability(availabilityId, availabilityData) {
     try {
       const response = await apiClient.put(`/availability/${availabilityId}`, availabilityData);
@@ -231,11 +217,44 @@ class AvailabilityService extends ApiService {
     }
   }
 
-  // Delete availability (mentor only)
+  // Delete availability (mentor only) - Legacy
   async deleteAvailability(availabilityId) {
     try {
       const response = await apiClient.delete(`/availability/${availabilityId}`);
       return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Set unavailability period (mentor only) - NEW
+  async setUnavailabilityPeriod(fromDate, toDate) {
+    try {
+      const response = await apiClient.post('/availability/my/unavailable', {
+        from: fromDate,
+        to: toDate
+      });
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Remove unavailability period (mentor only) - NEW
+  async removeUnavailabilityPeriod(rangeId) {
+    try {
+      const response = await apiClient.delete(`/availability/my/unavailable/${rangeId}`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Get unavailability periods (mentor only) - NEW
+  async getUnavailabilityPeriods() {
+    try {
+      const response = await apiClient.get('/availability/my/unavailable');
+      return response.data.data;
     } catch (error) {
       throw this.handleError(error);
     }

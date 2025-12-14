@@ -11,6 +11,8 @@ import {
   AiOutlineTeam,
   AiOutlineCalendar,
   AiOutlineClockCircle,
+  AiOutlineUsergroupAdd,
+  AiOutlineTool,
 } from 'react-icons/ai';
 
 const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
@@ -23,9 +25,16 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
       { name: 'Profile', href: '/profile/edit', icon: AiOutlineUser },
       { name: 'Home', href: '/', icon: AiOutlineHome },
       { name: 'Mentors', href: '/mentors', icon: AiOutlineTeam },
+      { name: 'Mega Sessions', href: '/mega-sessions', icon: AiOutlineUsergroupAdd },
     ];
 
-    if (user?.role === 'mentor') {
+    if (user?.role === 'admin') {
+      return [
+        ...baseNavigation,
+        { name: 'Admin: Mega Sessions', href: '/admin/mega-sessions', icon: AiOutlineTool },
+        { name: 'Dashboard', href: '/dashboard', icon: AiOutlineBarChart },
+      ];
+    } else if (user?.role === 'mentor') {
       return [
         ...baseNavigation,
         { name: 'Session Settings', href: '/sessions', icon: AiOutlineSetting },

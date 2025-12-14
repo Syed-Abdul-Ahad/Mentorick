@@ -1,7 +1,7 @@
 import { useUser } from '../store/hooks';
 import { Navigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
-import NewSessionSettings from '../components/booking/NewSessionSettings';
+import AvailabilityPage from '../components/booking/AvailabilityPage';
 
 const Sessions = () => {
   const user = useUser();
@@ -13,9 +13,7 @@ const Sessions = () => {
 
   return (
     <MainLayout>
-      <div className="p-6">
-        <NewSessionSettings />
-      </div>
+      <AvailabilityPage />
     </MainLayout>
   );
 };

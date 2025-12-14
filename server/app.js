@@ -9,13 +9,9 @@ const cookieParser = require('cookie-parser');
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
-const mentorRoutes = require('./routes/mentorRoutes');
 const mentorProfileRoutes = require('./routes/mentorProfileRoutes');
 const menteeProfileRoutes = require('./routes/menteeProfileRoutes');
-const sessionRoutes = require('./routes/sessionRoutes');
-const availabilityRoutes = require('./routes/availabilityRoutes');
-const bookingRoutes = require('./routes/bookingRoutes');
-const megaSessionRoutes = require('./routes/megaSessionRoutes');
+const availabilityRoutes = require('./routes/mentorAvailability.routes');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -30,12 +26,12 @@ app.use(helmet({
 }));
 
 // Rate limiting
-// const limiter = rateLimit({
-//   windowMs: 5 * 60 * 1000, // 5 minutes
-//   max: 100, // limit each IP to 100 requests per windowMs
-//   message: 'Too many requests from this IP, please try again later.',
-// });
-// app.use(limiter);
+const limiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+});
+app.use(limiter);
 
 // Compression middleware
 app.use(compression());
@@ -78,13 +74,10 @@ app.use('/uploads', (req, res, next) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/mentors', mentorRoutes);
 app.use('/api/mentor', mentorProfileRoutes);
 app.use('/api/mentee', menteeProfileRoutes);
-app.use('/api/sessions', sessionRoutes);
-app.use('/api/availability', availabilityRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/mega-sessions', megaSessionRoutes);
+app.use('/api/mentor/availability', availabilityRoutes);
+
 
 // Error handling middleware (must be last)
 app.use(notFound);

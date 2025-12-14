@@ -88,9 +88,23 @@ const MentorProfileForm = () => {
         setLoading(true);
         const res = await apiClient.get('/mentor/my-profile');
         if (res.data && res.data.data) {
-          setForm({ ...initialState, ...res.data.data, topics: res.data.data.topics.length ? res.data.data.topics : [''] });
-          setImagePreview(res.data.data.headshot);
-          setSelectedLanguages(res.data.data.languages || []);
+          const profileData = res.data.data;
+          
+          // Convert API sessionDurations format to form format
+          const formattedSessionDurations = profileData.sessionDurations?.map(session => ({
+            duration: session.duration,
+            price: session.priceUSD?.toString() || '',
+            currency: 'USD'
+          })) || [];
+          
+          setForm({ 
+            ...initialState, 
+            ...profileData, 
+            topics: profileData.topics?.length ? profileData.topics : [''],
+            sessionDurations: formattedSessionDurations
+          });
+          setImagePreview(profileData.headshot);
+          setSelectedLanguages(profileData.languages || []);
         }
       } catch (e) {
         toast.error('Could not load profile');
@@ -125,26 +139,39 @@ const MentorProfileForm = () => {
     if (form.topics.length > 1) setForm(f => ({ ...f, topics: f.topics.filter((_, i) => i !== idx) }));
   };
 
-  const handleSessionChange = (duration, checked) => {
-    setForm(f => {
-      let sessions = [...f.sessionDurations];
-      if (checked) {
-        sessions.push({ duration, price: '', currency: 'USD' });
-      } else {
-        sessions = sessions.filter(s => s.duration !== duration);
-      }
-      return { ...f, sessionDurations: sessions };
-    });
-  };
+const handleSessionChange = (duration, checked) => {
+  setForm(prev => {
+    let sessions = [...prev.sessionDurations];
 
-  const handleSessionPrice = (duration, field, value) => {
-    setForm(f => {
-      const sessions = f.sessionDurations.map(s =>
-        s.duration === duration ? { ...s, [field]: value } : s
-      );
-      return { ...f, sessionDurations: sessions };
-    });
-  };
+    if (checked) {
+      if (!sessions.some(s => s.duration === duration)) {
+        sessions.push({
+          duration,
+          price: '',
+          currency: 'USD'
+        });
+      }
+    } else {
+      sessions = sessions.filter(s => s.duration !== duration);
+    }
+
+    return { ...prev, sessionDurations: sessions };
+  });
+};
+
+
+const handleSessionPrice = (duration, field, value) => {
+  setForm(prev => ({
+    ...prev,
+    sessionDurations: prev.sessionDurations.map(session =>
+      session.duration === duration
+        ? { ...session, [field]: value }
+        : session
+    ),
+  }));
+};
+
+
 
   const handleLanguages = e => {
     const opts = Array.from(e.target.selectedOptions).map(o => o.value);

@@ -1,5 +1,60 @@
 const mongoose = require('mongoose');
 
+
+const HourSlotSchema = new mongoose.Schema({
+  hour: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 23
+  }
+}, { _id: false });
+
+
+const WeeklyAvailabilitySchema = new mongoose.Schema({
+  dayOfWeek: {
+    type: Number,
+    required: true,
+    min: 0, // Sunday
+    max: 6  // Saturday
+  },
+  slots: {
+    type: [HourSlotSchema],
+    validate: v => v.length > 0
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  }
+}, { _id: false });
+
+
+const DateAvailabilitySchema = new mongoose.Schema({
+  date: {
+    type: Date,
+    required: true
+  },
+  slots: {
+    type: [HourSlotSchema],
+    validate: v => v.length > 0
+  }
+}, { _id: false });
+
+
+const UnavailabilitySchema = new mongoose.Schema({
+  from: {
+    type: Date,
+    required: true
+  },
+  to: {
+    type: Date,
+    required: true
+  },
+  reason: {
+    type: String
+  }
+}, { _id: false });
+
 const MentorProfileSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
   fullName: { type: String, required: true },
@@ -22,7 +77,26 @@ const MentorProfileSchema = new mongoose.Schema({
     linkedin: { type: String },
     twitter: { type: String },
     instagram: { type: String }
+  },
+
+  timezone: {
+    type: String,
+    required: true,
+    default: 'Asia/Karachi'
+  },
+
+  availability: {
+    weekly: [WeeklyAvailabilitySchema],
+    specificDates: [DateAvailabilitySchema],
+    unavailability: [UnavailabilitySchema]
+  },
+
+  isAvailableForBooking: {
+    type: Boolean,
+    default: true
   }
+
 }, { timestamps: true });
+
 
 module.exports = mongoose.model('MentorProfile', MentorProfileSchema);
