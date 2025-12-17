@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { generateTimeSlots, formatHourDisplay, isToday } from '../../utils/timezoneUtils';
+import { generateTimeSlots, isToday, hourToLabel } from '../../utils/timezoneUtils';
 
 const DayAvailabilityCard = ({
   dayData,
@@ -30,6 +30,7 @@ const DayAvailabilityCard = ({
 
   const handleRepeatToggle = () => {
     if (isUnavailable) return;
+    
     onToggleRepeat(fullDate, dayOfWeek);
   };
 
@@ -115,7 +116,7 @@ const DayAvailabilityCard = ({
                       : 'border border-primary-200 text-primary-600 hover:bg-primary-50 hover:border-primary-300'
                 }`}
               >
-                {slot.display}
+                {slot.label}
               </button>
             );
           })}

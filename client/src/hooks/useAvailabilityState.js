@@ -1,14 +1,26 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { getUserTimezone, getNext7Days, formatDateForDisplay } from '../utils/timezoneUtils';
 
 /**
- * Custom hook for managing mentor availability state
+ * Custom hook for managing mentor availability state (Backend Compatible)
+ * State structure matches backend MentorProfile model exactly
  */
 export const useAvailabilityState = () => {
-  const [selectedTimezone, setSelectedTimezone] = useState(getUserTimezone());
-  const [availability, setAvailability] = useState({});
-  const [weeklyRecurring, setWeeklyRecurring] = useState({});
-  const [unavailabilityRanges, setUnavailabilityRanges] = useState([]);
+  // Backend-compatible state structure
+  const [availabilityState, setAvailabilityState] = useState({
+    weekly: {},     // { [dayOfWeek]: { slots: [hour], isActive: boolean } }
+    specificDates: {}, // { [dateISO]: { slots: [hour] } }
+    unavailability: []  // [{ from: dateString, to: dateString, reason?: string }]
+  });
+
+  // Track pending changes to send only incremental updates
+  const [pendingChanges, setPendingChanges] = useState({
+    weekly: {},     // { [dayOfWeek]: { slots: [hour], isActive: boolean } }
+    specificDates: {}, // { [dateISO]: { slots: [hour] } }
+    unavailability: []  // [{ from: dateString, to: dateString, reason?: string }]
+  });
+  
+  const [selectedTimezone] = useState(getUserTimezone());
   const [loading, setLoading] = useState(false);
 
   // Generate the next 7 days
@@ -21,64 +33,195 @@ export const useAvailabilityState = () => {
    * Toggle a time slot for a specific date
    */
   const toggleTimeSlot = useCallback((dateString, hour) => {
-    setAvailability(prev => {
-      const current = prev[dateString] || { slots: [], repeat: false };
-      const slots = current.slots.includes(hour)
-        ? current.slots.filter(h => h !== hour)
-        : [...current.slots, hour].sort((a, b) => a - b);
+    const date = new Date(dateString);
+    const dayOfWeek = date.getDay();
+    
+    setAvailabilityState(prev => {
+      // Check if we have date-specific availability for this date
+      const hasDateSpecific = prev.specificDates[dateString];
       
-      return {
-        ...prev,
-        [dateString]: {
-          ...current,
-          slots
+      if (hasDateSpecific) {
+        // Update date-specific availability
+        const currentSlots = prev.specificDates[dateString].slots || [];
+        const newSlots = currentSlots.includes(hour)
+          ? currentSlots.filter(h => h !== hour)
+          : [...currentSlots, hour].sort((a, b) => a - b);
+        
+        return {
+          ...prev,
+          specificDates: {
+            ...prev.specificDates,
+            [dateString]: { slots: newSlots }
+          }
+        };
+      } else {
+        // Check if we have weekly availability for this day
+        const weeklyData = prev.weekly[dayOfWeek];
+        
+        if (weeklyData) {
+          // Update weekly availability
+          const currentSlots = weeklyData.slots || [];
+          const newSlots = currentSlots.includes(hour)
+            ? currentSlots.filter(h => h !== hour)
+            : [...currentSlots, hour].sort((a, b) => a - b);
+          
+          return {
+            ...prev,
+            weekly: {
+              ...prev.weekly,
+              [dayOfWeek]: { ...weeklyData, slots: newSlots }
+            }
+          };
+        } else {
+          // Create new weekly availability
+          return {
+            ...prev,
+            weekly: {
+              ...prev.weekly,
+              [dayOfWeek]: { slots: [hour], isActive: true }
+            }
+          };
         }
-      };
+      }
     });
-  }, []);
+
+    // Track this change as pending
+    setPendingChanges(prev => {
+      const hasDateSpecific = availabilityState.specificDates[dateString];
+      
+      if (hasDateSpecific) {
+        // Updating date-specific availability
+        const currentSlots = availabilityState.specificDates[dateString].slots || [];
+        const newSlots = currentSlots.includes(hour)
+          ? currentSlots.filter(h => h !== hour)
+          : [...currentSlots, hour].sort((a, b) => a - b);
+        
+        return {
+          ...prev,
+          specificDates: {
+            ...prev.specificDates,
+            [dateString]: { slots: newSlots }
+          }
+        };
+      } else {
+        // Updating weekly availability
+        const weeklyData = availabilityState.weekly[dayOfWeek];
+        const currentSlots = weeklyData?.slots || [];
+        const newSlots = currentSlots.includes(hour)
+          ? currentSlots.filter(h => h !== hour)
+          : [...currentSlots, hour].sort((a, b) => a - b);
+        
+        return {
+          ...prev,
+          weekly: {
+            ...prev.weekly,
+            [dayOfWeek]: { slots: newSlots, isActive: true }
+          }
+        };
+      }
+    });
+  }, [availabilityState]);
 
   /**
    * Toggle weekly recurring for a specific day
    */
   const toggleWeeklyRecurring = useCallback((dateString, dayOfWeek) => {
-    setAvailability(prev => {
-      const current = prev[dateString] || { slots: [], repeat: false };
-      const newRepeat = !current.repeat;
+    setAvailabilityState(prev => {
+      const weeklyData = prev.weekly[dayOfWeek];
       
-      // Update weekly recurring state
-      setWeeklyRecurring(prevWeekly => ({
-        ...prevWeekly,
-        [dayOfWeek]: newRepeat ? (current.slots || []) : []
-      }));
-      
-      return {
-        ...prev,
-        [dateString]: {
-          ...current,
-          repeat: newRepeat
-        }
-      };
+      if (weeklyData?.isActive) {
+        // Turn off weekly recurring - move to date-specific
+        const currentSlots = weeklyData.slots || [];
+        return {
+          ...prev,
+          weekly: {
+            ...prev.weekly,
+            [dayOfWeek]: { ...weeklyData, isActive: false }
+          },
+          specificDates: {
+            ...prev.specificDates,
+            [dateString]: { slots: [...currentSlots] }
+          }
+        };
+      } else {
+        // Turn on weekly recurring
+        const dateSpecificSlots = prev.specificDates[dateString]?.slots || [];
+        const newWeeklyData = { slots: [...dateSpecificSlots], isActive: true };
+        
+        // Remove date-specific entry
+        const newSpecificDates = { ...prev.specificDates };
+        delete newSpecificDates[dateString];
+        
+        return {
+          ...prev,
+          weekly: {
+            ...prev.weekly,
+            [dayOfWeek]: newWeeklyData
+          },
+          specificDates: newSpecificDates
+        };
+      }
     });
-  }, []);
+
+    // Track this change as pending
+    setPendingChanges(prev => {
+      const weeklyData = availabilityState.weekly[dayOfWeek];
+      
+      if (weeklyData?.isActive) {
+        // Moving from weekly to date-specific
+        return {
+          ...prev,
+          weekly: {
+            ...prev.weekly,
+            [dayOfWeek]: { ...weeklyData, isActive: false }
+          },
+          specificDates: {
+            ...prev.specificDates,
+            [dateString]: { slots: [...(weeklyData.slots || [])] }
+          }
+        };
+      } else {
+        // Moving from date-specific to weekly
+        const dateSpecificSlots = availabilityState.specificDates[dateString]?.slots || [];
+        return {
+          ...prev,
+          weekly: {
+            ...prev.weekly,
+            [dayOfWeek]: { slots: [...dateSpecificSlots], isActive: true }
+          },
+          specificDates: {
+            ...prev.specificDates,
+            [dateString]: { slots: [] } // Clear date-specific
+          }
+        };
+      }
+    });
+  }, [availabilityState]);
 
   /**
    * Add unavailability date range
    */
-  const addUnavailabilityRange = useCallback((fromDate, toDate) => {
+  const addUnavailabilityRange = useCallback((fromDate, toDate, reason = '') => {
     const newRange = {
-      id: Date.now(),
       from: fromDate,
-      to: toDate
+      to: toDate,
+      reason
     };
     
-    setUnavailabilityRanges(prev => [...prev, newRange]);
+    setAvailabilityState(prev => ({
+      ...prev,
+      unavailability: [...prev.unavailability, newRange]
+    }));
   }, []);
 
   /**
    * Remove unavailability range
    */
-  const removeUnavailabilityRange = useCallback((rangeId) => {
-    setUnavailabilityRanges(prev => prev.filter(range => range.id !== rangeId));
+  const removeUnavailabilityRange = useCallback((rangeIndex) => {
+    setAvailabilityState(prev => ({
+      ...prev,
+      unavailability: prev.unavailability.filter((_, index) => index !== rangeIndex)
+    }));
   }, []);
 
   /**
@@ -86,12 +229,12 @@ export const useAvailabilityState = () => {
    */
   const isDateUnavailable = useCallback((dateString) => {
     const date = new Date(dateString);
-    return unavailabilityRanges.some(range => {
+    return availabilityState.unavailability.some(range => {
       const from = new Date(range.from);
       const to = new Date(range.to);
       return date >= from && date <= to;
     });
-  }, [unavailabilityRanges]);
+  }, [availabilityState.unavailability]);
 
   /**
    * Get available slots for a specific date
@@ -101,20 +244,20 @@ export const useAvailabilityState = () => {
       return [];
     }
 
-    // Check if there's date-specific availability
-    const dateSpecific = availability[dateString];
-    if (dateSpecific && !dateSpecific.repeat) {
+    // Check if there's date-specific availability first
+    const dateSpecific = availabilityState.specificDates[dateString];
+    if (dateSpecific) {
       return dateSpecific.slots || [];
     }
 
     // Check weekly recurring availability
-    const weeklySlots = weeklyRecurring[dayOfWeek] || [];
-    const dateSlots = dateSpecific?.slots || [];
+    const weeklyData = availabilityState.weekly[dayOfWeek];
+    if (weeklyData?.isActive) {
+      return weeklyData.slots || [];
+    }
     
-    // Merge weekly and date-specific slots
-    const combinedSlots = [...new Set([...weeklySlots, ...dateSlots])];
-    return combinedSlots.sort((a, b) => a - b);
-  }, [availability, weeklyRecurring, isDateUnavailable]);
+    return [];
+  }, [availabilityState, isDateUnavailable]);
 
   /**
    * Check if a time slot is selected for a specific date
@@ -127,125 +270,62 @@ export const useAvailabilityState = () => {
   /**
    * Get repeat status for a specific date
    */
-  const isRepeatEnabled = useCallback((dateString) => {
-    const dateSpecific = availability[dateString];
-    return dateSpecific?.repeat || false;
-  }, [availability]);
-
-  /**
-   * Set AM/PM period for a day (helper for bulk operations)
-   */
-  const setDayPeriodSlots = useCallback((dateString, period, enabled) => {
-    const startHour = period === 'AM' ? 0 : 12;
-    const endHour = period === 'AM' ? 12 : 24;
-    
-    setAvailability(prev => {
-      const current = prev[dateString] || { slots: [], repeat: false };
-      
-      if (enabled) {
-        // Add all slots for this period
-        const periodSlots = [];
-        for (let hour = startHour; hour < endHour; hour++) {
-          periodSlots.push(hour);
-        }
-        
-        const otherPeriodSlots = current.slots.filter(hour => 
-          period === 'AM' ? hour >= 12 : hour < 12
-        );
-        
-        return {
-          ...prev,
-          [dateString]: {
-            ...current,
-            slots: [...otherPeriodSlots, ...periodSlots].sort((a, b) => a - b)
-          }
-        };
-      } else {
-        // Remove all slots for this period
-        const remainingSlots = current.slots.filter(hour => 
-          period === 'AM' ? hour >= 12 : hour < 12
-        );
-        
-        return {
-          ...prev,
-          [dateString]: {
-            ...current,
-            slots: remainingSlots
-          }
-        };
-      }
-    });
-  }, []);
-
-  /**
-   * Get current state for API submission
-   */
-  const getAvailabilityForAPI = useCallback(() => {
-    const apiData = {
-      timezone: selectedTimezone,
-      weeklyRecurring: weeklyRecurring,
-      dateSpecific: Object.keys(availability).reduce((acc, dateString) => {
-        const dayData = availability[dateString];
-        if (!dayData.repeat && dayData.slots.length > 0) {
-          acc[dateString] = dayData.slots;
-        }
-        return acc;
-      }, {}),
-      unavailabilityRanges: unavailabilityRanges
-    };
-    
-    return apiData;
-  }, [selectedTimezone, availability, weeklyRecurring, unavailabilityRanges]);
-
-  /**
-   * Load availability from API response
-   */
-  const loadAvailabilityFromAPI = useCallback((apiData) => {
-    if (!apiData) return;
-    
-    setSelectedTimezone(apiData.timezone || getUserTimezone());
-    setWeeklyRecurring(apiData.weeklyRecurring || {});
-    setUnavailabilityRanges(apiData.unavailabilityRanges || []);
-    
-    // Convert date-specific data to internal format
-    const dateSpecificAvailability = {};
-    if (apiData.dateSpecific) {
-      Object.keys(apiData.dateSpecific).forEach(dateString => {
-        dateSpecificAvailability[dateString] = {
-          slots: apiData.dateSpecific[dateString],
-          repeat: false
-        };
-      });
+  const isRepeatEnabled = useCallback((dateString, dayOfWeek) => {
+    // If date-specific availability exists, repeat is OFF
+    if (availabilityState.specificDates[dateString]) {
+      return false;
     }
     
-    // Add weekly recurring data to availability
-    if (apiData.weeklyRecurring) {
-      weekDays.forEach(({ fullDate, date }) => {
-        const dayOfWeek = date.getDay();
-        const weeklySlots = apiData.weeklyRecurring[dayOfWeek];
-        
-        if (weeklySlots && weeklySlots.length > 0) {
-          if (!dateSpecificAvailability[fullDate]) {
-            dateSpecificAvailability[fullDate] = {
-              slots: weeklySlots,
-              repeat: true
-            };
-          }
-        }
-      });
-    }
-    
-    setAvailability(dateSpecificAvailability);
-  }, [weekDays]);
+    // If weekly availability exists and is active, repeat is ON
+    const weeklyData = availabilityState.weekly[dayOfWeek];
+    return weeklyData?.isActive || false;
+  }, [availabilityState]);
 
   /**
-   * Save availability to API
+   * Save availability using backend APIs - only send pending changes
    */
   const saveAvailability = useCallback(async (apiService) => {
     setLoading(true);
     try {
-      const data = getAvailabilityForAPI();
-      await apiService.saveAvailability(data);
+      const savePromises = [];
+      
+      // Save only pending weekly changes
+      Object.keys(pendingChanges.weekly).forEach(dayOfWeek => {
+        const weeklyData = pendingChanges.weekly[dayOfWeek];
+        savePromises.push(
+          apiService.setWeeklyAvailability(parseInt(dayOfWeek), weeklyData.slots)
+        );
+      });
+      
+      // Save only pending date-specific changes
+      Object.keys(pendingChanges.specificDates).forEach(dateString => {
+        const dateData = pendingChanges.specificDates[dateString];
+        savePromises.push(
+          apiService.setDateAvailability(dateString, dateData.slots)
+        );
+      });
+      
+      // Save pending unavailability ranges (if any)
+      if (pendingChanges.unavailability.length > 0) {
+        pendingChanges.unavailability.forEach(range => {
+          savePromises.push(
+            apiService.setUnavailability(range.from, range.to, range.reason)
+          );
+        });
+      }
+      
+      // Only make API calls if there are pending changes
+      if (savePromises.length > 0) {
+        await Promise.all(savePromises);
+      }
+      
+      // Clear pending changes after successful save
+      setPendingChanges({
+        weekly: {},
+        specificDates: {},
+        unavailability: []
+      });
+      
       return { success: true };
     } catch (error) {
       console.error('Error saving availability:', error);
@@ -253,7 +333,7 @@ export const useAvailabilityState = () => {
     } finally {
       setLoading(false);
     }
-  }, [getAvailabilityForAPI]);
+  }, [pendingChanges]);
 
   /**
    * Load availability from API
@@ -261,8 +341,47 @@ export const useAvailabilityState = () => {
   const loadAvailability = useCallback(async (apiService) => {
     setLoading(true);
     try {
-      const response = await apiService.getAvailability();
-      loadAvailabilityFromAPI(response.data);
+      const response = await apiService.getMyAvailability();
+      
+      if (response.success && response.data) {
+        const { weekly, specificDates, unavailability } = response.data;
+        
+        // Convert backend data to frontend state format
+        const newState = {
+          weekly: {},
+          specificDates: {},
+          unavailability: unavailability || []
+        };
+
+        // Convert weekly availability
+        if (weekly && weekly.length > 0) {
+          weekly.forEach(weekData => {
+            newState.weekly[weekData.dayOfWeek] = {
+              slots: weekData.slots.map(slotObj => slotObj.hour),
+              isActive: weekData.isActive
+            };
+          });
+        }
+
+        // Convert specific dates
+        if (specificDates && specificDates.length > 0) {
+          specificDates.forEach(dateData => {
+            const dateString = new Date(dateData.date).toISOString().split('T')[0];
+            newState.specificDates[dateString] = {
+              slots: dateData.slots.map(slotObj => slotObj.hour)
+            };
+          });
+        }
+
+        setAvailabilityState(newState);
+        // Clear any pending changes since we just loaded fresh data
+        setPendingChanges({
+          weekly: {},
+          specificDates: {},
+          unavailability: []
+        });
+      }
+      
       return { success: true };
     } catch (error) {
       console.error('Error loading availability:', error);
@@ -270,35 +389,29 @@ export const useAvailabilityState = () => {
     } finally {
       setLoading(false);
     }
-  }, [loadAvailabilityFromAPI]);
+  }, []);
 
   return {
     // State
     selectedTimezone,
-    availability,
-    weeklyRecurring,
-    unavailabilityRanges,
+    availabilityState,
     loading,
     weekDays,
     
     // Actions
-    setSelectedTimezone,
     toggleTimeSlot,
     toggleWeeklyRecurring,
     addUnavailabilityRange,
     removeUnavailabilityRange,
-    setDayPeriodSlots,
     
     // Getters
     isDateUnavailable,
     getAvailableSlots,
     isTimeSlotSelected,
     isRepeatEnabled,
-    getAvailabilityForAPI,
     
     // API methods
     saveAvailability,
-    loadAvailability,
-    loadAvailabilityFromAPI
+    loadAvailability
   };
 };

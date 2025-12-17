@@ -5,11 +5,13 @@ const {
   setWeeklyAvailability,
   setDateAvailability,
   setUnavailability,
-  getMentorAvailabilityForMentee
+  getMentorAvailabilityForMentee,
+  getMyAvailability
 } = require('../controllers/availability.controller');
 const { authenticate } = require('../middleware/auth');
 
 /* Mentor routes */
+router.get('/my-availability', authenticate, getMyAvailability);
 router.post('/weekly', authenticate, setWeeklyAvailability);
 router.post('/date', authenticate, setDateAvailability);
 router.post('/unavailable', authenticate,setUnavailability);

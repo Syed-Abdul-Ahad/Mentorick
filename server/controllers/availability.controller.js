@@ -180,3 +180,30 @@ exports.getMentorAvailabilityForMentee = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+/* ======================================================
+   GET MY AVAILABILITY (Mentor Only - Raw Data)
+====================================================== */
+exports.getMyAvailability = async (req, res) => {
+  try {
+    const mentor = await MentorProfile.findOne({ user: req.user.id });
+
+    if (!mentor) {
+      return res.status(404).json({ message: 'Mentor profile not found' });
+    }
+
+    // Return raw availability data for mentor's own view
+    res.status(200).json({
+      success: true,
+      data: {
+        timezone: mentor.timezone,
+        weekly: mentor.availability.weekly || [],
+        specificDates: mentor.availability.specificDates || [],
+        unavailability: mentor.availability.unavailability || []
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

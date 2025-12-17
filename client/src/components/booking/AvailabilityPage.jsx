@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAvailabilityState } from '../../hooks/useAvailabilityState';
 import { availabilityService } from '../../api';
-import AvailabilityHeader from './AvailabilityHeader';
 import DayAvailabilityCard from './DayAvailabilityCard';
 import UnavailabilityModal from './UnavailabilityModal';
 import Toast from '../shared/Toast';
@@ -11,11 +10,10 @@ const AvailabilityPage = () => {
     // State
     selectedTimezone,
     weekDays,
-    unavailabilityRanges,
+    availabilityState,
     loading,
     
     // Actions
-    setSelectedTimezone,
     toggleTimeSlot,
     toggleWeeklyRecurring,
     addUnavailabilityRange,
@@ -24,8 +22,8 @@ const AvailabilityPage = () => {
     // Getters
     isDateUnavailable,
     getAvailableSlots,
+    isTimeSlotSelected,
     isRepeatEnabled,
-    getAvailabilityForAPI,
     
     // API methods
     saveAvailability,
@@ -34,8 +32,8 @@ const AvailabilityPage = () => {
 
   const [showUnavailabilityModal, setShowUnavailabilityModal] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
-  const [autoSaving, setAutoSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const[loading2, setLoading] = useState(false); // dont remove this
 
   // Load availability on component mount
   useEffect(() => {
@@ -47,8 +45,10 @@ const AvailabilityPage = () => {
       const result = await loadAvailability(availabilityService);
       if (result.success) {
         setInitialized(true);
+        showToast('Availability loaded successfully');
       } else {
         showToast('Failed to load availability', 'error');
+        setInitialized(true); // Still show the interface
       }
     } catch (error) {
       console.error('Error loading initial availability:', error);
@@ -57,43 +57,20 @@ const AvailabilityPage = () => {
     }
   };
 
-  // Auto-save functionality
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      handleAutoSave();
-    }, 2000); // Auto-save after 2 seconds of inactivity
-
-    return () => clearTimeout(timeoutId);
-  }, [selectedTimezone, weekDays]); // Dependencies that trigger auto-save
-
-  const handleAutoSave = async () => {
-    if (loading || !initialized) return;
-    
-    setAutoSaving(true);
-    try {
-      const result = await saveAvailability(availabilityService);
-      if (!result.success) {
-        console.error('Auto-save failed:', result.error);
-      }
-    } catch (error) {
-      console.error('Auto-save failed:', error);
-    } finally {
-      setAutoSaving(false);
-    }
-  };
-
   const handleTimezoneChange = (timezone) => {
-    setSelectedTimezone(timezone);
-    showToast('Timezone updated successfully');
+    // Timezone is now read-only in this implementation
+    // Backend determines timezone handling
+    showToast('Timezone display updated');
   };
 
   const handleToggleSlot = (dateString, hour) => {
     toggleTimeSlot(dateString, hour);
+    // No auto-save, only manual save
   };
 
   const handleToggleRepeat = (dateString, dayOfWeek) => {
     toggleWeeklyRecurring(dateString, dayOfWeek);
-    showToast('Repeat setting updated');
+    // No auto-save, only manual save
   };
 
   const handleOpenUnavailabilityModal = () => {
@@ -104,17 +81,15 @@ const AvailabilityPage = () => {
     setShowUnavailabilityModal(false);
   };
 
-  const handleSubmitUnavailability = async (fromDate, toDate, rangeId, action) => {
+  const handleSubmitUnavailability = async (fromDate, toDate, rangeIndex, action) => {
     try {
       if (action === 'remove') {
-        removeUnavailabilityRange(rangeId);
-        // Call API to remove unavailability
-        await availabilityService.removeUnavailabilityPeriod(rangeId);
+        removeUnavailabilityRange(rangeIndex);
         showToast('Unavailability period removed');
       } else if (fromDate && toDate) {
         addUnavailabilityRange(fromDate, toDate);
         // Call API to set unavailability
-        await availabilityService.setUnavailabilityPeriod(fromDate, toDate);
+        await availabilityService.setUnavailability(fromDate, toDate);
         showToast('Unavailability period set successfully');
       }
     } catch (error) {
@@ -131,7 +106,8 @@ const AvailabilityPage = () => {
   };
 
   const handleManualSave = async () => {
-    setAutoSaving(true);
+    console.log("button clicked")
+    setLoading(true);
     try {
       const result = await saveAvailability(availabilityService);
       if (result.success) {
@@ -143,33 +119,56 @@ const AvailabilityPage = () => {
       console.error('Manual save failed:', error);
       showToast('Failed to save availability', 'error');
     } finally {
-      setAutoSaving(false);
+      setLoading(false);
     }
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
-      <AvailabilityHeader
-        selectedTimezone={selectedTimezone}
-        onTimezoneChange={handleTimezoneChange}
-        onOpenUnavailabilityModal={handleOpenUnavailabilityModal}
-      />
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          {/* Title and Timezone */}
+          <div className="mb-4 sm:mb-0">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Set Your Availability
+            </h1>
+            <span className="text-lg text-gray-600">{selectedTimezone} Standard Time</span>
+          </div>
 
-      {/* Auto-save indicator */}
-      {(autoSaving || loading) && (
+          {/* Unavailability Button */}
+          <button
+            onClick={handleOpenUnavailabilityModal}
+            className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-primary-300 focus:ring-opacity-50"
+          >
+            Set your Unavailability Date
+          </button>
+        </div>
+      </div>
+
+      {/* Loading indicator for initial load */}
+      {!initialized && (
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mr-3"></div>
+          <span className="text-gray-600">Loading your availability...</span>
+        </div>
+      )}
+
+      {/* Loading indicator for saving */}
+      {loading && (
         <div className="mb-4 flex items-center text-sm text-gray-600">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600 mr-2"></div>
-          <span>{autoSaving ? 'Auto-saving...' : 'Loading...'}</span>
+          <span>Saving...</span>
         </div>
       )}
 
       {/* Weekly Calendar Grid */}
+      {initialized && (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {weekDays.map((dayData) => {
           const dayOfWeek = dayData.date.getDay();
           const selectedSlots = getAvailableSlots(dayData.fullDate, dayOfWeek);
-          const isRepeat = isRepeatEnabled(dayData.fullDate);
+          const isRepeat = isRepeatEnabled(dayData.fullDate, dayOfWeek);
           const isUnavailable = isDateUnavailable(dayData.fullDate);
 
           return (
@@ -185,19 +184,30 @@ const AvailabilityPage = () => {
           );
         })}
       </div>
+      )}
 
-      {/* Manual Save Button (for testing/backup) */}
-      <div className="flex justify-center">
+      {/* Manual Save Button */}
+      {initialized && (
+      <div className="flex justify-center mb-8">
         <button
           onClick={handleManualSave}
-          disabled={autoSaving || loading}
-          className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading}
+          className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-3 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
         >
-          {autoSaving ? 'Saving...' : 'Manual Save'}
+          {loading ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Saving...
+            </div>
+          ) : (
+            'Save Availability'
+          )}
         </button>
       </div>
+      )}
 
       {/* Summary Section */}
+      {initialized && (
       <div className="mt-8 bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Availability Summary
@@ -228,14 +238,14 @@ const AvailabilityPage = () => {
           })}
         </div>
         
-        {unavailabilityRanges.length > 0 && (
+        {availabilityState.unavailability.length > 0 && (
           <div className="mt-6 pt-6 border-t border-gray-200">
             <h4 className="font-medium text-gray-900 mb-2">
               Unavailable Periods
             </h4>
             <div className="space-y-1">
-              {unavailabilityRanges.map(range => (
-                <div key={range.id} className="text-sm text-gray-600">
+              {availabilityState.unavailability.map((range, index) => (
+                <div key={index} className="text-sm text-gray-600">
                   {new Date(range.from).toLocaleDateString()} - {new Date(range.to).toLocaleDateString()}
                 </div>
               ))}
@@ -243,13 +253,14 @@ const AvailabilityPage = () => {
           </div>
         )}
       </div>
+      )}
 
       {/* Unavailability Modal */}
       <UnavailabilityModal
         isOpen={showUnavailabilityModal}
         onClose={handleCloseUnavailabilityModal}
         onSubmit={handleSubmitUnavailability}
-        existingRanges={unavailabilityRanges}
+        existingRanges={availabilityState.unavailability}
       />
 
       {/* Toast */}

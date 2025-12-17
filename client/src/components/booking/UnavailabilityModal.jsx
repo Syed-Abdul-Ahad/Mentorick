@@ -45,9 +45,9 @@ const UnavailabilityModal = ({
     onClose();
   };
 
-  const handleRemoveRange = (rangeId) => {
+  const handleRemoveRange = (rangeIndex) => {
     // This would be handled by parent component
-    onSubmit(null, null, rangeId, 'remove');
+    onSubmit(null, null, rangeIndex, 'remove');
   };
 
   // Get today's date for min attribute
@@ -136,13 +136,13 @@ const UnavailabilityModal = ({
                 Current Unavailable Periods
               </h4>
               <div className="space-y-2">
-                {existingRanges.map(range => (
-                  <div key={range.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                {existingRanges.map((range, index) => (
+                  <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
                     <div className="text-sm text-gray-700">
                       {new Date(range.from).toLocaleDateString()} - {new Date(range.to).toLocaleDateString()}
                     </div>
                     <button
-                      onClick={() => handleRemoveRange(range.id)}
+                      onClick={() => handleRemoveRange(index)}
                       className="text-red-500 hover:text-red-700 transition-colors duration-200"
                       title="Remove"
                     >

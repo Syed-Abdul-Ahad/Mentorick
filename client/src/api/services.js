@@ -167,94 +167,62 @@ class AvailabilityService extends ApiService {
     super('/mentor/availability');
   }
 
-  // Get my availability (mentor only) - NEW FORMAT
-  async getAvailability() {
-    try {
-      const response = await apiClient.get('/availability/date');
-      return response.data.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  // Save complete availability (mentor only) - NEW FORMAT
-  async saveAvailability(availabilityData) {
-    try {
-      const response = await apiClient.post('/availability/my/full-schedule', availabilityData);
-      return response.data.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  // Legacy methods for backward compatibility
+  // Get my own availability (mentor only)
   async getMyAvailability() {
     try {
-      const response = await apiClient.get('/availability/my/availability');
-      return response.data.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  // Create availability (mentor only) - Legacy
-  async createAvailability(availabilityData) {
-    try {
-      const response = await apiClient.post('/mentor/availability/date', availabilityData);
-      return response.data.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  // Update availability (mentor only) - Legacy
-  async updateAvailability(availabilityId, availabilityData) {
-    try {
-      const response = await apiClient.put(`/availability/${availabilityId}`, availabilityData);
-      return response.data.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  // Delete availability (mentor only) - Legacy
-  async deleteAvailability(availabilityId) {
-    try {
-      const response = await apiClient.delete(`/availability/${availabilityId}`);
+      const response = await apiClient.get('/mentor/availability/my-availability');
       return response.data;
     } catch (error) {
       throw this.handleError(error);
     }
   }
 
-  // Set unavailability period (mentor only) - NEW
-  async setUnavailabilityPeriod(fromDate, toDate) {
+  // Set weekly availability (repeat ON)
+  async setWeeklyAvailability(dayOfWeek, slots) {
     try {
-      const response = await apiClient.post('/availability/my/unavailable', {
-        from: fromDate,
-        to: toDate
+      const response = await apiClient.post('/mentor/availability/weekly', {
+        dayOfWeek,
+        slots: slots.map(hour => ({ hour }))
       });
-      return response.data.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  // Remove unavailability period (mentor only) - NEW
-  async removeUnavailabilityPeriod(rangeId) {
-    try {
-      const response = await apiClient.delete(`/availability/my/unavailable/${rangeId}`);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
     }
   }
 
-  // Get unavailability periods (mentor only) - NEW
-  async getUnavailabilityPeriods() {
+  // Set date-specific availability (repeat OFF)
+  async setDateAvailability(date, slots) {
     try {
-      const response = await apiClient.get('/availability/my/unavailable');
-      return response.data.data;
+      const response = await apiClient.post('/mentor/availability/date', {
+        date,
+        slots: slots.map(hour => ({ hour }))
+      });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Set unavailability period
+  async setUnavailability(from, to, reason = '') {
+    try {
+      const response = await apiClient.post('/mentor/availability/unavailable', {
+        from,
+        to,
+        reason
+      });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Get mentor availability for mentee (public)
+  async getMentorAvailability(mentorId, timezone = null) {
+    try {
+      const params = timezone ? { timezone } : {};
+      const response = await apiClient.get(`/mentor/availability/${mentorId}`, { params });
+      return response.data;
     } catch (error) {
       throw this.handleError(error);
     }
