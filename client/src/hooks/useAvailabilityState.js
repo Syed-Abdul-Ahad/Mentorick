@@ -2,23 +2,19 @@ import { useState, useCallback } from 'react';
 import { getUserTimezone, getNext7Days, formatDateForDisplay } from '../utils/timezoneUtils';
 
 /**
- * Custom hook for managing mentor availability state (Backend Compatible)
- * State structure matches backend MentorProfile model exactly
+ * Simplified hook for managing mentor availability state
  */
 export const useAvailabilityState = () => {
-  // Backend-compatible state structure
+  // Current availability data from backend (read-only)
   const [availabilityState, setAvailabilityState] = useState({
     weekly: {},     // { [dayOfWeek]: { slots: [hour], isActive: boolean } }
     specificDates: {}, // { [dateISO]: { slots: [hour] } }
     unavailability: []  // [{ from: dateString, to: dateString, reason?: string }]
   });
 
-  // Track pending changes to send only incremental updates
-  const [pendingChanges, setPendingChanges] = useState({
-    weekly: {},     // { [dayOfWeek]: { slots: [hour], isActive: boolean } }
-    specificDates: {}, // { [dateISO]: { slots: [hour] } }
-    unavailability: []  // [{ from: dateString, to: dateString, reason?: string }]
-  });
+  // Current editing state for each date (temporary editing before save)
+  const [editingState, setEditingState] = useState({});
+  // { [dateString]: { slots: [hour], isWeeklyMode: boolean } }
   
   const [selectedTimezone] = useState(getUserTimezone());
   const [loading, setLoading] = useState(false);
@@ -33,89 +29,51 @@ export const useAvailabilityState = () => {
    * Toggle a time slot for a specific date
    */
   const toggleTimeSlot = useCallback((dateString, hour) => {
-    const date = new Date(dateString);
-    const dayOfWeek = date.getDay();
-    
-    setAvailabilityState(prev => {
-      // Check if we have date-specific availability for this date
-      const hasDateSpecific = prev.specificDates[dateString];
+    setEditingState(prev => {
+      const current = prev[dateString] || { slots: [], isWeeklyMode: false };
+      const newSlots = current.slots.includes(hour)
+        ? current.slots.filter(h => h !== hour)
+        : [...current.slots, hour].sort((a, b) => a - b);
       
-      if (hasDateSpecific) {
-        // Update date-specific availability
-        const currentSlots = prev.specificDates[dateString].slots || [];
-        const newSlots = currentSlots.includes(hour)
-          ? currentSlots.filter(h => h !== hour)
-          : [...currentSlots, hour].sort((a, b) => a - b);
-        
-        return {
-          ...prev,
-          specificDates: {
-            ...prev.specificDates,
-            [dateString]: { slots: newSlots }
-          }
-        };
-      } else {
-        // Check if we have weekly availability for this day
-        const weeklyData = prev.weekly[dayOfWeek];
-        
-        if (weeklyData) {
-          // Update weekly availability
-          const currentSlots = weeklyData.slots || [];
-          const newSlots = currentSlots.includes(hour)
-            ? currentSlots.filter(h => h !== hour)
-            : [...currentSlots, hour].sort((a, b) => a - b);
-          
-          return {
-            ...prev,
-            weekly: {
-              ...prev.weekly,
-              [dayOfWeek]: { ...weeklyData, slots: newSlots }
-            }
-          };
-        } else {
-          // Create new weekly availability
-          return {
-            ...prev,
-            weekly: {
-              ...prev.weekly,
-              [dayOfWeek]: { slots: [hour], isActive: true }
-            }
-          };
+      return {
+        ...prev,
+        [dateString]: {
+          ...current,
+          slots: newSlots
         }
-      }
+      };
     });
+  }, []);
 
-    // Track this change as pending
-    setPendingChanges(prev => {
-      const hasDateSpecific = availabilityState.specificDates[dateString];
+  /**
+   * Toggle weekly recurring mode for a specific date
+   */
+  const toggleWeeklyRecurring = useCallback((dateString, dayOfWeek) => {
+    setEditingState(prev => {
+      const current = prev[dateString] || { slots: [], isWeeklyMode: false };
       
-      if (hasDateSpecific) {
-        // Updating date-specific availability
-        const currentSlots = availabilityState.specificDates[dateString].slots || [];
-        const newSlots = currentSlots.includes(hour)
-          ? currentSlots.filter(h => h !== hour)
-          : [...currentSlots, hour].sort((a, b) => a - b);
+      if (!current.isWeeklyMode) {
+        // Switching to weekly mode - show weekly schedule for this day
+        const weeklyData = availabilityState.weekly[dayOfWeek];
+        const weeklySlots = weeklyData?.isActive ? (weeklyData.slots || []) : [];
         
         return {
           ...prev,
-          specificDates: {
-            ...prev.specificDates,
-            [dateString]: { slots: newSlots }
+          [dateString]: {
+            slots: [...weeklySlots],
+            isWeeklyMode: true
           }
         };
       } else {
-        // Updating weekly availability
-        const weeklyData = availabilityState.weekly[dayOfWeek];
-        const currentSlots = weeklyData?.slots || [];
-        const newSlots = currentSlots.includes(hour)
-          ? currentSlots.filter(h => h !== hour)
-          : [...currentSlots, hour].sort((a, b) => a - b);
+        // Switching to date-specific mode - show date-specific schedule
+        const dateSpecific = availabilityState.specificDates[dateString];
+        const dateSlots = dateSpecific?.slots || [];
         
         return {
           ...prev,
-          weekly: {
-            ...prev.weekly,
-            [dayOfWeek]: { slots: newSlots, isActive: true }
+          [dateString]: {
+            slots: [...dateSlots],
+            isWeeklyMode: false
           }
         };
       }
@@ -123,80 +81,134 @@ export const useAvailabilityState = () => {
   }, [availabilityState]);
 
   /**
-   * Toggle weekly recurring for a specific day
+   * Get available slots for a specific date (for display)
    */
-  const toggleWeeklyRecurring = useCallback((dateString, dayOfWeek) => {
-    setAvailabilityState(prev => {
-      const weeklyData = prev.weekly[dayOfWeek];
-      
-      if (weeklyData?.isActive) {
-        // Turn off weekly recurring - move to date-specific
-        const currentSlots = weeklyData.slots || [];
-        return {
-          ...prev,
-          weekly: {
-            ...prev.weekly,
-            [dayOfWeek]: { ...weeklyData, isActive: false }
-          },
-          specificDates: {
-            ...prev.specificDates,
-            [dateString]: { slots: [...currentSlots] }
-          }
-        };
-      } else {
-        // Turn on weekly recurring
-        const dateSpecificSlots = prev.specificDates[dateString]?.slots || [];
-        const newWeeklyData = { slots: [...dateSpecificSlots], isActive: true };
-        
-        // Remove date-specific entry
-        const newSpecificDates = { ...prev.specificDates };
-        delete newSpecificDates[dateString];
-        
-        return {
-          ...prev,
-          weekly: {
-            ...prev.weekly,
-            [dayOfWeek]: newWeeklyData
-          },
-          specificDates: newSpecificDates
-        };
-      }
+  const getAvailableSlots = useCallback((dateString, dayOfWeek) => {
+    // Check if date is unavailable
+    const date = new Date(dateString);
+    const isUnavailable = availabilityState.unavailability.some(range => {
+      const from = new Date(range.from);
+      const to = new Date(range.to);
+      return date >= from && date <= to;
     });
+    
+    if (isUnavailable) {
+      return [];
+    }
 
-    // Track this change as pending
-    setPendingChanges(prev => {
-      const weeklyData = availabilityState.weekly[dayOfWeek];
+    // Check editing state first (user is currently editing this date)
+    if (editingState[dateString]) {
+      const editData = editingState[dateString];
       
-      if (weeklyData?.isActive) {
-        // Moving from weekly to date-specific
-        return {
-          ...prev,
-          weekly: {
-            ...prev.weekly,
-            [dayOfWeek]: { ...weeklyData, isActive: false }
-          },
-          specificDates: {
-            ...prev.specificDates,
-            [dateString]: { slots: [...(weeklyData.slots || [])] }
-          }
-        };
+      if (editData.isWeeklyMode) {
+        // Show weekly slots while in weekly editing mode
+        return editData.slots || [];
       } else {
-        // Moving from date-specific to weekly
-        const dateSpecificSlots = availabilityState.specificDates[dateString]?.slots || [];
-        return {
-          ...prev,
-          weekly: {
-            ...prev.weekly,
-            [dayOfWeek]: { slots: [...dateSpecificSlots], isActive: true }
-          },
-          specificDates: {
-            ...prev.specificDates,
-            [dateString]: { slots: [] } // Clear date-specific
-          }
-        };
+        // Show date-specific slots while in date-specific editing mode
+        return editData.slots || [];
       }
+    }
+
+    // No editing state - show saved data based on what exists
+    // Priority: date-specific first, then weekly if active
+    const dateSpecific = availabilityState.specificDates[dateString];
+    if (dateSpecific) {
+      return dateSpecific.slots || [];
+    }
+
+    // Check weekly recurring availability from saved state
+    const weeklyData = availabilityState.weekly[dayOfWeek];
+    if (weeklyData?.isActive) {
+      return weeklyData.slots || [];
+    }
+    
+    return [];
+  }, [availabilityState, editingState]);
+
+  /**
+   * Check if a time slot is selected for a specific date
+   */
+  const isTimeSlotSelected = useCallback((dateString, hour, dayOfWeek) => {
+    const availableSlots = getAvailableSlots(dateString, dayOfWeek);
+    return availableSlots.includes(hour);
+  }, [getAvailableSlots]);
+
+  /**
+   * Get repeat status for a specific date
+   */
+  const isRepeatEnabled = useCallback((dateString, dayOfWeek) => {
+    // Check editing state first
+    if (editingState[dateString]) {
+      return editingState[dateString].isWeeklyMode;
+    }
+
+    // Check saved state - if date-specific exists, repeat is OFF
+    if (availabilityState.specificDates[dateString]) {
+      return false;
+    }
+    
+    // If weekly availability exists and is active, repeat is ON
+    const weeklyData = availabilityState.weekly[dayOfWeek];
+    return weeklyData?.isActive || false;
+  }, [availabilityState, editingState]);
+
+  /**
+   * Check if a date has any changes to save
+   */
+  const hasUnsavedChanges = useCallback((dateString) => {
+    return editingState[dateString] !== undefined;
+  }, [editingState]);
+
+  /**
+   * Save availability for a specific date
+   */
+  const saveAvailabilityForDate = useCallback(async (apiService, dateString) => {
+    const editData = editingState[dateString];
+    if (!editData) return { success: true };
+
+    setLoading(true);
+    try {
+      const date = new Date(dateString);
+      const dayOfWeek = date.getDay();
+
+      if (editData.isWeeklyMode) {
+        // Save as weekly recurring
+        await apiService.setWeeklyAvailability(dayOfWeek, editData.slots, true);
+      } else {
+        // Save as date-specific
+        await apiService.setDateAvailability(dateString, editData.slots);
+      }
+
+      // Clear editing state for this date
+      setEditingState(prev => {
+        const newState = { ...prev };
+        delete newState[dateString];
+        return newState;
+      });
+
+      // Reload availability data to show updated state
+      await loadAvailability(apiService);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error saving availability:', error);
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  }, [editingState]);
+
+  /**
+   * Check if a date is unavailable
+   */
+  const isDateUnavailable = useCallback((dateString) => {
+    const date = new Date(dateString);
+    return availabilityState.unavailability.some(range => {
+      const from = new Date(range.from);
+      const to = new Date(range.to);
+      return date >= from && date <= to;
     });
-  }, [availabilityState]);
+  }, [availabilityState.unavailability]);
 
   /**
    * Add unavailability date range
@@ -225,117 +237,6 @@ export const useAvailabilityState = () => {
   }, []);
 
   /**
-   * Check if a date is unavailable
-   */
-  const isDateUnavailable = useCallback((dateString) => {
-    const date = new Date(dateString);
-    return availabilityState.unavailability.some(range => {
-      const from = new Date(range.from);
-      const to = new Date(range.to);
-      return date >= from && date <= to;
-    });
-  }, [availabilityState.unavailability]);
-
-  /**
-   * Get available slots for a specific date
-   */
-  const getAvailableSlots = useCallback((dateString, dayOfWeek) => {
-    if (isDateUnavailable(dateString)) {
-      return [];
-    }
-
-    // Check if there's date-specific availability first
-    const dateSpecific = availabilityState.specificDates[dateString];
-    if (dateSpecific) {
-      return dateSpecific.slots || [];
-    }
-
-    // Check weekly recurring availability
-    const weeklyData = availabilityState.weekly[dayOfWeek];
-    if (weeklyData?.isActive) {
-      return weeklyData.slots || [];
-    }
-    
-    return [];
-  }, [availabilityState, isDateUnavailable]);
-
-  /**
-   * Check if a time slot is selected for a specific date
-   */
-  const isTimeSlotSelected = useCallback((dateString, hour, dayOfWeek) => {
-    const availableSlots = getAvailableSlots(dateString, dayOfWeek);
-    return availableSlots.includes(hour);
-  }, [getAvailableSlots]);
-
-  /**
-   * Get repeat status for a specific date
-   */
-  const isRepeatEnabled = useCallback((dateString, dayOfWeek) => {
-    // If date-specific availability exists, repeat is OFF
-    if (availabilityState.specificDates[dateString]) {
-      return false;
-    }
-    
-    // If weekly availability exists and is active, repeat is ON
-    const weeklyData = availabilityState.weekly[dayOfWeek];
-    return weeklyData?.isActive || false;
-  }, [availabilityState]);
-
-  /**
-   * Save availability using backend APIs - only send pending changes
-   */
-  const saveAvailability = useCallback(async (apiService) => {
-    setLoading(true);
-    try {
-      const savePromises = [];
-      
-      // Save only pending weekly changes
-      Object.keys(pendingChanges.weekly).forEach(dayOfWeek => {
-        const weeklyData = pendingChanges.weekly[dayOfWeek];
-        savePromises.push(
-          apiService.setWeeklyAvailability(parseInt(dayOfWeek), weeklyData.slots)
-        );
-      });
-      
-      // Save only pending date-specific changes
-      Object.keys(pendingChanges.specificDates).forEach(dateString => {
-        const dateData = pendingChanges.specificDates[dateString];
-        savePromises.push(
-          apiService.setDateAvailability(dateString, dateData.slots)
-        );
-      });
-      
-      // Save pending unavailability ranges (if any)
-      if (pendingChanges.unavailability.length > 0) {
-        pendingChanges.unavailability.forEach(range => {
-          savePromises.push(
-            apiService.setUnavailability(range.from, range.to, range.reason)
-          );
-        });
-      }
-      
-      // Only make API calls if there are pending changes
-      if (savePromises.length > 0) {
-        await Promise.all(savePromises);
-      }
-      
-      // Clear pending changes after successful save
-      setPendingChanges({
-        weekly: {},
-        specificDates: {},
-        unavailability: []
-      });
-      
-      return { success: true };
-    } catch (error) {
-      console.error('Error saving availability:', error);
-      return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
-    }
-  }, [pendingChanges]);
-
-  /**
    * Load availability from API
    */
   const loadAvailability = useCallback(async (apiService) => {
@@ -345,8 +246,6 @@ export const useAvailabilityState = () => {
       
       if (response.success && response.data) {
         const { weekly, specificDates, unavailability } = response.data;
-        
-        // Convert backend data to frontend state format
         const newState = {
           weekly: {},
           specificDates: {},
@@ -374,12 +273,8 @@ export const useAvailabilityState = () => {
         }
 
         setAvailabilityState(newState);
-        // Clear any pending changes since we just loaded fresh data
-        setPendingChanges({
-          weekly: {},
-          specificDates: {},
-          unavailability: []
-        });
+        // Clear editing state since we have fresh data
+        setEditingState({});
       }
       
       return { success: true };
@@ -401,6 +296,7 @@ export const useAvailabilityState = () => {
     // Actions
     toggleTimeSlot,
     toggleWeeklyRecurring,
+    saveAvailabilityForDate,
     addUnavailabilityRange,
     removeUnavailabilityRange,
     
@@ -409,9 +305,9 @@ export const useAvailabilityState = () => {
     getAvailableSlots,
     isTimeSlotSelected,
     isRepeatEnabled,
+    hasUnsavedChanges,
     
     // API methods
-    saveAvailability,
     loadAvailability
   };
 };

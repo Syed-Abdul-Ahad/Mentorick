@@ -16,6 +16,7 @@ const AvailabilityPage = () => {
     // Actions
     toggleTimeSlot,
     toggleWeeklyRecurring,
+    saveAvailabilityForDate,
     addUnavailabilityRange,
     removeUnavailabilityRange,
     
@@ -24,9 +25,9 @@ const AvailabilityPage = () => {
     getAvailableSlots,
     isTimeSlotSelected,
     isRepeatEnabled,
+    hasUnsavedChanges,
     
     // API methods
-    saveAvailability,
     loadAvailability
   } = useAvailabilityState();
 
@@ -105,18 +106,38 @@ const AvailabilityPage = () => {
     }, 3000);
   };
 
-  const handleManualSave = async () => {
-    console.log("button clicked")
+  const handleManualSave = async (dateString = null) => {
+    console.log("Save button clicked for date:", dateString);
     setLoading(true);
     try {
-      const result = await saveAvailability(availabilityService);
-      if (result.success) {
-        showToast('Availability saved successfully');
+      if (dateString) {
+        // Save specific date
+        const result = await saveAvailabilityForDate(availabilityService, dateString);
+        if (result.success) {
+          showToast('Availability saved successfully');
+        } else {
+          showToast(result.error || 'Failed to save availability', 'error');
+        }
       } else {
-        showToast(result.error || 'Failed to save availability', 'error');
+        // Save all dates with unsaved changes
+        const datesToSave = weekDays.filter(day => hasUnsavedChanges(day.fullDate));
+        
+        if (datesToSave.length === 0) {
+          showToast('No changes to save', 'info');
+          return;
+        }
+
+        for (const dayData of datesToSave) {
+          const result = await saveAvailabilityForDate(availabilityService, dayData.fullDate);
+          if (!result.success) {
+            throw new Error(result.error || `Failed to save ${dayData.dayName}`);
+          }
+        }
+        
+        showToast(`Saved availability for ${datesToSave.length} day(s)`);
       }
     } catch (error) {
-      console.error('Manual save failed:', error);
+      console.error('Save failed:', error);
       showToast('Failed to save availability', 'error');
     } finally {
       setLoading(false);
@@ -170,6 +191,7 @@ const AvailabilityPage = () => {
           const selectedSlots = getAvailableSlots(dayData.fullDate, dayOfWeek);
           const isRepeat = isRepeatEnabled(dayData.fullDate, dayOfWeek);
           const isUnavailable = isDateUnavailable(dayData.fullDate);
+          const hasChanges = hasUnsavedChanges(dayData.fullDate);
 
           return (
             <DayAvailabilityCard
@@ -178,8 +200,10 @@ const AvailabilityPage = () => {
               selectedSlots={selectedSlots}
               isRepeatEnabled={isRepeat}
               isUnavailable={isUnavailable}
+              hasUnsavedChanges={hasChanges}
               onToggleSlot={handleToggleSlot}
               onToggleRepeat={handleToggleRepeat}
+              onSave={handleManualSave}
             />
           );
         })}

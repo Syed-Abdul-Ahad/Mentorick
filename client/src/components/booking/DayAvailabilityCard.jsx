@@ -6,8 +6,10 @@ const DayAvailabilityCard = ({
   selectedSlots = [],
   isRepeatEnabled = false,
   isUnavailable = false,
+  hasUnsavedChanges = false,
   onToggleSlot,
-  onToggleRepeat
+  onToggleRepeat,
+  onSave
 }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('AM');
   
@@ -34,23 +36,38 @@ const DayAvailabilityCard = ({
     onToggleRepeat(fullDate, dayOfWeek);
   };
 
+  const handleSave = () => {
+    if (hasUnsavedChanges && onSave) {
+      onSave(fullDate);
+    }
+  };
+
   return (
-    <div className={`bg-white rounded-lg border-2 p-4 transition-all duration-200 ${
+    <div className={`bg-white rounded-lg border-2 px-4 py-2 transition-all duration-200 ${
       isUnavailable 
         ? 'border-gray-200 bg-gray-50 opacity-60' 
-        : 'border-gray-200 hover:border-gray-300'
+        : hasUnsavedChanges
+          ? 'border-primary-400 bg-primary-50'
+          : 'border-gray-200 hover:border-gray-300'
     }`}>
       {/* Day Header */}
       <div className="mb-4">
-        <h3 className={`font-semibold text-lg ${
-          isToday(dayData.date) 
-            ? 'text-primary-600' 
-            : isUnavailable 
-              ? 'text-gray-400' 
-              : 'text-gray-900'
-        }`}>
-          {dayName}
-        </h3>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className={`font-semibold text-lg ${
+            isToday(dayData.date) 
+              ? 'text-primary-600' 
+              : isUnavailable 
+                ? 'text-gray-400' 
+                : 'text-gray-900'
+          }`}>
+            {dayName}
+          </h3>
+          {hasUnsavedChanges && (
+            <span className="inline-block px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full font-medium">
+              Unsaved
+            </span>
+          )}
+        </div>
         <p className={`text-sm ${
           isUnavailable ? 'text-gray-400' : 'text-gray-500'
         }`}>
@@ -67,11 +84,11 @@ const DayAvailabilityCard = ({
 
       {/* AM/PM Toggle */}
       <div className="mb-4">
-        <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="flex bg-gray-100 rounded-3xl p-1">
           <button
             onClick={() => setSelectedPeriod('AM')}
             disabled={isUnavailable}
-            className={`flex-1 py-2 px-3 rounded-md font-medium text-sm transition-all duration-200 ${
+            className={`flex-1 py-1 px-2 rounded-3xl font-medium text-sm transition-all duration-200 ${
               selectedPeriod === 'AM'
                 ? 'bg-primary-500 text-white shadow-sm'
                 : isUnavailable
@@ -84,7 +101,7 @@ const DayAvailabilityCard = ({
           <button
             onClick={() => setSelectedPeriod('PM')}
             disabled={isUnavailable}
-            className={`flex-1 py-2 px-3 rounded-md font-medium text-sm transition-all duration-200 ${
+            className={`flex-1 py-1 px-2 rounded-3xl font-medium text-sm transition-all duration-200 ${
               selectedPeriod === 'PM'
                 ? 'bg-primary-500 text-white shadow-sm'
                 : isUnavailable
@@ -108,7 +125,7 @@ const DayAvailabilityCard = ({
                 key={slot.value}
                 onClick={() => handleSlotClick(slot.value)}
                 disabled={isUnavailable}
-                className={`py-2 px-3 rounded-full text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:ring-opacity-50 ${
+                className={`py-1 px-2 rounded-full text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:ring-opacity-50 ${
                   isSelected
                     ? 'bg-primary-500 text-white shadow-md hover:bg-primary-600'
                     : isUnavailable
@@ -157,8 +174,20 @@ const DayAvailabilityCard = ({
             Available slots: {selectedSlots.length}
           </div>
           <div className="text-xs text-gray-400">
-            Available for 30, 60, or 90 min sessions
+            Available for 15, 30, or 60 min sessions
           </div>
+        </div>
+      )}
+
+      {/* Save Button */}
+      {hasUnsavedChanges && !isUnavailable && (
+        <div className="mt-4 pt-4 border-t border-primary-200">
+          <button
+            onClick={handleSave}
+            className="w-full bg-primary-500 hover:bg-primary-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            Save Changes
+          </button>
         </div>
       )}
     </div>

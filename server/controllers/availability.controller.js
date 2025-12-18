@@ -15,14 +15,32 @@ const {
 ====================================================== */
 exports.setWeeklyAvailability = async (req, res) => {
   try {
-    const { dayOfWeek, slots } = req.body;
+    const { dayOfWeek, slots, isActive = true } = req.body;
 
     if (dayOfWeek < 0 || dayOfWeek > 6) {
       return res.status(400).json({ message: 'Invalid dayOfWeek' });
     }
 
+    // If isActive is false, we're deactivating weekly availability
+    if (isActive === false) {
+      const mentor = await MentorProfile.findOne({ user: req.user.id });
+      
+      // Remove or deactivate weekly availability for this day
+      mentor.availability.weekly = mentor.availability.weekly.filter(
+        w => w.dayOfWeek !== dayOfWeek
+      );
+
+      await mentor.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Weekly availability deactivated'
+      });
+    }
+
+    // For active weekly availability, require slots
     if (!slots || !slots.length) {
-      return res.status(400).json({ message: 'Slots are required' });
+      return res.status(400).json({ message: 'Slots are required for active weekly availability' });
     }
 
     if (hasDuplicateSlots(slots)) {

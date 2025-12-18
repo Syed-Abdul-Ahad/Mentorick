@@ -177,12 +177,13 @@ class AvailabilityService extends ApiService {
     }
   }
 
-  // Set weekly availability (repeat ON)
-  async setWeeklyAvailability(dayOfWeek, slots) {
+  // Set weekly availability (repeat ON/OFF)
+  async setWeeklyAvailability(dayOfWeek, slots, isActive = true) {
     try {
       const response = await apiClient.post('/mentor/availability/weekly', {
         dayOfWeek,
-        slots: slots.map(hour => ({ hour }))
+        slots: slots.map(hour => ({ hour })),
+        isActive
       });
       return response.data;
     } catch (error) {
