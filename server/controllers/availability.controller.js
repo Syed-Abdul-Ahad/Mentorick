@@ -4,6 +4,9 @@ const {
   utcToLocalHour,
   isDateBlocked
 } = require('../utils/time.util');
+const Booking = require('../models/Booking');
+const { subtractBookings } = require('../utils/slot.util');
+const { DateTime } = require('luxon');
 
 const {
   hasDuplicateSlots,
@@ -144,60 +147,93 @@ exports.setUnavailability = async (req, res) => {
 /* ======================================================
    GET AVAILABILITY FOR MENTEE (Timezone Safe)
 ====================================================== */
+
 exports.getMentorAvailabilityForMentee = async (req, res) => {
-  try {
-    const { mentorId } = req.params;
-    const menteeTimezone = req.query.timezone;
+  const { mentorId } = req.params;
+  const menteeTimezone = req.query.timezone;
 
-    const mentor = await MentorProfile.findOne({ user: mentorId });
+  const mentor = await MentorProfile.findOne({ user: mentorId });
+  if (!mentor) return res.status(404).json({ message: 'Mentor not found' });
 
-    if (!mentor) {
-      return res.status(404).json({ message: 'Mentor not found' });
+  const availabilityByDate = new Map(); // Group slots by mentee's local date
+
+  for (let i = 0; i < 14; i++) {
+    const date = DateTime.now().plus({ days: i });
+
+    if (isDateBlocked(date.toJSDate(), mentor.availability.unavailability)) {
+      continue;
     }
 
-    const availability = [];
+    const daySlots =
+      mentor.availability.specificDates.find(d =>
+        DateTime.fromJSDate(d.date).hasSame(date, 'day')
+      )?.slots ||
+      mentor.availability.weekly.find(w =>
+        w.dayOfWeek === date.weekday % 7 && w.isActive
+      )?.slots ||
+      [];
 
-    for (let i = 0; i < 14; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() + i);
+    for (const slot of daySlots) {
+      const hourStartUTC = DateTime
+        .fromObject(
+          { year: date.year, month: date.month, day: date.day, hour: slot.hour },
+          { zone: mentor.timezone }
+        )
+        .toUTC()
+        .toJSDate();
 
-      if (isDateBlocked(date, mentor.availability.unavailability)) continue;
+      const hourEndUTC = DateTime.fromJSDate(hourStartUTC).plus({ hours: 1 }).toJSDate();
 
-      const dayOfWeek = date.getDay();
-
-      const daySlots =
-        mentor.availability.specificDates.find(d =>
-          d.date.toDateString() === date.toDateString()
-        )?.slots ||
-        mentor.availability.weekly.find(w =>
-          w.dayOfWeek === dayOfWeek && w.isActive
-        )?.slots ||
-        [];
-
-      const convertedSlots = daySlots.map(slot => {
-        const utc = localHourToUTC(
-          date.toISOString().split('T')[0],
-          slot.hour,
-          mentor.timezone
-        );
-        return utcToLocalHour(utc, menteeTimezone);
+      const bookings = await Booking.find({
+        mentor: mentor.user,
+        startTimeUTC: { $lt: hourEndUTC },
+        endTimeUTC: { $gt: hourStartUTC },
+        status: { $in: ['pending', 'confirmed'] }
       });
 
-      availability.push({
-        date,
-        slots: convertedSlots
+      const freeWindows = subtractBookings(hourStartUTC, hourEndUTC, bookings);
+
+      freeWindows.forEach(([start, end]) => {
+        let cursor = DateTime.fromJSDate(start);
+
+        while (cursor.plus({ minutes: 15 }) <= DateTime.fromJSDate(end)) {
+          const durations = [];
+          if (cursor.plus({ minutes: 15 }) <= DateTime.fromJSDate(end)) durations.push(15);
+          if (cursor.plus({ minutes: 30 }) <= DateTime.fromJSDate(end)) durations.push(30);
+          if (cursor.plus({ minutes: 60 }) <= DateTime.fromJSDate(end)) durations.push(60);
+
+          // Convert to mentee timezone and get the actual date for this time
+          const menteeDateTime = cursor.setZone(menteeTimezone);
+          const menteeDate = menteeDateTime.toISODate(); // This gives us the correct date in mentee's timezone
+
+          // Initialize the date array if it doesn't exist
+          if (!availabilityByDate.has(menteeDate)) {
+            availabilityByDate.set(menteeDate, []);
+          }
+
+          // Add the slot to the correct date
+          availabilityByDate.get(menteeDate).push({
+            start: menteeDateTime.toFormat('HH:mm'),
+            durations
+          });
+
+          cursor = cursor.plus({ minutes: 15 });
+        }
       });
     }
-
-    res.status(200).json({
-      success: true,
-      availability
-    });
-
-  } catch (err) {
-    res.status(500).json({ message: err.message });
   }
+
+  // Convert Map to array format
+  const availability = Array.from(availabilityByDate.entries())
+    .map(([date, slots]) => ({
+      date,
+      slots
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date)); // Sort by date
+
+  res.json({ success: true, availability });
 };
+
 
 /* ======================================================
    GET MY AVAILABILITY (Mentor Only - Raw Data)

@@ -232,14 +232,14 @@ class AvailabilityService extends ApiService {
 
 class BookingService extends ApiService {
   constructor() {
-    super('/bookings');
+    super('/booking');
   }
 
   // Create a new booking
   async createBooking(bookingData) {
     try {
-      const response = await apiClient.post('/bookings', bookingData);
-      return response.data.data;
+      const response = await apiClient.post('/booking/create', bookingData);
+      return response.data;
     } catch (error) {
       throw this.handleError(error);
     }

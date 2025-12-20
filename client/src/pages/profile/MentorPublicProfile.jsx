@@ -9,7 +9,7 @@ import { BiHappyBeaming } from "react-icons/bi";
 import apiClient from '../../api/axiosConfig';
 import currencyService from '../../api/currencyService';
 import { useUser } from '../../store/hooks';
-import BookingCalendar from '../../components/booking/BookingCalendar';
+import BookingModal from '../../components/booking/BookingModal';
 import Toast from '../../components/shared/Toast';
 
 
@@ -565,33 +565,13 @@ const MentorPublicProfile = () => {
       </section>
 
       {/* Booking Modal */}
-      {showBookingModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Book Session with {profile?.fullName}
-              </h2>
-              <button
-                onClick={() => setShowBookingModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="p-0">
-              <BookingCalendar
-                mentorId={id}
-                mentorName={profile?.fullName}
-                onBookingSuccess={handleBookingSuccess}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      <BookingModal
+        isOpen={showBookingModal}
+        onClose={() => setShowBookingModal(false)}
+        mentorId={id}
+        mentorName={profile?.fullName}
+        onBookingSuccess={handleBookingSuccess}
+      />
 
       {/* Toast Notification */}
       {toast.show && (
