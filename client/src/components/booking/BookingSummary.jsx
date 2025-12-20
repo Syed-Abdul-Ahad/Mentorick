@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Button from '../shared/Button';
+import { formatTimeTo12Hour } from '../../utils/timezone';
 
 /**
  * Booking summary component for booking flow
@@ -51,7 +52,7 @@ const BookingSummary = ({
         
         <div className="flex justify-between py-3 border-b border-gray-100">
           <span className="text-gray-600">Time</span>
-          <span className="font-medium text-gray-900">{selectedSlot.start}</span>
+          <span className="font-medium text-gray-900">{formatTimeTo12Hour(selectedSlot.start)}</span>
         </div>
         
         <div className="flex justify-between py-3 border-b border-gray-100">

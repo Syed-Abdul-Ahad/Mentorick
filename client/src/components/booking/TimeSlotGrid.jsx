@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { formatTimeTo12Hour } from '../../utils/timezone';
 
 /**
  * Time slot grid component for booking flow
@@ -43,7 +44,7 @@ const TimeSlotGrid = ({ slots, selectedSlot, onSlotSelect, loading }) => {
                   : 'border-gray-200 hover:border-gray-300 text-gray-700'
               }`}
             >
-              <div className="font-bold text-lg">{slot.start}</div>
+              <div className="font-bold text-lg">{formatTimeTo12Hour(slot.start)}</div>
               <div className="text-xs text-gray-500 mt-2">
                 Up to {maxDuration} min
               </div>

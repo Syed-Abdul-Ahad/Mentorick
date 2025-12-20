@@ -127,15 +127,15 @@ const MentorPublicProfile = () => {
         }
 
         // Fetch mentor's mega sessions
-        try {
-          const megaRes = await apiClient.get(`/mega-sessions?mentorId=${id}&upcoming=true`);
-          if (megaRes.data && megaRes.data.status === 'success') {
-            setMentorMegaSessions(megaRes.data.data.megaSessions || []);
-          }
-        } catch (error) {
-          console.error('Error fetching mega sessions:', error);
-          setMentorMegaSessions([]);
-        }
+        // try {
+        //   const megaRes = await apiClient.get(`/mega-sessions?mentorId=${id}&upcoming=true`);
+        //   if (megaRes.data && megaRes.data.status === 'success') {
+        //     setMentorMegaSessions(megaRes.data.data.megaSessions || []);
+        //   }
+        // } catch (error) {
+        //   console.error('Error fetching mega sessions:', error);
+        //   setMentorMegaSessions([]);
+        // }
       } catch (e) {
         setProfile(null);
       } finally {
@@ -153,7 +153,8 @@ const MentorPublicProfile = () => {
     }
 
     if (user.role === 'mentor') {
-      showToast('You cannot book a session with yourself', 'error');
+      showToast('Mentor cannot book a session', 'error');
+      console.log("Mentor cannot book a session")
       return;
     }
 
@@ -441,7 +442,7 @@ const MentorPublicProfile = () => {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <button 
                 onClick={handleBookSession}
-                className="w-full bg-primary text-white font-semibold py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors mb-3"
+                className="w-full bg-primary cursor-pointer text-white font-semibold py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors mb-3"
               >
                 Book a Session
               </button>
@@ -454,7 +455,7 @@ const MentorPublicProfile = () => {
       </div>
 
       {/* Mega Sessions Section */}
-      {mentorMegaSessions.length > 0 && (
+      {/* {mentorMegaSessions.length > 0 && (
         <section className="bg-gray-50 py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl font-bold text-center mb-12">
@@ -515,7 +516,7 @@ const MentorPublicProfile = () => {
             </div>
           </div>
         </section>
-      )}
+      )}*/}
 
       {/* FAQ Section */}
       <section className="bg-white py-16">
