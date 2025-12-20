@@ -51,6 +51,8 @@ exports.createBooking = async (req, res) => {
       startTimeUTC: startUTC.toJSDate(),
       endTimeUTC: endUTC.toJSDate(),
       durationMinutes: duration,
+      mentorTimezone: mentorProfile.timezone, // Automatically capture mentor's timezone
+      menteeTimezone: timezone, // Use timezone from request as mentee's timezone
       price: {
         amount: priceAmount,
         currency
