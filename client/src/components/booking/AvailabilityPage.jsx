@@ -4,6 +4,8 @@ import { availabilityService } from '../../api';
 import DayAvailabilityCard from './DayAvailabilityCard';
 import UnavailabilityModal from './UnavailabilityModal';
 import Toast from '../shared/Toast';
+import axios from 'axios';
+
 
 const AvailabilityPage = () => {
   const {
@@ -34,12 +36,22 @@ const AvailabilityPage = () => {
   const [showUnavailabilityModal, setShowUnavailabilityModal] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [initialized, setInitialized] = useState(false);
+  const [googleConnected, setGoogleConnected] = useState(false);
   const[loading2, setLoading] = useState(false); // dont remove this
 
   // Load availability on component mount
   useEffect(() => {
     loadInitialAvailability();
   }, []);
+
+  useEffect(() => {
+  axios.get('http://localhost:5000/auth/google/status', {
+    withCredentials: true
+  }).then(res => {
+    setGoogleConnected(res.data.connected);
+  });
+}, []);
+
 
   const loadInitialAvailability = async () => {
     try {
@@ -57,6 +69,13 @@ const AvailabilityPage = () => {
       setInitialized(true); // Still show the interface
     }
   };
+
+const params = new URLSearchParams(location.search);
+const connected = params.get('connected');
+
+if (connected === 'true') {
+  console.log('Google Calendar connected');
+}
 
   const handleTimezoneChange = (timezone) => {
     // Timezone is now read-only in this implementation
@@ -156,6 +175,20 @@ const AvailabilityPage = () => {
             </h1>
             <span className="text-lg text-gray-600">{selectedTimezone} Standard Time</span>
           </div>
+
+      {googleConnected ? (
+        <button disabled className="connected-btn">
+          ✅ Google Calendar Connected
+        </button>
+      ) : (
+        <button
+          onClick={() => {
+            window.location.href = 'http://localhost:5000/auth/google';
+          }}
+        >
+          Connect Google Calendar
+        </button>
+      )}
 
           {/* Unavailability Button */}
           <button

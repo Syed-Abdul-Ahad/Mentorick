@@ -1,5 +1,7 @@
 const MentorProfile = require('../models/MentorProfile');
 const Booking = require('../models/Booking');
+const { createCalendarEvent } = require('../utils/calendar.util');
+const User = require('../models/User');
 const { DateTime } = require('luxon');
 
 exports.createBooking = async (req, res) => {
@@ -64,6 +66,28 @@ exports.createBooking = async (req, res) => {
     // booking.meeting = meeting
     // booking.status = 'confirmed'
     // await booking.save()
+
+    const mentorUser = await User.findById(mentorId);
+    const menteeUser = await User.findById(menteeId);
+
+    const meeting = await createCalendarEvent({
+      mentorId,
+      mentorEmail: mentorUser.email,
+      menteeEmail: menteeUser.email,
+      // mentorTimezone: mentorProfile.timezone,
+      startUTC: startUTC.toJSDate(),
+      endUTC: endUTC.toJSDate()
+    });
+
+    booking.meeting = {
+      provider: 'google',
+      meetingLink: meeting.meetingLink,
+      calendarEventId: meeting.calendarEventId
+    };
+
+    booking.status = 'confirmed';
+    await booking.save();
+
 
     res.status(201).json({
       success: true,

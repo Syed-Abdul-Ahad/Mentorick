@@ -13,6 +13,7 @@ const mentorProfileRoutes = require('./routes/mentorProfileRoutes');
 const menteeProfileRoutes = require('./routes/menteeProfileRoutes');
 const availabilityRoutes = require('./routes/mentorAvailability.routes');
 const bookingRoutes = require('./routes/bookingRoutes');
+const googleRoutes = require('./routes/googleRoutes');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -79,6 +80,7 @@ app.use('/api/mentor', mentorProfileRoutes);
 app.use('/api/mentee', menteeProfileRoutes);
 app.use('/api/mentor/availability', availabilityRoutes);
 app.use('/api/booking', bookingRoutes);
+app.use('/auth', googleRoutes);
 
 
 // Error handling middleware (must be last)
