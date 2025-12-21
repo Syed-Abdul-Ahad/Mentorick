@@ -107,9 +107,9 @@ const MyBookings = () => {
 
   const getOtherUserName = (booking) => {
     if (booking.userRole === 'mentor') {
-      return booking.mentee.name;
+      return booking.mentee.firstName + ' ' + booking.mentee.lastName;
     }
-    return booking.mentor.name;
+    return booking.mentor.firstName + ' ' + booking.mentor.lastName;
   };
 
   const filteredBookings = bookings.filter(booking => {

@@ -129,8 +129,8 @@ exports.getMyBookings = async (req, res) => {
     }
 
     const bookings = await Booking.find(baseQuery)
-      .populate('mentor', 'name email')
-      .populate('mentee', 'name email')  
+      .populate('mentor', 'firstName lastName email')
+      .populate('mentee', 'firstName lastName email')  
       .populate('mentorProfile', 'timezone sessionDurations')
       .sort({ startTimeUTC: 1 })
       .limit(parseInt(limit));

@@ -4,6 +4,7 @@ import { availabilityService } from '../../api';
 import DayAvailabilityCard from './DayAvailabilityCard';
 import UnavailabilityModal from './UnavailabilityModal';
 import Toast from '../shared/Toast';
+import toast from 'react-hot-toast';
 import axios from 'axios';
 
 
@@ -34,10 +35,10 @@ const AvailabilityPage = () => {
   } = useAvailabilityState();
 
   const [showUnavailabilityModal, setShowUnavailabilityModal] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [initialized, setInitialized] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
   const[loading2, setLoading] = useState(false); // dont remove this
+  const [conflictModal, setConflictModal] = useState({ show: false, bookings: [], message: '' });
 
   // Load availability on component mount
   useEffect(() => {
@@ -58,14 +59,14 @@ const AvailabilityPage = () => {
       const result = await loadAvailability(availabilityService);
       if (result.success) {
         setInitialized(true);
-        showToast('Availability loaded successfully');
+        toast.success('Availability loaded successfully');
       } else {
-        showToast('Failed to load availability', 'error');
+        toast.error('Failed to load availability');
         setInitialized(true); // Still show the interface
       }
     } catch (error) {
       console.error('Error loading initial availability:', error);
-      showToast('Failed to load availability', 'error');
+      toast.error('Failed to load availability');
       setInitialized(true); // Still show the interface
     }
   };
@@ -80,7 +81,7 @@ if (connected === 'true') {
   const handleTimezoneChange = (timezone) => {
     // Timezone is now read-only in this implementation
     // Backend determines timezone handling
-    showToast('Timezone display updated');
+    toast.success('Timezone display updated');
   };
 
   const handleToggleSlot = (dateString, hour) => {
@@ -105,25 +106,43 @@ if (connected === 'true') {
     try {
       if (action === 'remove') {
         removeUnavailabilityRange(rangeIndex);
-        showToast('Unavailability period removed');
+        toast.success('Unavailability period removed');
       } else if (fromDate && toDate) {
-        addUnavailabilityRange(fromDate, toDate);
-        // Call API to set unavailability
-        await availabilityService.setUnavailability(fromDate, toDate);
-        showToast('Unavailability period set successfully');
+        try {
+          // Call API to set unavailability
+          await availabilityService.setUnavailability(fromDate, toDate);
+          addUnavailabilityRange(fromDate, toDate);
+          toast.success('Unavailability period set successfully');
+          setShowUnavailabilityModal(false);
+        } catch (apiError) {
+          // Handle specific 409 conflict error
+          if (apiError.response?.status === 409) {
+            const errorData = apiError.response.data;
+            const conflictingBookings = errorData.conflictingBookings || [];
+            
+            // Show conflict modal instead of just toast
+            setConflictModal({
+              show: true,
+              bookings: conflictingBookings,
+              message: errorData.message,
+              suggestion: errorData.suggestion
+            });
+            
+            // Also show toast for immediate feedback
+            toast.error('Cannot set unavailability - you have existing bookings in this period');
+          } else {
+            throw apiError; // Re-throw for generic error handling
+          }
+        }
       }
     } catch (error) {
       console.error('Error handling unavailability:', error);
-      showToast('Failed to update unavailability', 'error');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update unavailability';
+      toast.error(errorMessage);
     }
   };
 
-  const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
-    setTimeout(() => {
-      setToast({ show: false, message: '', type: 'success' });
-    }, 3000);
-  };
+
 
   const handleManualSave = async (dateString = null) => {
     console.log("Save button clicked for date:", dateString);
@@ -133,16 +152,16 @@ if (connected === 'true') {
         // Save specific date
         const result = await saveAvailabilityForDate(availabilityService, dateString);
         if (result.success) {
-          showToast('Availability saved successfully');
+          toast.success('Availability saved successfully');
         } else {
-          showToast(result.error || 'Failed to save availability', 'error');
+          toast.error(result.error || 'Failed to save availability');
         }
       } else {
         // Save all dates with unsaved changes
         const datesToSave = weekDays.filter(day => hasUnsavedChanges(day.fullDate));
         
         if (datesToSave.length === 0) {
-          showToast('No changes to save', 'info');
+          toast('No changes to save', { icon: 'ℹ️' });
           return;
         }
 
@@ -153,11 +172,11 @@ if (connected === 'true') {
           }
         }
         
-        showToast(`Saved availability for ${datesToSave.length} day(s)`);
+        toast.success(`Saved availability for ${datesToSave.length} day(s)`);
       }
     } catch (error) {
       console.error('Save failed:', error);
-      showToast('Failed to save availability', 'error');
+      toast.error('Failed to save availability');
     } finally {
       setLoading(false);
     }
@@ -312,6 +331,64 @@ if (connected === 'true') {
       </div>
       )}
 
+      {/* Booking Conflict Modal */}
+      {conflictModal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl mx-4 max-h-96 overflow-y-auto">
+            <h3 className="text-lg font-semibold text-red-600 mb-4">
+              Cannot Set Unavailability
+            </h3>
+            <p className="text-gray-700 mb-4">{conflictModal.message}</p>
+            
+            {conflictModal.bookings.length > 0 && (
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-900 mb-2">Conflicting Bookings:</h4>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {conflictModal.bookings.map((booking, index) => (
+                    <div key={booking.id} className="bg-gray-50 p-3 rounded border">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-gray-900">{booking.mentee}</p>
+                          <p className="text-sm text-gray-600">
+                            {new Date(booking.startTime).toLocaleString()}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Duration: {booking.duration} minutes | Status: {booking.status}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <p className="text-sm text-gray-600 mb-6">
+              {conflictModal.suggestion || 'Please cancel or reschedule these bookings before setting unavailability.'}
+            </p>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setConflictModal({ show: false, bookings: [], message: '' })}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setConflictModal({ show: false, bookings: [], message: '' });
+                  // Navigate to bookings page to manage conflicts
+                  window.location.href = '/my-bookings';
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                View My Bookings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Unavailability Modal */}
       <UnavailabilityModal
         isOpen={showUnavailabilityModal}
@@ -320,14 +397,8 @@ if (connected === 'true') {
         existingRanges={availabilityState.unavailability}
       />
 
-      {/* Toast */}
-      {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast({ show: false, message: '', type: 'success' })}
-        />
-      )}
+      {/* React Hot Toast Container */}
+      <Toast />
     </div>
   );
 };

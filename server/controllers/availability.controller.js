@@ -118,7 +118,7 @@ exports.setDateAvailability = async (req, res) => {
 ====================================================== */
 exports.setUnavailability = async (req, res) => {
   try {
-    const { from, to, reason } = req.body;
+    const { from, to, reason, force = false } = req.body;
 
     if (!from || !to) {
       return res.status(400).json({ message: 'From and To dates required' });
@@ -130,13 +130,73 @@ exports.setUnavailability = async (req, res) => {
 
     const mentor = await MentorProfile.findOne({ user: req.user.id });
 
+    // Fix date handling: ensure 'to' date includes the entire day
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+    toDate.setHours(23, 59, 59, 999); // Set to end of the day
+
+    // Check for existing confirmed/pending bookings in this time range
+    const existingBookings = await Booking.find({
+      mentor: req.user.id,
+      status: { $in: ['pending', 'confirmed'] },
+      $or: [
+        // Booking starts within the unavailable period
+        {
+          startTimeUTC: { 
+            $gte: fromDate, 
+            $lte: toDate 
+          }
+        },
+        // Booking ends within the unavailable period
+        {
+          endTimeUTC: { 
+            $gte: fromDate, 
+            $lte: toDate 
+          }
+        },
+        // Booking spans the entire unavailable period
+        {
+          startTimeUTC: { $lt: fromDate },
+          endTimeUTC: { $gt: toDate }
+        }
+      ]
+    }).populate('mentee', 'firstName lastName email');
+
+    if (existingBookings.length > 0 && !force) {
+      // Return conflict with booking details
+      const conflictDetails = existingBookings.map(booking => ({
+        id: booking._id,
+        mentee: `${booking.mentee.firstName} ${booking.mentee.lastName}`,
+        startTime: booking.startTimeUTC,
+        endTime: booking.endTimeUTC,
+        status: booking.status,
+        duration: booking.durationMinutes
+      }));
+
+      return res.status(409).json({ 
+        message: 'Cannot set unavailability: You have existing bookings in this time period',
+        conflictingBookings: conflictDetails,
+        suggestion: 'Please cancel or reschedule these bookings first, or set force=true to override (not recommended)'
+      });
+    }
+
+    // If forcing with existing bookings, log a warning
+    if (force && existingBookings.length > 0) {
+      console.warn(`Mentor ${req.user.id} forced unavailability despite ${existingBookings.length} existing bookings`);
+    }
+
     mentor.availability.unavailability.push({ from, to, reason });
 
     await mentor.save();
 
     res.status(200).json({
       success: true,
-      message: 'Unavailability added'
+      message: force && existingBookings.length > 0 
+        ? 'Unavailability added (with existing bookings - please handle conflicts)' 
+        : 'Unavailability added successfully',
+      ...(force && existingBookings.length > 0 && { 
+        warning: 'You have existing bookings in this period that need to be handled manually' 
+      })
     });
 
   } catch (err) {
