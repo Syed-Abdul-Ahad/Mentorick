@@ -1,9 +1,9 @@
 import { useUser } from '../store/hooks';
 import { Navigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
-import BookingManagement from '../components/booking/BookingManagement';
+import MyBookings from '../components/booking/MyBookings';
 
-const MyBookings = () => {
+const MyBookingsPage = () => {
   const user = useUser();
 
   // Only authenticated users can access this page
@@ -13,11 +13,9 @@ const MyBookings = () => {
 
   return (
     <MainLayout>
-      <div className="p-6">
-        <BookingManagement />
-      </div>
+      <MyBookings />
     </MainLayout>
   );
 };
 
-export default MyBookings;
+export default MyBookingsPage;

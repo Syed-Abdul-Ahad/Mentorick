@@ -16,7 +16,6 @@ const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT} in ${process.env.NODE_ENV} mode`);
-  console.log(`📱 Health check: http://localhost:${PORT}/health`);
 });
 
 // Handle unhandled promise rejections

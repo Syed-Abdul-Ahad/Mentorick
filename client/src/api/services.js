@@ -248,48 +248,18 @@ class BookingService extends ApiService {
   // Get my bookings
   async getMyBookings(params = {}) {
     try {
-      const response = await apiClient.get('/bookings/my-bookings', { params });
-      return response.data.data;
+      const response = await apiClient.get('/booking/my-bookings', { params });
+      return response.data;
     } catch (error) {
       throw this.handleError(error);
     }
   }
 
-  // Get mentor's upcoming sessions
-  async getMentorUpcomingSessions() {
+  // Get booking analytics
+  async getBookingAnalytics() {
     try {
-      const response = await apiClient.get('/bookings/mentor/upcoming');
-      return response.data.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  // Get specific booking
-  async getBooking(bookingId) {
-    try {
-      const response = await apiClient.get(`/bookings/${bookingId}`);
-      return response.data.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  // Cancel booking
-  async cancelBooking(bookingId, reason = '') {
-    try {
-      const response = await apiClient.put(`/bookings/${bookingId}/cancel`, { reason });
-      return response.data.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  // Update booking status (mentor only)
-  async updateBookingStatus(bookingId, statusData) {
-    try {
-      const response = await apiClient.put(`/bookings/${bookingId}/status`, statusData);
-      return response.data.data;
+      const response = await apiClient.get('/booking/analytics');
+      return response.data;
     } catch (error) {
       throw this.handleError(error);
     }
