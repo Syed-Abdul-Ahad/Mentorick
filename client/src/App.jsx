@@ -19,8 +19,6 @@ import MentorPublicProfile from "./pages/profile/MentorPublicProfile";
 import Homepage from "./pages/Homepage";
 import Mentors from "./pages/Mentors";
 import OurWhy from "./pages/OurWhy";
-// import MegaSessions from "./components/mega-sessions/MegaSessions";
-// import AdminMegaSessions from "./components/admin/AdminMegaSessions";
 
 function AuthenticatedApp() {
   const dispatch = useDispatch();
@@ -143,10 +141,6 @@ function AuthenticatedApp() {
             isAuthenticated ? <Homepage /> : <Navigate to="/login" />
           }
         />
-        {/* <Route
-          path="/mega-sessions"
-          element={<MegaSessions />}
-        /> */}
         <Route
           path="*"
           element={<NotFound />}

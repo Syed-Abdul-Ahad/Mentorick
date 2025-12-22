@@ -37,14 +37,14 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
     } else if (user?.role === 'mentor') {
       return [
         ...baseNavigation,
-        { name: 'Session Settings', href: '/sessions', icon: AiOutlineSetting },
+        { name: 'Availability Settings', href: '/sessions', icon: AiOutlineSetting },
         { name: 'My Bookings', href: '/my-bookings', icon: AiOutlineCalendar },
         { name: 'Dashboard', href: '/dashboard', icon: AiOutlineBarChart },
       ];
     } else {
       return [
         ...baseNavigation,
-        { name: 'My Sessions', href: '/my-bookings', icon: AiOutlineClockCircle },
+        { name: 'My Bookings', href: '/my-bookings', icon: AiOutlineCalendar },
         { name: 'Dashboard', href: '/dashboard', icon: AiOutlineBarChart },
       ];
     }

@@ -155,25 +155,6 @@ const MyBookings = () => {
           </div>
         )}
 
-        {/* Filter Buttons */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {[
-            { key: 'all', label: 'All' },
-            { key: 'upcoming', label: 'Upcoming' },
-            { key: 'confirmed', label: 'Confirmed' },
-            { key: 'completed', label: 'Completed' },
-            { key: 'cancelled', label: 'Cancelled' }
-          ].map(({ key, label }) => (
-            <Button
-              key={key}
-              variant={filter === key ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setFilter(key)}
-            >
-              {label}
-            </Button>
-          ))}
-        </div>
       </div>
 
       {/* Bookings List */}
@@ -228,7 +209,7 @@ const MyBookings = () => {
                     </h3>
                     <div className="text-sm text-gray-600 space-y-1">
                       <p><span className="font-medium">Date:</span> {timeInfo.date} ({timeInfo.day})</p>
-                      <p><span className="font-medium">Time:</span> {timeInfo.time}</p>
+                      <p><span className="font-medium">Time:</span> {timeInfo.time} {booking.userRole === 'mentor' ? booking.mentorTimezone : booking.menteeTimezone}</p>
                     </div>
                   </div>
 
