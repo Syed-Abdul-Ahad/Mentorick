@@ -55,3 +55,64 @@ exports.createCalendarEvent = async ({
     calendarEventId: response.data.id
   };
 };
+
+exports.createMegaSessionCalendarEvent = async ({
+  mentorId,
+  mentorEmail,
+  startUTC,
+  endUTC,
+  title,
+  description
+}) => {
+  const auth = await getAuthClient(mentorId);
+  const calendar = google.calendar({ version: 'v3', auth });
+
+  const response = await calendar.events.insert({
+    calendarId: 'primary',
+    conferenceDataVersion: 1,
+    sendUpdates: 'all',
+    requestBody: {
+      summary: title,
+      description: description,
+      start: { dateTime: startUTC.toISOString() },
+      end: { dateTime: endUTC.toISOString() },
+      attendees: [{ email: mentorEmail }], // Initially only mentor
+      conferenceData: {
+        createRequest: {
+          requestId: `mega-${Date.now()}`
+        }
+      }
+    }
+  });
+
+  return {
+    meetingLink: response.data.conferenceData.entryPoints[0].uri,
+    calendarEventId: response.data.id
+  };
+};
+
+exports.updateMegaSessionAttendees = async ({
+  mentorId,
+  calendarEventId,
+  attendeeEmails,
+  title,
+  description
+}) => {
+  const auth = await getAuthClient(mentorId);
+  const calendar = google.calendar({ version: 'v3', auth });
+
+  const attendees = attendeeEmails.map(email => ({ email }));
+
+  const response = await calendar.events.patch({
+    calendarId: 'primary',
+    eventId: calendarEventId,
+    sendUpdates: 'all',
+    requestBody: {
+      summary: title,
+      description: description,
+      attendees
+    }
+  });
+
+  return response.data;
+};

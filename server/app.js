@@ -13,6 +13,7 @@ const mentorProfileRoutes = require('./routes/mentorProfileRoutes');
 const menteeProfileRoutes = require('./routes/menteeProfileRoutes');
 const availabilityRoutes = require('./routes/mentorAvailability.routes');
 const bookingRoutes = require('./routes/bookingRoutes');
+const megaSessionRoutes = require('./routes/megaSessionRoutes');
 const googleRoutes = require('./routes/googleRoutes');
 
 // Import middleware
@@ -80,6 +81,7 @@ app.use('/api/mentor', mentorProfileRoutes);
 app.use('/api/mentee', menteeProfileRoutes);
 app.use('/api/mentor/availability', availabilityRoutes);
 app.use('/api/booking', bookingRoutes);
+app.use('/api/mega-sessions', megaSessionRoutes);
 app.use('/auth', googleRoutes);
 
 

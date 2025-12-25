@@ -11,6 +11,7 @@ import currencyService from '../../api/currencyService';
 import { useUser } from '../../store/hooks';
 import BookingModal from '../../components/booking/BookingModal';
 import Toast from '../../components/shared/Toast';
+import { megaSessionService } from '../../api/services';
 
 
 const MentorPublicProfile = () => {
@@ -127,15 +128,19 @@ const MentorPublicProfile = () => {
         }
 
         // Fetch mentor's mega sessions
-        // try {
-        //   const megaRes = await apiClient.get(`/mega-sessions?mentorId=${id}&upcoming=true`);
-        //   if (megaRes.data && megaRes.data.status === 'success') {
-        //     setMentorMegaSessions(megaRes.data.data.megaSessions || []);
-        //   }
-        // } catch (error) {
-        //   console.error('Error fetching mega sessions:', error);
-        //   setMentorMegaSessions([]);
-        // }
+        try {
+          const megaRes = await megaSessionService.getMegaSessions({ upcoming: true });
+          if (megaRes.megaSessions) {
+            // Filter mega sessions for this specific mentor
+            const mentorSessions = megaRes.megaSessions.filter(session => 
+              session.mentor._id === id
+            );
+            setMentorMegaSessions(mentorSessions);
+          }
+        } catch (error) {
+          console.error('Error fetching mega sessions:', error);
+          setMentorMegaSessions([]);
+        }
       } catch (e) {
         setProfile(null);
       } finally {
@@ -455,7 +460,7 @@ const MentorPublicProfile = () => {
       </div>
 
       {/* Mega Sessions Section */}
-      {/* {mentorMegaSessions.length > 0 && (
+      {mentorMegaSessions.length > 0 && (
         <section className="bg-gray-50 py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl font-bold text-center mb-12">
@@ -463,60 +468,86 @@ const MentorPublicProfile = () => {
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mentorMegaSessions.map((session) => (
-                <div key={session._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
-                        {session.title}
-                      </h3>
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        session.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
-                        session.status === 'active' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {session.status}
-                      </span>
-                    </div>
+              {mentorMegaSessions.map((session) => {
+                const startDate = new Date(session.startTimeUTC);
+                const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const localTime = startDate.toLocaleTimeString([], { 
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  timeZone: userTimezone
+                });
+                const localDate = startDate.toLocaleDateString([], {
+                  weekday: 'long',
+                  month: 'short',
+                  day: 'numeric',
+                  timeZone: userTimezone
+                });
 
-                    {session.description && (
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                        {session.description}
-                      </p>
-                    )}
-
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <HiOutlineClock className="w-4 h-4 mr-2" />
-                        {new Date(session.scheduledDate).toLocaleDateString()} at {session.startTime} - {session.endTime}
-                      </div>
-                      
-                      <div className="flex items-center text-sm text-gray-600">
-                        <HiOutlineUsers className="w-4 h-4 mr-2" />
-                        {session.participants?.length || 0} / {session.maxParticipants} participants
+                return (
+                  <div key={session._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+                          {session.title}
+                        </h3>
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                          Open
+                        </span>
                       </div>
 
-                      <div className="flex items-center text-sm text-gray-600">
-                        <HiOutlineBriefcase className="w-4 h-4 mr-2" />
-                        {session.price > 0 ? `${session.currency} ${session.price}` : 'Free'}
-                      </div>
-                    </div>
+                      {session.description && (
+                        <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                          {session.description}
+                        </p>
+                      )}
 
-                    <div className="pt-4 border-t">
-                      <a 
-                        href="/mega-sessions" 
-                        className="inline-block w-full text-center bg-primary-500 text-white px-4 py-2 rounded-lg hover:bg-primary-600 transition-colors"
-                      >
-                        View Details
-                      </a>
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <HiOutlineClock className="w-4 h-4 mr-2" />
+                          <div>
+                            <div>{localDate} at {localTime}</div>
+                            <div className="text-xs text-gray-500">
+                              ({startDate.toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit',
+                                timeZone: 'UTC'
+                              })} UTC)
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center text-sm text-gray-600">
+                          <HiOutlineUsers className="w-4 h-4 mr-2" />
+                          {session.participants?.length || 0} / {session.maxParticipants} participants
+                        </div>
+
+                        <div className="flex items-center text-sm text-gray-600">
+                          <HiOutlineBriefcase className="w-4 h-4 mr-2" />
+                          {session.price?.amount > 0 ? `${session.price.currency} ${session.price.amount}` : 'Free'}
+                        </div>
+
+                        <div className="flex items-center text-sm text-gray-600">
+                          <HiOutlineClock className="w-4 h-4 mr-2" />
+                          {session.durationMinutes} minutes
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t">
+                        <a 
+                          href="/mega-sessions" 
+                          className="inline-block w-full text-center bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+                        >
+                          View Details & Join
+                        </a>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
-      )}*/}
+      )}
 
       {/* FAQ Section */}
       <section className="bg-white py-16">

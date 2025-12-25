@@ -13,6 +13,8 @@ import MentorSignup from "./pages/signup/MentorSignup";
 import Dashboard from "./pages/dashboard/Dashboard";
 import Sessions from "./pages/Sessions";
 import MyBookings from "./pages/MyBookings";
+import MegaSessions from "./pages/MegaSessions";
+import AdminMegaSessions from "./pages/admin/AdminMegaSessions";
 import NotFound from "./pages/NotFound";
 import MentorProfileForm from "./pages/profile/MentorProfileForm";
 import MentorPublicProfile from "./pages/profile/MentorPublicProfile";
@@ -130,8 +132,22 @@ function AuthenticatedApp() {
         />
         {/* Mentor public profile */}
         <Route path="/mentor/:id" element={<MentorPublicProfile />} />
+        
+        {/* Mega Sessions (public for mentees) */}
+        <Route 
+          path="/mega-sessions" 
+          element={
+            isAuthenticated ? <MegaSessions /> : <Navigate to="/login" />
+          } 
+        />
 
         {/* Admin routes */}
+        <Route
+          path="/admin/mega-sessions"
+          element={
+            isAuthenticated && user?.role === 'admin' ? <AdminMegaSessions /> : <Navigate to="/login" />
+          }
+        />
 
 
         {/* Default redirects */}

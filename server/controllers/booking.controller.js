@@ -1,6 +1,6 @@
 const MentorProfile = require('../models/MentorProfile');
 const Booking = require('../models/Booking');
-const { createCalendarEvent } = require('../utils/calendar.util');
+const { createCalendarEvent, createMegaSessionCalendarEvent, updateMegaSessionAttendees } = require('../utils/calendar.util');
 const User = require('../models/User');
 const { DateTime } = require('luxon');
 const mongoose = require('mongoose');
@@ -98,6 +98,263 @@ exports.createBooking = async (req, res) => {
     console.error('Error creating booking:', error);
     res.status(500).json({
       message: 'Internal server error while creating booking'
+    });
+  }
+};
+
+/* ======================================================
+   CREATE MEGA SESSION (Admin Only)
+====================================================== */
+exports.createMegaSession = async (req, res) => {
+  try {
+    const { 
+      mentorId, 
+      startTime, 
+      duration, 
+      timezone, 
+      currency, 
+      title, 
+      description, 
+      maxParticipants = 10 
+    } = req.body;
+    
+    // Parse duration to extract number (handle "30 min" or just "30")
+    const durationMinutes = typeof duration === 'string' 
+      ? parseInt(duration.toString().replace(/\D/g, '')) 
+      : parseInt(duration);
+      
+    if (!durationMinutes || ![15, 30, 60].includes(durationMinutes)) {
+      return res.status(400).json({ 
+        message: 'Invalid duration. Must be 15, 30, or 60 minutes' 
+      });
+    }
+    
+    const adminId = req.user.id;
+
+    const mentorProfile = await MentorProfile.findOne({ user: mentorId });
+    if (!mentorProfile) return res.status(404).json({ message: 'Mentor not found' });
+
+    const startUTC = DateTime
+      .fromISO(startTime, { zone: timezone })
+      .toUTC();
+
+    const endUTC = startUTC.plus({ minutes: durationMinutes });
+
+    // Check for conflicts with existing bookings
+    const overlap = await Booking.findOne({
+      mentor: mentorId,
+      startTimeUTC: { $lt: endUTC.toJSDate() },
+      endTimeUTC: { $gt: startUTC.toJSDate() },
+      status: { $in: ['pending', 'confirmed'] }
+    });
+
+    if (overlap) {
+      return res.status(409).json({ 
+        message: 'Time slot conflicts with existing booking',
+        conflictingBooking: overlap
+      });
+    }
+
+    const priceInfo = mentorProfile.sessionDurations.find(
+      s => parseInt(s.duration) === parseInt(durationMinutes)
+    );
+
+    if (!priceInfo) {
+      return res.status(400).json({ 
+        message: `Session duration of ${durationMinutes} minutes is not available for this mentor`
+      });
+    }
+
+    const priceAmount = priceInfo[`price${currency}`];
+    if (priceAmount === undefined) {
+      return res.status(400).json({ 
+        message: `Pricing for ${currency} currency is not available`
+      });
+    }
+
+    // Create mega session booking
+    const megaSession = await Booking.create({
+      mentor: mentorId,
+      mentorProfile: mentorProfile._id,
+      startTimeUTC: startUTC.toJSDate(),
+      endTimeUTC: endUTC.toJSDate(),
+      durationMinutes: durationMinutes,
+      mentorTimezone: mentorProfile.timezone,
+      menteeTimezone: timezone,
+      isMegaSession: true,
+      title: title || 'Mega Mentorship Session',
+      description: description || 'Group mentorship session with multiple participants',
+      maxParticipants,
+      participants: [],
+      createdBy: adminId,
+      price: {
+        amount: priceAmount,
+        currency
+      }
+    });
+
+    // Create calendar event for mentor
+    const mentorUser = await User.findById(mentorId);
+
+    const meeting = await createMegaSessionCalendarEvent({
+      mentorId,
+      mentorEmail: mentorUser.email,
+      startUTC: startUTC.toJSDate(),
+      endUTC: endUTC.toJSDate(),
+      title: megaSession.title,
+      description: megaSession.description
+    });
+
+    megaSession.meeting = {
+      provider: 'google',
+      meetingLink: meeting.meetingLink,
+      calendarEventId: meeting.calendarEventId
+    };
+
+    megaSession.status = 'confirmed';
+    await megaSession.save();
+
+    res.status(201).json({
+      success: true,
+      megaSession
+    });
+  } catch (error) {
+    console.error('Error creating mega session:', error);
+    res.status(500).json({
+      message: 'Internal server error while creating mega session'
+    });
+  }
+};
+
+/* ======================================================
+   GET ALL MEGA SESSIONS (Mentees + Public View)
+====================================================== */
+exports.getMegaSessions = async (req, res) => {
+  try {
+    const { upcoming = true, limit = 50 } = req.query;
+
+    const baseQuery = {
+      isMegaSession: true,
+      status: 'confirmed'
+    };
+
+    if (upcoming === 'true') {
+      baseQuery.startTimeUTC = { $gte: new Date() };
+    }
+
+    const megaSessions = await Booking.find(baseQuery)
+      .populate('mentor', 'firstName lastName email')
+      .populate('mentorProfile', 'fullName title timezone sessionDurations')
+      .populate('participants', 'firstName lastName email')
+      .populate('createdBy', 'firstName lastName')
+      .sort({ startTimeUTC: 1 })
+      .limit(parseInt(limit));
+
+    res.status(200).json({
+      success: true,
+      megaSessions,
+      total: megaSessions.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching mega sessions:', error);
+    res.status(500).json({
+      message: 'Internal server error while fetching mega sessions'
+    });
+  }
+};
+
+/* ======================================================
+   JOIN MEGA SESSION (Mentees)
+====================================================== */
+exports.joinMegaSession = async (req, res) => {
+  try {
+    const { megaSessionId } = req.params;
+    const menteeId = req.user.id;
+
+    const megaSession = await Booking.findOne({
+      _id: megaSessionId,
+      isMegaSession: true,
+      status: 'confirmed'
+    }).populate('mentor', 'email')
+      .populate('participants', 'email');
+
+    if (!megaSession) {
+      return res.status(404).json({ message: 'Mega session not found' });
+    }
+
+    // Check if session is in the future
+    if (new Date() >= megaSession.startTimeUTC) {
+      return res.status(400).json({ message: 'Cannot join past sessions' });
+    }
+
+    // Check if already joined
+    if (megaSession.participants.some(p => p._id.toString() === menteeId)) {
+      return res.status(400).json({ message: 'Already joined this session' });
+    }
+
+    // Check if session is full
+    if (megaSession.participants.length >= megaSession.maxParticipants) {
+      return res.status(400).json({ message: 'Session is full' });
+    }
+
+    // Add mentee to participants
+    megaSession.participants.push(menteeId);
+    await megaSession.save();
+
+    // Update calendar event with new attendee
+    const menteeUser = await User.findById(menteeId);
+    
+    // Get all participant emails (need to populate the updated participants array)
+    const participantUsers = await User.find({ 
+      _id: { $in: megaSession.participants } 
+    }).select('email');
+    
+    const allAttendeeEmails = [
+      megaSession.mentor.email,
+      ...participantUsers.map(p => p.email).filter(email => email), // Filter out any null/undefined emails
+      menteeUser.email
+    ].filter(email => email); // Remove any undefined emails
+
+    await updateMegaSessionAttendees({
+      mentorId: megaSession.mentor._id,
+      calendarEventId: megaSession.meeting.calendarEventId,
+      attendeeEmails: allAttendeeEmails,
+      title: megaSession.title,
+      description: megaSession.description
+    });
+
+    // Create individual booking record for tracking
+    const participantBooking = await Booking.create({
+      mentor: megaSession.mentor._id,
+      mentee: menteeId,
+      mentorProfile: megaSession.mentorProfile,
+      startTimeUTC: megaSession.startTimeUTC,
+      endTimeUTC: megaSession.endTimeUTC,
+      durationMinutes: megaSession.durationMinutes,
+      mentorTimezone: megaSession.mentorTimezone,
+      menteeTimezone: req.body.timezone || megaSession.menteeTimezone,
+      isMegaSession: false,
+      price: megaSession.price,
+      status: 'confirmed',
+      meeting: megaSession.meeting,
+      parentMegaSession: megaSessionId
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Successfully joined mega session',
+      participantBooking,
+      megaSession: {
+        ...megaSession.toObject(),
+        participantCount: megaSession.participants.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Error joining mega session:', error);
+    res.status(500).json({
+      message: 'Internal server error while joining mega session'
     });
   }
 };

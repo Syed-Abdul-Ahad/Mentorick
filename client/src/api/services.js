@@ -266,6 +266,42 @@ class BookingService extends ApiService {
   }
 }
 
+class MegaSessionService extends ApiService {
+  constructor() {
+    super('/mega-sessions');
+  }
+
+  // Create a new mega session (Admin only)
+  async createMegaSession(sessionData) {
+    try {
+      const response = await apiClient.post('/mega-sessions/create', sessionData);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Get all mega sessions
+  async getMegaSessions(params = {}) {
+    try {
+      const response = await apiClient.get('/mega-sessions/list', { params });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Join a mega session
+  async joinMegaSession(megaSessionId, joinData = {}) {
+    try {
+      const response = await apiClient.post(`/mega-sessions/${megaSessionId}/join`, joinData);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+}
+
 // Export service instances
 export const authService = new AuthService();
 export const userService = new UserService();

@@ -114,8 +114,30 @@ const optionalAuth = async (req, res, next) => {
   }
 };
 
+const requireAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Access denied. Admin privileges required.',
+    });
+  }
+  next();
+};
+
+const requireMentor = (req, res, next) => {
+  if (req.user.role !== 'mentor') {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Access denied. Mentor privileges required.',
+    });
+  }
+  next();
+};
+
 module.exports = {
   authenticate,
   authorize,
   optionalAuth,
+  requireAdmin,
+  requireMentor,
 };

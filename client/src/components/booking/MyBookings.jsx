@@ -106,10 +106,16 @@ const MyBookings = () => {
   };
 
   const getOtherUserName = (booking) => {
-    if (booking.userRole === 'mentor') {
-      return booking.mentee.firstName + ' ' + booking.mentee.lastName;
+    // Handle mega sessions
+    if (booking.isMegaSession) {
+      return `${booking.title || 'Mega Session'} (${booking.participants?.length || 0}/${booking.maxParticipants} participants)`;
     }
-    return booking.mentor.firstName + ' ' + booking.mentor.lastName;
+    
+    // Handle regular 1:1 sessions
+    if (booking.userRole === 'mentor') {
+      return booking.mentee ? booking.mentee.firstName + ' ' + booking.mentee.lastName : 'Unknown Mentee';
+    }
+    return booking.mentor ? booking.mentor.firstName + ' ' + booking.mentor.lastName : 'Unknown Mentor';
   };
 
   const filteredBookings = bookings.filter(booking => {
@@ -193,6 +199,11 @@ const MyBookings = () => {
                     <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
                       {getRoleLabel(booking)}
                     </span>
+                    {booking.isMegaSession && (
+                      <span className="text-sm text-purple-700 bg-purple-100 px-2 py-1 rounded font-medium">
+                        Mega Session
+                      </span>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-semibold text-gray-900">
@@ -205,11 +216,17 @@ const MyBookings = () => {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <h3 className="font-medium text-gray-900 mb-2">
-                      {booking.userRole === 'mentor' ? 'Mentee' : 'Mentor'}: {getOtherUserName(booking)}
+                      {booking.isMegaSession 
+                        ? getOtherUserName(booking)
+                        : `${booking.userRole === 'mentor' ? 'Mentee' : 'Mentor'}: ${getOtherUserName(booking)}`
+                      }
                     </h3>
                     <div className="text-sm text-gray-600 space-y-1">
                       <p><span className="font-medium">Date:</span> {timeInfo.date} ({timeInfo.day})</p>
                       <p><span className="font-medium">Time:</span> {timeInfo.time} {booking.userRole === 'mentor' ? booking.mentorTimezone : booking.menteeTimezone}</p>
+                      {booking.isMegaSession && booking.description && (
+                        <p><span className="font-medium">Description:</span> {booking.description}</p>
+                      )}
                     </div>
                   </div>
 

@@ -25,7 +25,7 @@ const Card = ({
         delay: delay,
         ease: "easeOut"
       }}
-      whileHover={hover ? { y: -5, scale: 1.02 } : {}}
+      whileHover={hover ? { y: -2, scale: 1.005 } : {}}
       className={`
         bg-white rounded-xl shadow-sm border border-gray-100
         p-6 transition-all duration-300
