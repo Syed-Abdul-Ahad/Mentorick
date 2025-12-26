@@ -244,7 +244,7 @@ exports.getMegaSessions = async (req, res) => {
 
     const megaSessions = await Booking.find(baseQuery)
       .populate('mentor', 'firstName lastName email')
-      .populate('mentorProfile', 'fullName title timezone sessionDurations')
+      .populate('mentorProfile', 'fullName title timezone sessionDurations headshot')
       .populate('participants', 'firstName lastName email')
       .populate('createdBy', 'firstName lastName')
       .sort({ startTimeUTC: 1 })

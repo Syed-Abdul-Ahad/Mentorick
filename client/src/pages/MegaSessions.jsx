@@ -80,7 +80,7 @@ const MegaSessions = () => {
     return {
       userLocal: userTime,
       userDate: userDate,
-      utc: utcTimeFormatted + ' UTC'
+      utc: utcTimeFormatted + ' UTC +00'
     };
   };
 
@@ -131,7 +131,7 @@ const MegaSessions = () => {
                   <div className="flex items-center mb-4">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                       <span className="text-blue-600 font-medium text-sm">
-                        {session.mentorProfile?.fullName?.charAt(0) || 'M'}
+                        <img src={session.mentorProfile?.headshot || ''} alt={session.mentorProfile?.fullName || 'Mentor'} className="w-10 h-10 rounded-full object-cover" />
                       </span>
                     </div>
                     <div>

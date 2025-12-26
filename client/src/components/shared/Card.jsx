@@ -9,10 +9,10 @@ const Card = ({
   direction = 'up' 
 }) => {
   const directions = {
-    up: { y: 50, opacity: 0 },
-    down: { y: -50, opacity: 0 },
-    left: { x: 50, opacity: 0 },
-    right: { x: -50, opacity: 0 }
+    up: { y: 10, opacity: 0 },
+    down: { y: -10, opacity: 0 },
+    left: { x: 10, opacity: 0 },
+    right: { x: -10, opacity: 0 }
   };
 
   return (
