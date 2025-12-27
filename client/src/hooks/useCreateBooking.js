@@ -23,7 +23,8 @@ export const useCreateBooking = () => {
         startTime: bookingData.startTime, // Should be ISO string without timezone offset
         duration: bookingData.duration, // 15, 30, or 60
         timezone: timezone,
-        currency: bookingData.currency || 'USD'
+        currency: bookingData.currency || 'USD',
+        description: bookingData.description || ''
       };
 
       // Call existing booking API

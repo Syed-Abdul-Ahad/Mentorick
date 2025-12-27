@@ -20,6 +20,7 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedDuration, setSelectedDuration] = useState(null);
+  const [description, setDescription] = useState('');
 
   // Fetch mentor availability
   const { availability, loading: availabilityLoading, error: availabilityError, timezone } = useMentorAvailability(mentorId);
@@ -34,6 +35,7 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
       setSelectedDate(null);
       setSelectedSlot(null);
       setSelectedDuration(null);
+      setDescription('');
       clearError();
     }
   }, [isOpen, clearError]);
@@ -56,6 +58,10 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
     setCurrentStep(4);
   };
 
+  const handleDescriptionNext = () => {
+    setCurrentStep(5);
+  };
+
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedSlot || !selectedDuration) {
       return;
@@ -68,7 +74,8 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
       mentorId,
       startTime,
       duration: selectedDuration,
-      currency: 'USD' // Default currency, could be made configurable
+      currency: 'USD', // Default currency, could be made configurable
+      description: description.trim()
     };
 
     const result = await createBooking(bookingData);
@@ -105,7 +112,8 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
     1: 'Select Date',
     2: 'Select Time',
     3: 'Select Duration',
-    4: 'Confirm Booking'
+    4: 'Add Description',
+    5: 'Confirm Booking'
   };
 
   if (!isOpen) return null;
@@ -135,7 +143,7 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
         {/* Progress Indicator */}
         <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
           <div className="flex items-center space-x-2">
-            {[1, 2, 3, 4].map((step) => (
+            {[1, 2, 3, 4, 5].map((step) => (
               <React.Fragment key={step}>
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
@@ -146,7 +154,7 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
                 >
                   {step}
                 </div>
-                {step < 4 && (
+                {step < 5 && (
                   <div
                     className={`flex-1 h-1 rounded ${
                       step < currentStep ? 'bg-primary-500' : 'bg-gray-300'
@@ -235,12 +243,63 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
               >
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Session Details</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        What would you like to discuss? <span className="text-gray-400">(Optional)</span>
+                      </label>
+                      <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value.slice(0, 200))}
+                        placeholder="In which topic area you want to discuss and what would be the agenda of the meeting?"
+                        className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                        rows={4}
+                        maxLength={200}
+                      />
+                      <div className="flex justify-between items-center mt-2">
+                        <p className="text-sm text-gray-500">
+                          This helps your mentor prepare for the session
+                        </p>
+                        <span className="text-sm text-gray-400">
+                          {description.length}/200
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex space-x-3 mt-6">
+                    <button
+                      onClick={handleBack}
+                      className="flex-1 px-4 py-2 text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 transition-colors"
+                    >
+                      ← Back
+                    </button>
+                    <button
+                      onClick={handleDescriptionNext}
+                      className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                    >
+                      Continue to Summary
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {currentStep === 5 && (
+              <motion.div
+                key="step5"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+              >
                 <BookingSummary
                   selectedDate={selectedDate}
                   selectedSlot={selectedSlot}
                   selectedDuration={selectedDuration}
                   mentorName={mentorName}
                   timezone={timezone}
+                  description={description}
                   onConfirm={handleConfirmBooking}
                   onBack={handleBack}
                   loading={bookingLoading}

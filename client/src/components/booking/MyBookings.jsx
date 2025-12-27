@@ -224,8 +224,13 @@ const MyBookings = () => {
                     <div className="text-sm text-gray-600 space-y-1">
                       <p><span className="font-medium">Date:</span> {timeInfo.date} ({timeInfo.day})</p>
                       <p><span className="font-medium">Time:</span> {timeInfo.time} {booking.userRole === 'mentor' ? booking.mentorTimezone : booking.menteeTimezone}</p>
-                      {booking.isMegaSession && booking.description && (
-                        <p><span className="font-medium">Description:</span> {booking.description}</p>
+                      {booking.description && (
+                        <div className="mt-2">
+                          <p className="font-medium text-gray-700 mb-1">Session Agenda:</p>
+                          <div className="bg-gray-50 p-2 rounded text-sm text-gray-800">
+                            {booking.description}
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>

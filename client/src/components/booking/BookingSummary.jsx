@@ -12,7 +12,8 @@ const BookingSummary = ({
   selectedSlot, 
   selectedDuration, 
   mentorName, 
-  timezone, 
+  timezone,
+  description, 
   onConfirm, 
   onBack, 
   loading,
@@ -64,6 +65,15 @@ const BookingSummary = ({
           <span className="text-gray-600">Timezone</span>
           <span className="font-medium text-gray-900">{timezone}</span>
         </div>
+        
+        {description && (
+          <div className="py-3 border-b border-gray-100">
+            <span className="text-gray-600 block mb-2">Session Agenda</span>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-sm text-gray-900">{description}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {error && (
