@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 
 exports.createBooking = async (req, res) => {
   try {
-    const { mentorId, startTime, duration, timezone, currency } = req.body;
+    const { mentorId, startTime, duration, timezone, currency, description } = req.body;
     const menteeId = req.user.id;
 
     const mentorProfile = await MentorProfile.findOne({ user: mentorId });
@@ -56,6 +56,7 @@ exports.createBooking = async (req, res) => {
       durationMinutes: duration,
       mentorTimezone: mentorProfile.timezone, // Automatically capture mentor's timezone
       menteeTimezone: timezone, // Use timezone from request as mentee's timezone
+      description,
       price: {
         amount: priceAmount,
         currency
