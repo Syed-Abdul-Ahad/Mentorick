@@ -20,6 +20,13 @@ exports.setWeeklyAvailability = async (req, res) => {
   try {
     const { dayOfWeek, slots, isActive = true } = req.body;
 
+    // Defensive validation: reject if availability is accidentally sent as string
+    if (req.body.availability && typeof req.body.availability === 'string') {
+      return res.status(400).json({ 
+        message: 'Invalid availability format. Use dedicated availability endpoints.' 
+      });
+    }
+
     if (dayOfWeek < 0 || dayOfWeek > 6) {
       return res.status(400).json({ message: 'Invalid dayOfWeek' });
     }
@@ -56,6 +63,14 @@ exports.setWeeklyAvailability = async (req, res) => {
 
     const mentor = await MentorProfile.findOne({ user: req.user.id });
 
+    // Ensure availability object exists with proper structure
+    if (!mentor.availability || typeof mentor.availability !== 'object') {
+      mentor.availability = { weekly: [], specificDates: [], unavailability: [] };
+    }
+    if (!Array.isArray(mentor.availability.weekly)) {
+      mentor.availability.weekly = [];
+    }
+
     mentor.availability.weekly =
       mentor.availability.weekly.filter(w => w.dayOfWeek !== dayOfWeek);
 
@@ -84,6 +99,13 @@ exports.setDateAvailability = async (req, res) => {
   try {
     const { date, slots } = req.body;
 
+    // Defensive validation: reject if availability is accidentally sent as string
+    if (req.body.availability && typeof req.body.availability === 'string') {
+      return res.status(400).json({ 
+        message: 'Invalid availability format. Use dedicated availability endpoints.' 
+      });
+    }
+
     if (!date || !slots?.length) {
       return res.status(400).json({ message: 'Date and slots required' });
     }
@@ -93,6 +115,14 @@ exports.setDateAvailability = async (req, res) => {
     }
 
     const mentor = await MentorProfile.findOne({ user: req.user.id });
+
+    // Ensure availability object exists with proper structure
+    if (!mentor.availability || typeof mentor.availability !== 'object') {
+      mentor.availability = { weekly: [], specificDates: [], unavailability: [] };
+    }
+    if (!Array.isArray(mentor.availability.specificDates)) {
+      mentor.availability.specificDates = [];
+    }
 
     mentor.availability.specificDates =
       mentor.availability.specificDates.filter(
@@ -120,6 +150,13 @@ exports.setUnavailability = async (req, res) => {
   try {
     const { from, to, reason, force = false } = req.body;
 
+    // Defensive validation: reject if availability is accidentally sent as string
+    if (req.body.availability && typeof req.body.availability === 'string') {
+      return res.status(400).json({ 
+        message: 'Invalid availability format. Use dedicated availability endpoints.' 
+      });
+    }
+
     if (!from || !to) {
       return res.status(400).json({ message: 'From and To dates required' });
     }
@@ -129,6 +166,14 @@ exports.setUnavailability = async (req, res) => {
     }
 
     const mentor = await MentorProfile.findOne({ user: req.user.id });
+
+    // Ensure availability object exists with proper structure
+    if (!mentor.availability || typeof mentor.availability !== 'object') {
+      mentor.availability = { weekly: [], specificDates: [], unavailability: [] };
+    }
+    if (!Array.isArray(mentor.availability.unavailability)) {
+      mentor.availability.unavailability = [];
+    }
 
     // Fix date handling: ensure 'to' date includes the entire day
     const fromDate = new Date(from);

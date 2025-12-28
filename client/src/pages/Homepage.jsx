@@ -38,6 +38,7 @@ import {
   FaSlack,
 } from "react-icons/fa";
 import { SiShopify, SiStripe, SiSalesforce, SiAdobe } from "react-icons/si";
+import { useUser } from "../store/hooks";
 
 const Homepage = () => {
   const navigate = useNavigate();
@@ -46,6 +47,7 @@ const Homepage = () => {
   const [email, setEmail] = useState("");
   const [openFaq, setOpenFaq] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const user = useUser();
 
 
   const faqs = [
@@ -182,10 +184,11 @@ const Homepage = () => {
                 Our 'Why'
               </a>
 
+                {!user && (
               <Button onClick={() => navigate('/login')} variant="solid" size="sm">
                 Login
               </Button>
-
+                )}
               {/* Mobile hamburger menu - right of login */}
               <div className="md:hidden">
                 <button 

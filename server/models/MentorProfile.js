@@ -86,9 +86,18 @@ const MentorProfileSchema = new mongoose.Schema({
   },
 
   availability: {
-    weekly: [WeeklyAvailabilitySchema],
-    specificDates: [DateAvailabilitySchema],
-    unavailability: [UnavailabilitySchema]
+    weekly: {
+      type: [WeeklyAvailabilitySchema],
+      default: []
+    },
+    specificDates: {
+      type: [DateAvailabilitySchema],
+      default: []
+    },
+    unavailability: {
+      type: [UnavailabilitySchema],
+      default: []
+    }
   },
 
   isAvailableForBooking: {

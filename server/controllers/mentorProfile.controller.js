@@ -92,13 +92,35 @@ exports.createOrUpdateMentorProfile = async (req, res, next) => {
       }
     }
 
+    // Safely destructure only allowed fields - EXPLICITLY EXCLUDE availability
+    const {
+      fullName,
+      title,
+      about,
+      idealMentee,
+      topics,
+      languages,
+      donationInfo,
+      funFact,
+      socialLinks,
+      timezone
+    } = data;
+
     const profileData = {
-      ...data,
       user: userId,
       headshot: headshotUrl,
-      topics: Array.isArray(data.topics) ? data.topics : (data.topics ? [data.topics] : []),
-      languages: Array.isArray(data.languages) ? data.languages : (data.languages ? [data.languages] : []),
-      sessionDurations: processedSessionDurations
+      fullName,
+      title,
+      about,
+      idealMentee,
+      topics: Array.isArray(topics) ? topics : (topics ? [topics] : []),
+      languages: Array.isArray(languages) ? languages : (languages ? [languages] : []),
+      sessionDurations: processedSessionDurations,
+      donationInfo,
+      funFact,
+      socialLinks,
+      timezone
+      // availability is NEVER included here - managed by dedicated endpoints
     };
     
     let profile = await MentorProfile.findOneAndUpdate(

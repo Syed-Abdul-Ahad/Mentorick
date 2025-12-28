@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const MentorProfile = require('../models/MentorProfile');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
@@ -150,12 +151,23 @@ const logout = async (req, res, next) => {
 // @access  Private
 const getMe = async (req, res, next) => {
   try {
-    // const user = await User.findById(req.user.id);
+    let user = await User.findById(req.user.id).lean();
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.role === 'mentor') {
+      const mentorProfile = await MentorProfile.findOne({ user: user._id });
+      user.profile = mentorProfile;  
+    } else {
+      user.profile = null;
+    }
 
     res.status(200).json({
       status: 'success',
       data: {
-        user: req.user,
+        user,
       },
     });
   } catch (error) {
