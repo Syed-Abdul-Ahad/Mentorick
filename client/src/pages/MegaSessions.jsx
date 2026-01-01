@@ -39,16 +39,25 @@ const MegaSessions = () => {
     setJoiningSession(sessionId);
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      await megaSessionService.joinMegaSession(sessionId, { timezone });
+      const response = await megaSessionService.joinMegaSession(sessionId, { timezone });
       
-      toast.success('Successfully joined the mega session!');
+      console.log('Join session response:', response);
       
-      // Refresh sessions to show updated participant count
-      const response = await megaSessionService.getMegaSessions({ upcoming: true });
-      setMegaSessions(response.megaSessions || []);
+      // Check for successful response
+      if (response.success || response.message) {
+        toast.success(response.message || 'Successfully joined the mega session!');
+        
+        // Refresh sessions to show updated participant count
+        const sessionsResponse = await megaSessionService.getMegaSessions({ upcoming: true });
+        setMegaSessions(sessionsResponse.megaSessions || []);
+      } else {
+        toast.error('Failed to join session');
+      }
       
     } catch (error) {
-      toast.error(error.message || 'Failed to join session');
+      console.error('Join session error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to join session';
+      toast.error(errorMessage);
     } finally {
       setJoiningSession(null);
     }
@@ -115,7 +124,10 @@ const MegaSessions = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {megaSessions.map((session) => {
               const timeInfo = formatTimeForUser(session.startTimeUTC, userTimezone);
-              const isUserJoined = session.participants?.some(p => p._id === user?.id);
+              // Check if user is joined using both _id and id for compatibility
+              const isUserJoined = session.participants?.some(p => 
+                p._id === user?._id || p._id === user?.id || p.id === user?._id || p.id === user?.id
+              );
               const isFull = session.participants?.length >= session.maxParticipants;
               const canJoin = user && !isUserJoined && !isFull;
 
@@ -182,17 +194,32 @@ const MegaSessions = () => {
                   {/* Status & Action */}
                   <div className="space-y-2">
                     {isUserJoined ? (
-                      <div className="bg-green-50 border border-green-200 rounded-md p-3">
-                        <div className="flex items-center">
-                          <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span className="text-green-800 font-medium">You're registered!</span>
+                      <>
+                        <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                          <div className="flex items-center">
+                            <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="text-green-800 font-medium">Already Joined</span>
+                          </div>
+                          <p className="text-sm text-green-700 mt-1">
+                            You are registered for this mega session.
+                          </p>
                         </div>
-                        <p className="text-sm text-green-700 mt-1">
-                          Calendar event has been added to your schedule.
-                        </p>
-                      </div>
+                        {/* Meeting Link Button for Joined Users */}
+                        {session.meeting?.meetingLink && (
+                          <Button
+                            variant="outline"
+                            className="w-full flex items-center justify-center space-x-2"
+                            onClick={() => window.open(session.meeting.meetingLink, '_blank')}
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47A3 3 0 1015 8z" />
+                            </svg>
+                            <span>Join Meeting</span>
+                          </Button>
+                        )}
+                      </>
                     ) : isFull ? (
                       <div className="bg-red-50 border border-red-200 rounded-md p-3">
                         <div className="flex items-center">
