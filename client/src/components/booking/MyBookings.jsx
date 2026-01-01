@@ -93,7 +93,7 @@ const MyBookings = () => {
   const getStatusColor = (status) => {
     const colors = {
       pending: 'bg-yellow-100 text-yellow-800',
-      confirmed: 'bg-green-100 text-green-800',
+      confirmed: 'bg-primary-500 text-white',
       completed: 'bg-blue-100 text-blue-800',
       cancelled: 'bg-red-100 text-red-800',
       'no-show': 'bg-gray-100 text-gray-800'
@@ -127,6 +127,15 @@ const MyBookings = () => {
     }
     return booking.status === filter;
   });
+
+  const otherRole = (booking)=>{
+    const role = getRoleLabel(booking);
+    if(role==='As Mentor'){
+      return 'mentee';
+    }
+    return 'mentor';
+  }
+
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -190,58 +199,87 @@ const MyBookings = () => {
             );
             
             return (
-              <Card key={booking._id} className="p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+              <Card key={booking._id} className="p-4 md:p-6 hover:shadow-md transition-shadow border border-gray-200 rounded-lg">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 space-y-3 sm:space-y-0">
+                  <div className="flex items-center flex-wrap gap-2">
+                    <span className={`px-2.5 py-1.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
                       {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                     </span>
-                    <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    <span className="text-xs text-gray-600 bg-gray-100 px-2.5 py-1.5 rounded-full font-medium">
                       {getRoleLabel(booking)}
                     </span>
                     {booking.isMegaSession && (
-                      <span className="text-sm text-purple-700 bg-purple-100 px-2 py-1 rounded font-medium">
+                      <span className="text-xs text-white bg-gradient-to-r from-purple-500 to-indigo-600 px-2.5 py-1.5 rounded-full font-medium">
                         Mega Session
                       </span>
                     )}
                   </div>
-                  <div className="text-right">
-                    <p className="text-lg font-semibold text-gray-900">
+                  <div className="sm:text-right text-left">
+                    <p className="text-lg md:text-xl font-bold text-gray-900">
                       {booking.price.amount} {booking.price.currency}
                     </p>
                     <p className="text-sm text-gray-500">{booking.durationMinutes} minutes</p>
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="font-medium text-gray-900 mb-2">
-                      {booking.isMegaSession 
-                        ? getOtherUserName(booking)
-                        : `${booking.userRole === 'mentor' ? 'Mentee' : 'Mentor'}: ${getOtherUserName(booking)}`
-                      }
-                    </h3>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <p><span className="font-medium">Date:</span> {timeInfo.date} ({timeInfo.day})</p>
-                      <p><span className="font-medium">Time:</span> {timeInfo.time} {booking.userRole === 'mentor' ? booking.mentorTimezone : booking.menteeTimezone}</p>
-                      {booking.description && (
-                        <div className="mt-2">
-                          <p className="font-medium text-gray-700 mb-1">Session Agenda:</p>
-                          <div className="bg-gray-50 p-2 rounded text-sm text-gray-800">
-                            {booking.description}
-                          </div>
-                        </div>
-                      )}
+                <div className="mb-4">
+                  {!booking?.isMegaSession && (
+                    <div className="flex items-center space-x-2 mb-2">
+                      <div className="w-1.5 h-1.5 bg-primary-500 rounded-full"></div>
+                      <span className='text-xs md:text-sm text-gray-500 font-medium'>{otherRole(booking)}</span>
                     </div>
+                  )}
+                  <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 break-words pl-1">
+                    {booking.isMegaSession 
+                      ? (booking.title || 'Mega Session') + ` (${booking.participants?.length || 0}/${booking.maxParticipants} participants)`
+                      : getOtherUserName(booking) 
+                    }
+                  </h3>
+                </div>
+
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between space-y-4 md:space-y-0">
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center flex-wrap gap-x-4 gap-y-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-5 h-5 bg-primary-500 rounded flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">DATE</span>
+                        <span className="text-sm text-gray-600 break-words">{timeInfo.date} ({timeInfo.day})</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center flex-wrap gap-x-4 gap-y-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-5 h-5 bg-primary-500 rounded flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">TIME</span>
+                        <span className="text-sm text-gray-600 break-words">{timeInfo.time} {booking.userRole === 'mentor' ? booking.mentorTimezone : booking.menteeTimezone}</span>
+                      </div>
+                    </div>
+
+                    {booking.description && (
+                      <div className="mb-4">
+                        <p className="text-sm font-medium text-gray-900 mb-2">Session Agenda</p>
+                        <div className="border-l-4 border-primary-500 bg-gray-50 p-3 text-sm text-gray-700 break-words">
+                          {booking.description}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {booking.meeting?.meetingLink && (
-                    <div className="flex items-center justify-end">
+                    <div className="md:ml-6 flex items-start justify-end md:justify-start w-full md:w-auto mt-4 md:mt-0">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => window.open(booking.meeting.meetingLink, '_blank')}
-                        className="flex items-center space-x-2"
+                        className="bg-primary-500 hover:bg-primary-600 text-white border-primary-500 hover:border-primary-600 flex items-center space-x-2 w-full sm:w-auto"
                       >
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47A3 3 0 1015 8z" />
