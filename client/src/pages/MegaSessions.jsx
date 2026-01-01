@@ -128,8 +128,10 @@ const MegaSessions = () => {
               const isUserJoined = session.participants?.some(p => 
                 p._id === user?._id || p._id === user?.id || p.id === user?._id || p.id === user?.id
               );
+              // Check if current user is the mentor hosting this session
+              const isUserMentor = session.mentor?._id === user?._id || session.mentor?._id === user?.id || session.mentor?.id === user?._id || session.mentor?.id === user?.id;
               const isFull = session.participants?.length >= session.maxParticipants;
-              const canJoin = user && !isUserJoined && !isFull;
+              const canJoin = user && !isUserJoined && !isFull && !isUserMentor;
 
               return (
                 <Card key={session._id} className="p-6">
@@ -193,7 +195,27 @@ const MegaSessions = () => {
 
                   {/* Status & Action */}
                   <div className="space-y-2">
-                    {isUserJoined ? (
+                    {isUserMentor ? (
+                      <>
+                        <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                          <p className="text-sm text-blue-700 mt-1">
+                            You are the mentor presenting this session.
+                          </p>
+                        </div>
+                        {/* Meeting Link Button for Mentor */}
+                        {session.meeting?.meetingLink && (
+                          <Button
+                            className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700"
+                            onClick={() => window.open(session.meeting.meetingLink, '_blank')}
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47A3 3 0 1015 8z" />
+                            </svg>
+                            <span>Start Meeting</span>
+                          </Button>
+                        )}
+                      </>
+                    ) : isUserJoined ? (
                       <>
                         <div className="bg-green-50 border border-green-200 rounded-md p-3">
                           <div className="flex items-center">
