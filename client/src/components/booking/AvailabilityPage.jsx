@@ -145,8 +145,12 @@ if (connected === 'true') {
 
 
   const handleManualSave = async (dateString = null) => {
-    console.log("Save button clicked for date:", dateString);
     setLoading(true);
+    if(!googleConnected){
+      toast.error('Please connect your Google Calendar before saving availability');
+      setLoading(false);
+      return;
+    }
     try {
       if (dateString) {
         // Save specific date
@@ -192,22 +196,33 @@ if (connected === 'true') {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Set Your Availability
             </h1>
-            <span className="text-lg text-gray-600">{selectedTimezone} Standard Time</span>
+            <div className="flex items-center space-x-4">
+              <span className="text-lg text-gray-600">{selectedTimezone} Standard Time</span>
+              {/* Google Calendar Status Badge */}
+              <div className="flex items-center">
+                {googleConnected ? (
+                  <div className="flex items-center space-x-2 bg-green-50 text-green-700 px-3 py-1 rounded-full border border-green-200">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-sm font-medium">Google Calendar Connected</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      window.location.href = 'http://localhost:5000/auth/google';
+                    }}
+                    className="flex items-center space-x-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded-full border border-blue-200 transition-colors duration-200"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-sm font-medium">Connect Google Calendar</span>
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
-
-      {googleConnected ? (
-        <button disabled className="connected-btn">
-          ✅ Google Calendar Connected
-        </button>
-      ) : (
-        <button
-          onClick={() => {
-            window.location.href = 'http://localhost:5000/auth/google';
-          }}
-        >
-          Connect Google Calendar
-        </button>
-      )}
 
           {/* Unavailability Button */}
           <button
@@ -259,26 +274,6 @@ if (connected === 'true') {
             />
           );
         })}
-      </div>
-      )}
-
-      {/* Manual Save Button */}
-      {initialized && (
-      <div className="flex justify-center mb-8">
-        <button
-          onClick={handleManualSave}
-          disabled={loading}
-          className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-3 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
-        >
-          {loading ? (
-            <div className="flex items-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Saving...
-            </div>
-          ) : (
-            'Save Availability'
-          )}
-        </button>
       </div>
       )}
 
