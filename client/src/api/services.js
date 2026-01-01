@@ -302,10 +302,52 @@ class MegaSessionService extends ApiService {
   }
 }
 
+class MenteeService extends ApiService {
+  constructor() {
+    super('/mentee');
+  }
+
+  // Get my mentee profile (authenticated)
+  async getMyProfile() {
+    try {
+      const response = await apiClient.get('/mentee/my-profile');
+      console.log('Mentee profile response:', response);
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Create or update mentee profile
+  async createOrUpdateProfile(profileData) {
+    try {
+      const response = await apiClient.post('/mentee/profile', profileData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Get mentee profile by ID (public)
+  async getMenteeById(menteeId) {
+    try {
+      const response = await apiClient.get(`/mentee/profile/${menteeId}`);
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+}
+
 // Export service instances
 export const authService = new AuthService();
 export const userService = new UserService();
 export const mentorService = new MentorService();
+export const menteeService = new MenteeService();
 export const availabilityService = new AvailabilityService();
 export const bookingService = new BookingService();
 export const megaSessionService = new MegaSessionService();

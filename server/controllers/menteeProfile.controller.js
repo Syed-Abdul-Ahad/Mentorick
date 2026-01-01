@@ -15,7 +15,17 @@ exports.createOrUpdateMenteeProfile = async (req, res, next) => {
       ...data,
       user: userId,
       headshot: headshotUrl,
-      interests: Array.isArray(data.interests) ? data.interests : (data.interests ? [data.interests] : []),
+      interests: (() => {
+        if (Array.isArray(data.interests)) return data.interests;
+        if (typeof data.interests === 'string') {
+          try {
+            return JSON.parse(data.interests);
+          } catch (e) {
+            return data.interests ? [data.interests] : [];
+          }
+        }
+        return data.interests ? [data.interests] : [];
+      })(),
       languages: Array.isArray(data.languages) ? data.languages : (data.languages ? [data.languages] : [])
     };
     let profile = await MenteeProfile.findOneAndUpdate(

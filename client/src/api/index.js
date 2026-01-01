@@ -9,6 +9,7 @@ export {
   authService, 
   userService, 
   mentorService, 
+  menteeService,
   availabilityService, 
   bookingService, 
   megaSessionService 

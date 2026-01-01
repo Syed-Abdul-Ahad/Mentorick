@@ -17,6 +17,7 @@ import MegaSessions from "./pages/MegaSessions";
 import AdminMegaSessions from "./pages/admin/AdminMegaSessions";
 import NotFound from "./pages/NotFound";
 import MentorProfileForm from "./pages/profile/MentorProfileForm";
+import MenteeProfileForm from "./pages/profile/MenteeProfileForm";
 import MentorPublicProfile from "./pages/profile/MentorPublicProfile";
 import Homepage from "./pages/Homepage";
 import Mentors from "./pages/Mentors";
@@ -123,11 +124,15 @@ function AuthenticatedApp() {
             isAuthenticated ? <MyBookings /> : <Navigate to="/login" />
           }
         />
-        {/* Mentor profile edit (mentor only) */}
+        {/* Profile edit - different forms based on user role */}
         <Route
           path="/profile/edit"
           element={
-            isAuthenticated && user?.role === 'mentor' ? <MentorProfileForm /> : <Navigate to="/login" />
+            isAuthenticated ? (
+              user?.role === 'mentor' ? <MentorProfileForm /> :
+              user?.role === 'mentee' ? <MenteeProfileForm /> :
+              <Navigate to="/login" />
+            ) : <Navigate to="/login" />
           }
         />
         {/* Mentor public profile */}

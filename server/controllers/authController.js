@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const MentorProfile = require('../models/MentorProfile');
+const MenteeProfile = require('../models/MenteeProfile');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
@@ -160,7 +161,12 @@ const getMe = async (req, res, next) => {
     if (user.role === 'mentor') {
       const mentorProfile = await MentorProfile.findOne({ user: user._id });
       user.profile = mentorProfile;  
-    } else {
+    } 
+    else if (user.role === 'mentee') {
+      const menteeProfile = await MenteeProfile.findOne({ user: user._id });
+      user.profile = menteeProfile;  
+    }
+    else {
       user.profile = null;
     }
 

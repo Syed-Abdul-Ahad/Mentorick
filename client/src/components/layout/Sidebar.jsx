@@ -67,7 +67,12 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           <div className="flex items-center space-x-3 mb-8">
             <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
               {user?.profile?.headshot ? (
-              <img src={user?.profile?.headshot} alt="profile picture" className='object-cover w-[100%] h-[100%] rounded-full'/>
+                <img
+                    src={user?.profile?.headshot}
+                    loading="lazy"
+                    alt="profile picture" 
+                    className='object-cover w-[100%] h-[100%] rounded-full'
+                  />
               ) : (
                 <AiOutlineUser className="h-4 w-4 text-gray-400" />
               )}
