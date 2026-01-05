@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
+import { setUser } from '../../store/slices/authSlice';
 import { authService } from '../../api';
 import Button from '../../components/shared/Button';
 import FormInput from '../../components/shared/FormInput';
@@ -17,6 +19,7 @@ const ResetPassword = () => {
 
   const { token } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -57,12 +60,22 @@ const ResetPassword = () => {
 
     try {
       const response = await authService.resetPassword(token, formData.password);
-      toast.success(response.message || 'Password reset successful! You can now login with your new password.');
       
-      // Redirect to login after a short delay
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      // Backend auto-logs in the user, so update Redux state
+      if (response.data && response.data.user) {
+        dispatch(setUser({ user: response.data.user }));
+        toast.success('Password reset successful! Redirecting to dashboard...');
+        
+        // Redirect to dashboard after successful reset and auto-login
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
+      } else {
+        toast.success(response.message || 'Password reset successful! You can now login.');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      }
     } catch (error) {
       setError(error.message || 'Failed to reset password. The link may be invalid or expired.');
       toast.error(error.message || 'Failed to reset password');

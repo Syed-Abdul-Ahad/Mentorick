@@ -10,9 +10,10 @@ class AuthService extends ApiService {
   async login(credentials) {
     try {
       const response = await apiClient.post('/auth/login', credentials);
+      if(response.data.status !== 'success'){
+        throw new Error(response.data.message || 'Login failed');
+      }
       const { user } = response.data.data;
-      console.log('Login successful:', user);
-      
       // Token is now set as httpOnly cookie by the server
       return { user };
     } catch (error) {

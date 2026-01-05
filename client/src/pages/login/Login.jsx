@@ -38,7 +38,6 @@ const Login = () => {
 
     try {
       const response = await authService.login(formData);
-      console.log('Login response:', response);
       dispatch(setUser(response));
       navigate('/dashboard');
     } catch (error) {
