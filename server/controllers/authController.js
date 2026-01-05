@@ -3,6 +3,7 @@ const MentorProfile = require('../models/MentorProfile');
 const MenteeProfile = require('../models/MenteeProfile');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const sendEmailWithResend = require('../utils/email');
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -235,52 +236,60 @@ const updatePassword = async (req, res, next) => {
 // @desc    Forgot password
 // @route   POST /api/auth/forgotpassword
 // @access  Public
+// @desc    Forgot password
+// @route   POST /api/auth/forgotpassword
+// @access  Public
 const forgotPassword = async (req, res, next) => {
   try {
     const user = await User.findOne({ email: req.body.email });
+    console.log("User found for password reset:", user);
 
     if (!user) {
       return res.status(404).json({
         status: 'error',
-        message: 'User not found with that email',
+        message: "We couldn't find a user with that email",
       });
     }
 
-    // Get reset token
+    // 1️⃣ Generate reset token
     const resetToken = user.createPasswordResetToken();
-
     await user.save({ validateBeforeSave: false });
+    console.log("Reset token generated:", resetToken);
 
-    // Create reset url
-    const resetUrl = `${req.protocol}://${req.get(
-      'host'
-    )}/api/auth/resetpassword/${resetToken}`;
-
-    const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
-
+    // 2️⃣ Frontend reset URL
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+    console.log("Reset URL:", resetUrl);
+    // 3️⃣ Send email via Resend
     try {
-      // Here you would send the email
-      // await sendEmail({
-      //   email: user.email,
-      //   subject: 'Password reset token',
-      //   message,
-      // });
+      const option = {
+        email: user.email,
+        subject: '🔐 Password Reset Request',
+        isForgotPassword: true,
+        resetUrl,
+        firstName: user.firstName || 'User',
+        message: `
+          We received a request to reset your password.
+
+          Click the link below to reset it:
+          ${resetUrl}
+
+          This link is valid for 10 minutes.
+        `,
+      }
+      await sendEmailWithResend(option);
 
       res.status(200).json({
         status: 'success',
-        message: 'Email sent',
-        resetUrl, // Remove this in production
+        message: 'Password reset link sent to your email',
       });
     } catch (err) {
-      console.log(err);
       user.passwordResetToken = undefined;
       user.passwordResetExpires = undefined;
-
       await user.save({ validateBeforeSave: false });
 
       return res.status(500).json({
         status: 'error',
-        message: 'Email could not be sent',
+        message: 'There was an error sending the email. Try again later.',
       });
     }
   } catch (error) {
@@ -291,14 +300,18 @@ const forgotPassword = async (req, res, next) => {
 // @desc    Reset password
 // @route   PUT /api/auth/resetpassword/:resettoken
 // @access  Public
+// @desc    Reset password
+// @route   PUT /api/auth/resetpassword/:resettoken
+// @access  Public
 const resetPassword = async (req, res, next) => {
   try {
-    // Get hashed token
+    // 1️⃣ Hash token
     const resetPasswordToken = crypto
       .createHash('sha256')
       .update(req.params.resettoken)
       .digest('hex');
 
+    // 2️⃣ Find valid user
     const user = await User.findOne({
       passwordResetToken: resetPasswordToken,
       passwordResetExpires: { $gt: Date.now() },
@@ -307,21 +320,25 @@ const resetPassword = async (req, res, next) => {
     if (!user) {
       return res.status(400).json({
         status: 'error',
-        message: 'Invalid or expired token',
+        message: 'Token is invalid or has expired',
       });
     }
 
-    // Set new password
+    // 3️⃣ Set new password
     user.password = req.body.password;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
+    user.passwordChangedAt = Date.now();
+
     await user.save();
 
+    // 4️⃣ Auto login
     sendTokenResponse(user, 200, res);
   } catch (error) {
     next(error);
   }
 };
+
 
 // @desc    Verify email
 // @route   GET /api/auth/verify/:token

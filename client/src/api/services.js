@@ -68,7 +68,7 @@ class AuthService extends ApiService {
   // Forgot password
   async forgotPassword(email) {
     try {
-      const response = await apiClient.post('/auth/forgot-password', { email });
+      const response = await apiClient.post('/auth/forgotpassword', { email });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -76,9 +76,9 @@ class AuthService extends ApiService {
   }
 
   // Reset password
-  async resetPassword(resetData) {
+  async resetPassword(token, password) {
     try {
-      const response = await apiClient.post('/auth/reset-password', resetData);
+      const response = await apiClient.put(`/auth/resetpassword/${token}`, { password });
       return response.data;
     } catch (error) {
       throw this.handleError(error);

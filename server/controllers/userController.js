@@ -202,146 +202,142 @@ const deleteUser = async (req, res, next) => {
 // @desc    Get user profile (current user)
 // @route   GET /api/users/profile
 // @access  Private
-const getProfile = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user.id).select('-password');
+// const getProfile = async (req, res, next) => {
+//   try {
+//     const user = await User.findById(req.user.id).select('-password');
 
-    res.status(200).json({
-      status: 'success',
-      data: {
-        user,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+//     res.status(200).json({
+//       status: 'success',
+//       data: {
+//         user,
+//       },
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 // @desc    Update user profile
 // @route   PUT /api/users/profile
 // @access  Private
-const updateProfile = async (req, res, next) => {
-  try {
-    const allowedFields = [
-      'firstName',
-      'lastName',
-      'avatar',
-      'profile.bio',
-      'profile.dateOfBirth',
-      'profile.phoneNumber',
-      'profile.location',
-      'profile.socialLinks',
-    ];
+// const updateProfile = async (req, res, next) => {
+//   try {
+//     const allowedFields = [
+//       'firstName',
+//       'lastName',
+//       'avatar',
+//       'profile.bio',
+//       'profile.dateOfBirth',
+//       'profile.phoneNumber',
+//       'profile.location',
+//       'profile.socialLinks',
+//     ];
 
-    const updates = {};
-    allowedFields.forEach(field => {
-      if (field.includes('.')) {
-        const [parent, child] = field.split('.');
-        if (req.body[parent] && req.body[parent][child] !== undefined) {
-          if (!updates[parent]) updates[parent] = {};
-          updates[parent][child] = req.body[parent][child];
-        }
-      } else if (req.body[field] !== undefined) {
-        updates[field] = req.body[field];
-      }
-    });
+//     const updates = {};
+//     allowedFields.forEach(field => {
+//       if (field.includes('.')) {
+//         const [parent, child] = field.split('.');
+//         if (req.body[parent] && req.body[parent][child] !== undefined) {
+//           if (!updates[parent]) updates[parent] = {};
+//           updates[parent][child] = req.body[parent][child];
+//         }
+//       } else if (req.body[field] !== undefined) {
+//         updates[field] = req.body[field];
+//       }
+//     });
 
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { $set: updates },
-      {
-        new: true,
-        runValidators: true,
-      }
-    ).select('-password');
+//     const user = await User.findByIdAndUpdate(
+//       req.user.id,
+//       { $set: updates },
+//       {
+//         new: true,
+//         runValidators: true,
+//       }
+//     ).select('-password');
 
-    res.status(200).json({
-      status: 'success',
-      data: {
-        user,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+//     res.status(200).json({
+//       status: 'success',
+//       data: {
+//         user,
+//       },
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 // @desc    Upload user avatar
 // @route   POST /api/users/avatar
 // @access  Private
-const uploadAvatar = async (req, res, next) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Please upload an image file',
-      });
-    }
+// const uploadAvatar = async (req, res, next) => {
+//   try {
+//     if (!req.file) {
+//       return res.status(400).json({
+//         status: 'error',
+//         message: 'Please upload an image file',
+//       });
+//     }
 
-    // Here you would typically upload to cloud storage (AWS S3, Cloudinary, etc.)
-    // For now, we'll just store the filename
-    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+//     // Here you would typically upload to cloud storage (AWS S3, Cloudinary, etc.)
+//     // For now, we'll just store the filename
+//     const avatarUrl = `/uploads/avatars/${req.file.filename}`;
 
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { avatar: avatarUrl },
-      {
-        new: true,
-        runValidators: true,
-      }
-    ).select('-password');
+//     const user = await User.findByIdAndUpdate(
+//       req.user.id,
+//       { avatar: avatarUrl },
+//       {
+//         new: true,
+//         runValidators: true,
+//       }
+//     ).select('-password');
 
-    res.status(200).json({
-      status: 'success',
-      data: {
-        user,
-        avatarUrl,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+//     res.status(200).json({
+//       status: 'success',
+//       data: {
+//         user,
+//         avatarUrl,
+//       },
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 // @desc    Get user statistics
 // @route   GET /api/users/stats
 // @access  Private/Admin
-const getUserStats = async (req, res, next) => {
-  try {
-    const stats = await User.aggregate([
-      {
-        $group: {
-          _id: '$role',
-          count: { $sum: 1 },
-        },
-      },
-    ]);
+// const getUserStats = async (req, res, next) => {
+//   try {
+//     const stats = await User.aggregate([
+//       {
+//         $group: {
+//           _id: '$role',
+//           count: { $sum: 1 },
+//         },
+//       },
+//     ]);
 
-    const totalUsers = await User.countDocuments();
-    const activeUsers = await User.countDocuments({ isActive: true });
-    const verifiedUsers = await User.countDocuments({ isEmailVerified: true });
+//     const totalUsers = await User.countDocuments();
+//     const activeUsers = await User.countDocuments({ isActive: true });
+//     const verifiedUsers = await User.countDocuments({ isEmailVerified: true });
 
-    res.status(200).json({
-      status: 'success',
-      data: {
-        totalUsers,
-        activeUsers,
-        verifiedUsers,
-        usersByRole: stats,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+//     res.status(200).json({
+//       status: 'success',
+//       data: {
+//         totalUsers,
+//         activeUsers,
+//         verifiedUsers,
+//         usersByRole: stats,
+//       },
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 module.exports = {
   getUsers,
   getUser,
   updateUser,
   deleteUser,
-  getProfile,
-  updateProfile,
-  uploadAvatar,
-  getUserStats,
 };

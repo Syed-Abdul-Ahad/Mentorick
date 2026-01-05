@@ -8,6 +8,7 @@ import { useIsAuthenticated, useUser } from "./store/hooks";
 import { setUser, clearUser } from "./store/slices/authSlice";
 import axios from "axios";
 import Login from "./pages/login/Login";
+import ResetPassword from "./pages/login/ResetPassword";
 import Signup from "./pages/signup/Signup";
 import MentorSignup from "./pages/signup/MentorSignup";
 import Dashboard from "./pages/dashboard/Dashboard";
@@ -22,6 +23,7 @@ import MentorPublicProfile from "./pages/profile/MentorPublicProfile";
 import Homepage from "./pages/Homepage";
 import Mentors from "./pages/Mentors";
 import OurWhy from "./pages/OurWhy";
+import Toast from "./components/shared/Toast";
 
 function AuthenticatedApp() {
   const dispatch = useDispatch();
@@ -74,6 +76,7 @@ function AuthenticatedApp() {
 
   return (
     <BrowserRouter>
+      <Toast />
       <Routes>
         {/* Public routes */}
         <Route path="/" 
@@ -88,6 +91,12 @@ function AuthenticatedApp() {
           path="/login"
           element={
             isAuthenticated ? <Navigate to="/" /> : <Login />
+          }
+        />
+        <Route
+          path="/reset-password/:token"
+          element={
+            isAuthenticated ? <Navigate to="/" /> : <ResetPassword />
           }
         />
         <Route

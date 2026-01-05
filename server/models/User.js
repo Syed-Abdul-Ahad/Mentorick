@@ -37,10 +37,6 @@ const userSchema = new mongoose.Schema({
     enum: ['mentee', 'mentor', 'admin'],
     default: 'mentee',
   },
-  avatar: {
-    type: String,
-    default: null,
-  },
   isEmailVerified: {
     type: Boolean,
     default: false,
@@ -56,27 +52,27 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
-  profile: {
-    bio: {
-      type: String,
-      maxlength: [500, 'Bio cannot be more than 500 characters'],
-    },
-    dateOfBirth: Date,
-    phoneNumber: {
-      type: String,
-      match: [/^\+?[\d\s-()]+$/, 'Please enter a valid phone number'],
-    },
-    location: {
-      country: String,
-      city: String,
-    },
-    socialLinks: {
-      linkedin: String,
-      twitter: String,
-      github: String,
-      website: String,
-    },
-  },
+  // profile: {
+  //   bio: {
+  //     type: String,
+  //     maxlength: [500, 'Bio cannot be more than 500 characters'],
+  //   },
+  //   dateOfBirth: Date,
+  //   phoneNumber: {
+  //     type: String,
+  //     match: [/^\+?[\d\s-()]+$/, 'Please enter a valid phone number'],
+  //   },
+  //   location: {
+  //     country: String,
+  //     city: String,
+  //   },
+  //   socialLinks: {
+  //     linkedin: String,
+  //     twitter: String,
+  //     github: String,
+  //     website: String,
+  //   },
+  // },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
