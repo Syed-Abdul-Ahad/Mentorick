@@ -242,7 +242,6 @@ const updatePassword = async (req, res, next) => {
 const forgotPassword = async (req, res, next) => {
   try {
     const user = await User.findOne({ email: req.body.email });
-    console.log("User found for password reset:", user);
 
     if (!user) {
       return res.status(404).json({
@@ -254,11 +253,9 @@ const forgotPassword = async (req, res, next) => {
     // 1️⃣ Generate reset token
     const resetToken = user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
-    console.log("Reset token generated:", resetToken);
 
     // 2️⃣ Frontend reset URL
     const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-    console.log("Reset URL:", resetUrl);
     // 3️⃣ Send email via Resend
     try {
       const option = {
