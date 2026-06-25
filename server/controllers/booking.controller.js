@@ -1,4 +1,5 @@
 const MentorProfile = require('../models/MentorProfile');
+const MenteeProfile = require('../models/MenteeProfile');
 const Booking = require('../models/Booking');
 const { createCalendarEvent, createMegaSessionCalendarEvent, updateMegaSessionAttendees } = require('../utils/calendar.util');
 const User = require('../models/User');
@@ -386,16 +387,47 @@ exports.getMyBookings = async (req, res) => {
 
     const bookings = await Booking.find(baseQuery)
       .populate('mentor', 'firstName lastName email')
-      .populate('mentee', 'firstName lastName email')  
-      .populate('mentorProfile', 'timezone sessionDurations')
+      .populate('mentee', 'firstName lastName email')
+      .populate('mentorProfile', 'timezone sessionDurations headshot')
       .sort({ startTimeUTC: 1 })
       .limit(parseInt(limit));
 
-    // Add user role for each booking
-    const bookingsWithRole = bookings.map(booking => ({
-      ...booking.toObject(),
-      userRole: booking.mentor._id.toString() === userId ? 'mentor' : 'mentee'
-    }));
+    const menteeIds = [
+      ...new Set(
+        bookings
+          .filter((booking) => booking.mentee)
+          .map((booking) => booking.mentee._id.toString())
+      ),
+    ];
+
+    const menteeProfiles = menteeIds.length
+      ? await MenteeProfile.find({ user: { $in: menteeIds } }).select('user headshot')
+      : [];
+
+    const menteeHeadshotByUserId = menteeProfiles.reduce((acc, profile) => {
+      acc[profile.user.toString()] = profile.headshot || null;
+      return acc;
+    }, {});
+
+    const MEGA_SESSION_IMAGE = '/mega-session.jpg';
+
+    // Add user role and headshots for each booking
+    const bookingsWithRole = bookings.map((booking) => {
+      const bookingObj = booking.toObject();
+      const menteeHeadshot = booking.mentee
+        ? menteeHeadshotByUserId[booking.mentee._id.toString()] || null
+        : null;
+
+      return {
+        ...bookingObj,
+        userRole: booking.mentor._id.toString() === userId ? 'mentor' : 'mentee',
+        mentorHeadshot: bookingObj.mentorProfile?.headshot || null,
+        menteeHeadshot,
+        megaSessionImage: bookingObj.isMegaSession || bookingObj.parentMegaSession
+          ? MEGA_SESSION_IMAGE
+          : null,
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -414,86 +446,223 @@ exports.getMyBookings = async (req, res) => {
 /* ======================================================
    GET BOOKING ANALYTICS (Basic Stats)
 ====================================================== */
+const formatDashboardBooking = (booking, userId) => {
+  const isMentor = booking.mentor?._id?.toString() === userId;
+  const otherUser = isMentor ? booking.mentee : booking.mentor;
+  const otherName = booking.isMegaSession
+    ? booking.title || 'Mega Session'
+    : otherUser
+      ? `${otherUser.firstName} ${otherUser.lastName}`
+      : 'Participant';
+
+  return {
+    id: booking._id,
+    status: booking.status,
+    isMegaSession: booking.isMegaSession,
+    title: booking.title || booking.description || null,
+    otherName,
+    durationMinutes: booking.durationMinutes,
+    startTimeUTC: booking.startTimeUTC,
+    timezone: isMentor ? booking.mentorTimezone : booking.menteeTimezone,
+    price: booking.price,
+    updatedAt: booking.updatedAt,
+    createdAt: booking.createdAt,
+  };
+};
+
+const buildRecentActivity = (bookings, userId) =>
+  bookings.map((booking) => {
+    const isMentor = booking.mentor?._id?.toString() === userId;
+    const otherUser = isMentor ? booking.mentee : booking.mentor;
+    const otherName = booking.isMegaSession
+      ? booking.title || 'Mega Session'
+      : otherUser
+        ? `${otherUser.firstName} ${otherUser.lastName}`
+        : 'Participant';
+
+    const activityMap = {
+      completed: `Session completed with ${otherName}`,
+      confirmed: `Session confirmed with ${otherName}`,
+      pending: `Booking pending with ${otherName}`,
+      cancelled: `Session cancelled with ${otherName}`,
+      'no-show': `No-show recorded for ${otherName}`,
+    };
+
+    return {
+      id: booking._id,
+      title: activityMap[booking.status] || `Session updated with ${otherName}`,
+      status: booking.status,
+      timestamp: booking.updatedAt || booking.createdAt,
+    };
+  });
+
 exports.getBookingAnalytics = async (req, res) => {
   try {
     const userId = req.user.id;
+    const userRole = req.user.role;
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    const userBookingMatch = {
+      $or: [
+        { mentor: userObjectId },
+        { mentee: userObjectId },
+      ],
+    };
 
     // Get counts by status
     const statusStats = await Booking.aggregate([
-      {
-        $match: {
-          $or: [
-            { mentor: new mongoose.Types.ObjectId(userId) },
-            { mentee: new mongoose.Types.ObjectId(userId) }
-          ]
-        }
-      },
+      { $match: userBookingMatch },
       {
         $group: {
           _id: '$status',
-          count: { $sum: 1 }
-        }
-      }
+          count: { $sum: 1 },
+        },
+      },
     ]);
+
+    const statusBreakdown = statusStats.reduce((acc, curr) => {
+      acc[curr._id] = curr.count;
+      return acc;
+    }, {});
+
+    const totalSessions = Object.values(statusBreakdown).reduce((sum, count) => sum + count, 0);
+    const completedSessions = statusBreakdown.completed || 0;
 
     // Get upcoming bookings count
     const upcomingCount = await Booking.countDocuments({
       $or: [
         { mentor: userId },
-        { mentee: userId }
+        { mentee: userId },
       ],
       startTimeUTC: { $gte: new Date() },
-      status: { $in: ['pending', 'confirmed'] }
+      status: { $in: ['pending', 'confirmed'] },
     });
+
+    const hoursResult = await Booking.aggregate([
+      { $match: { ...userBookingMatch, status: 'completed' } },
+      { $group: { _id: null, totalMinutes: { $sum: '$durationMinutes' } } },
+    ]);
+    const totalHours = hoursResult[0]
+      ? Math.round((hoursResult[0].totalMinutes / 60) * 10) / 10
+      : 0;
+
+    const uniqueMenteesResult = await Booking.aggregate([
+      { $match: { mentor: userObjectId, mentee: { $ne: null } } },
+      { $group: { _id: '$mentee' } },
+      { $count: 'count' },
+    ]);
+    const uniqueMentees = uniqueMenteesResult[0]?.count || 0;
+
+    const uniqueMentorsResult = await Booking.aggregate([
+      { $match: { mentee: userObjectId, mentor: { $ne: null } } },
+      { $group: { _id: '$mentor' } },
+      { $count: 'count' },
+    ]);
+    const uniqueMentors = uniqueMentorsResult[0]?.count || 0;
 
     // Get total spent/earned (as mentor and mentee)
     const mentorEarnings = await Booking.aggregate([
       {
         $match: {
-          mentor: new mongoose.Types.ObjectId(userId),
-          status: 'completed'
-        }
+          mentor: userObjectId,
+          status: 'completed',
+        },
       },
       {
         $group: {
           _id: '$price.currency',
-          total: { $sum: '$price.amount' }
-        }
-      }
+          total: { $sum: '$price.amount' },
+        },
+      },
     ]);
 
     const menteeSpent = await Booking.aggregate([
       {
         $match: {
-          mentee: new mongoose.Types.ObjectId(userId),
-          status: 'completed'
-        }
+          mentee: userObjectId,
+          status: 'completed',
+        },
       },
       {
         $group: {
           _id: '$price.currency',
-          total: { $sum: '$price.amount' }
-        }
-      }
+          total: { $sum: '$price.amount' },
+        },
+      },
     ]);
+
+    const upcomingBookingsList = await Booking.find({
+      $or: [{ mentor: userId }, { mentee: userId }],
+      startTimeUTC: { $gte: new Date() },
+      status: { $in: ['pending', 'confirmed'] },
+    })
+      .populate('mentor', 'firstName lastName')
+      .populate('mentee', 'firstName lastName')
+      .sort({ startTimeUTC: 1 })
+      .limit(5);
+
+    const recentBookingsList = await Booking.find(userBookingMatch)
+      .populate('mentor', 'firstName lastName')
+      .populate('mentee', 'firstName lastName')
+      .sort({ updatedAt: -1 })
+      .limit(5);
+
+    let platformStats = null;
+    if (userRole === 'admin') {
+      const [
+        totalBookings,
+        totalMegaSessions,
+        upcomingMegaSessions,
+        totalMentors,
+        totalUsers,
+        pendingBookings,
+        confirmedBookings,
+      ] = await Promise.all([
+        Booking.countDocuments({}),
+        Booking.countDocuments({ isMegaSession: true }),
+        Booking.countDocuments({
+          isMegaSession: true,
+          startTimeUTC: { $gte: new Date() },
+          status: 'confirmed',
+        }),
+        MentorProfile.countDocuments({}),
+        User.countDocuments({}),
+        Booking.countDocuments({ status: 'pending' }),
+        Booking.countDocuments({ status: 'confirmed' }),
+      ]);
+
+      platformStats = {
+        totalBookings,
+        totalMegaSessions,
+        upcomingMegaSessions,
+        totalMentors,
+        totalUsers,
+        pendingBookings,
+        confirmedBookings,
+      };
+    }
 
     res.status(200).json({
       success: true,
       analytics: {
-        statusBreakdown: statusStats.reduce((acc, curr) => {
-          acc[curr._id] = curr.count;
-          return acc;
-        }, {}),
+        statusBreakdown,
         upcomingBookings: upcomingCount,
         mentorEarnings,
-        menteeSpending: menteeSpent
-      }
+        menteeSpending: menteeSpent,
+        totalSessions,
+        completedSessions,
+        totalHours,
+        uniqueMentees,
+        uniqueMentors,
+        upcomingSessions: upcomingBookingsList.map((booking) => formatDashboardBooking(booking, userId)),
+        recentActivity: buildRecentActivity(recentBookingsList, userId),
+        platformStats,
+      },
     });
-
   } catch (error) {
     console.error('Error fetching analytics:', error);
     res.status(500).json({
-      message: 'Internal server error while fetching analytics'
+      message: 'Internal server error while fetching analytics',
     });
   }
 };

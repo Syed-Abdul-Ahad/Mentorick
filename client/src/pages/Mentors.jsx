@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import MainLayout from "../components/layout/MainLayout";
+import MobileMenuButton from "../components/layout/MobileMenuButton";
 import Button from "../components/shared/Button";
 import FormInput from "../components/shared/FormInput";
 import MentorSlider from "../components/shared/MentorSlider";
@@ -15,7 +16,6 @@ import {
   AiOutlineUser,
   AiOutlineClockCircle,
   AiOutlineVideoCamera,
-  AiOutlineMenu,
 } from "react-icons/ai";
 import { BsGrid3X3Gap, BsListUl } from "react-icons/bs";
 
@@ -24,7 +24,6 @@ const Mentors = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("rating");
   const [viewMode, setViewMode] = useState("grid"); // 'grid' or 'list'
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mentors, setMentors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -278,23 +277,15 @@ const Mentors = () => {
   );
 
   return (
-    <MainLayout 
-      isMobileMenuOpen={isMobileMenuOpen}
-      setIsMobileMenuOpen={setIsMobileMenuOpen}
-    >
+    <MainLayout hideMobileHeader>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <div className="bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
-              <div className="flex items-center">
-                <button
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                >
-                  <AiOutlineMenu className="h-6 w-6" />
-                </button>
-                <h1 className="text-2xl font-bold text-gray-900 ml-2 lg:ml-0">Mentorick</h1>
+              <h1 className="text-2xl font-bold text-primary-600">Mentorick</h1>
+              <div className="lg:hidden">
+                <MobileMenuButton />
               </div>
             </div>
           </div>

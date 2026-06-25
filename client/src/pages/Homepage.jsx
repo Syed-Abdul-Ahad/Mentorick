@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/layout/MainLayout";
+import MobileMenuButton from "../components/layout/MobileMenuButton";
 import Button from "../components/shared/Button";
 import MentorSlider from "../components/shared/MentorSlider";
 import Footer from "../components/shared/Footer";
@@ -46,7 +47,6 @@ const Homepage = () => {
   const [sortBy, setSortBy] = useState("rating");
   const [email, setEmail] = useState("");
   const [openFaq, setOpenFaq] = useState(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const user = useUser();
 
 
@@ -124,10 +124,7 @@ const Homepage = () => {
   ];
 
   return (
-    <MainLayout 
-      isMobileMenuOpen={isMobileMenuOpen} 
-      setIsMobileMenuOpen={setIsMobileMenuOpen}
-    >
+    <MainLayout hideMobileHeader>
       {/* Header */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -191,14 +188,7 @@ const Homepage = () => {
                 )}
               {/* Mobile hamburger menu - right of login */}
               <div className="md:hidden">
-                <button 
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="p-2 rounded-md text-gray-400 hover:text-gray-500"
-                >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </button>
+                <MobileMenuButton />
               </div>
             </div>
           </div>

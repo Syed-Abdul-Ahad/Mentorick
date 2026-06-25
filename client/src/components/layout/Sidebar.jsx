@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useUser } from '../../store/hooks';
 import { 
@@ -6,11 +6,8 @@ import {
   AiOutlineUser, 
   AiOutlineSetting, 
   AiOutlineBarChart,
-  AiOutlineMenu,
-  AiOutlineClose,
   AiOutlineTeam,
   AiOutlineCalendar,
-  AiOutlineClockCircle,
   AiOutlineUsergroupAdd,
   AiOutlineTool,
 } from 'react-icons/ai';
@@ -58,7 +55,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
     <>
       {/* Sidebar */}
       <div className={`
-        fixed left-0 top-0 h-full w-48 bg-white shadow-lg z-40 transform transition-transform duration-300 ease-in-out
+        fixed left-0 top-0 h-full w-48 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0
       `}>
@@ -108,8 +105,8 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
 
       {/* Mobile overlay */}
       {isMobileMenuOpen && (
-        <div 
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-gray-900/10 backdrop-blur-[3px]"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
