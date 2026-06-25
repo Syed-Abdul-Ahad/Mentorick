@@ -316,6 +316,36 @@ class MegaSessionService extends ApiService {
     }
   }
 
+  // Get pending mega sessions awaiting mentor approval
+  async getPendingMegaSessions() {
+    try {
+      const response = await apiClient.get('/mega-sessions/pending');
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Accept a pending mega session (Mentor)
+  async acceptMegaSession(megaSessionId) {
+    try {
+      const response = await apiClient.post(`/mega-sessions/${megaSessionId}/accept`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Reject a pending mega session (Mentor)
+  async rejectMegaSession(megaSessionId) {
+    try {
+      const response = await apiClient.post(`/mega-sessions/${megaSessionId}/reject`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   // Join a mega session
   async joinMegaSession(megaSessionId, joinData = {}) {
     try {

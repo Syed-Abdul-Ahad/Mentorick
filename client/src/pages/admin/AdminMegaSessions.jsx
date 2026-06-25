@@ -116,7 +116,7 @@ const AdminMegaSessions = () => {
       };
 
       await megaSessionService.createMegaSession(sessionData);
-      toast.success('Mega session created successfully!');
+      toast.success('Mega session submitted — awaiting mentor approval');
       
       // Reset form
       setSelectedMentor(null);

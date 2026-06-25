@@ -13,7 +13,7 @@ import {
 } from 'react-icons/hi2';
 import { useUser } from '../../store/hooks';
 import { clearUser } from '../../store/slices/authSlice';
-import { authService, bookingService } from '../../api';
+import { authService, bookingService, megaSessionService } from '../../api';
 import apiClient from '../../api/axiosConfig';
 import MainLayout from '../../components/layout/MainLayout';
 import toast from 'react-hot-toast';
@@ -63,6 +63,25 @@ const formatSessionTime = (utcDate, timezone) => {
   });
 
   return `${dayLabel}, ${time}`;
+};
+
+const formatMegaSessionSchedule = (utcDate, timezone) => {
+  const date = new Date(utcDate);
+  const tz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const dateStr = date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: tz,
+  });
+  const time = date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: tz,
+  });
+  return { dateStr, time, tz };
 };
 
 const StatCard = ({ label, value, suffix = '' }) => (
@@ -156,6 +175,32 @@ const Dashboard = () => {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [analytics, setAnalytics] = useState(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(true);
+  const [pendingMegaSessions, setPendingMegaSessions] = useState([]);
+  const [loadingPendingMega, setLoadingPendingMega] = useState(false);
+  const [actionId, setActionId] = useState(null);
+
+  const fetchPendingMegaSessions = async () => {
+    if (user?.role !== 'mentor') return;
+    setLoadingPendingMega(true);
+    try {
+      const response = await megaSessionService.getPendingMegaSessions();
+      setPendingMegaSessions(response.pendingSessions || []);
+    } catch (error) {
+      console.error('Error fetching pending mega sessions:', error);
+    } finally {
+      setLoadingPendingMega(false);
+    }
+  };
+
+  const refreshDashboardData = async () => {
+    try {
+      const response = await bookingService.getBookingAnalytics();
+      setAnalytics(response.analytics);
+    } catch (error) {
+      console.error('Error fetching dashboard analytics:', error);
+    }
+    await fetchPendingMegaSessions();
+  };
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -170,7 +215,42 @@ const Dashboard = () => {
       }
     };
     fetchAnalytics();
-  }, []);
+    if (user?.role === 'mentor') {
+      fetchPendingMegaSessions();
+    }
+  }, [user?.role]);
+
+  useEffect(() => {
+    if (user?.role === 'mentor' && currentTab === 'mega-sessions') {
+      fetchPendingMegaSessions();
+    }
+  }, [user?.role, currentTab]);
+
+  const handleAcceptMegaSession = async (sessionId) => {
+    setActionId(sessionId);
+    try {
+      await megaSessionService.acceptMegaSession(sessionId);
+      toast.success('Mega session accepted and published');
+      await refreshDashboardData();
+    } catch (error) {
+      toast.error(error.message || 'Failed to accept mega session');
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const handleRejectMegaSession = async (sessionId) => {
+    setActionId(sessionId);
+    try {
+      await megaSessionService.rejectMegaSession(sessionId);
+      toast.success('Mega session rejected');
+      await refreshDashboardData();
+    } catch (error) {
+      toast.error(error.message || 'Failed to reject mega session');
+    } finally {
+      setActionId(null);
+    }
+  };
 
   useEffect(() => {
     if (user?.role === 'mentor' && currentTab === 'payments') {
@@ -219,6 +299,9 @@ const Dashboard = () => {
   const actions = getQuickActions(user?.role, navigate);
   const earnings = analytics?.mentorEarnings?.[0];
   const spending = analytics?.menteeSpending?.[0];
+  const upcomingSessionsDisplay = (analytics?.upcomingSessions || []).filter(
+    (session) => !(user?.role === 'mentor' && session.isMegaSession && session.status === 'pending')
+  );
 
   return (
     <MainLayout>
@@ -239,21 +322,27 @@ const Dashboard = () => {
 
         {/* Mentor tabs */}
         {user?.role === 'mentor' && (
-          <div className="flex gap-6 border-b border-gray-200 mb-8">
+          <div className="flex gap-6 border-b border-gray-200 mb-8 overflow-x-auto">
             {[
               { id: 'overview', label: 'Overview' },
+              { id: 'mega-sessions', label: 'Mega sessions', count: pendingMegaSessions.length },
               { id: 'payments', label: 'Payment settings' },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setSearchParams({ tab: tab.id })}
-                className={`pb-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                className={`pb-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex items-center gap-1.5 ${
                   currentTab === tab.id
                     ? 'text-gray-900 border-primary-500'
                     : 'text-gray-400 border-transparent hover:text-gray-600'
                 }`}
               >
                 {tab.label}
+                {tab.count > 0 && (
+                  <span className="text-[11px] font-semibold text-amber-600 tabular-nums">
+                    {tab.count}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -381,9 +470,9 @@ const Dashboard = () => {
                       <div key={i} className="h-16 bg-gray-50 rounded-lg animate-pulse" />
                     ))}
                   </div>
-                ) : analytics?.upcomingSessions?.length > 0 ? (
+                ) : upcomingSessionsDisplay.length > 0 ? (
                   <ul className="mt-5 divide-y divide-gray-100">
-                    {analytics.upcomingSessions.map((session) => (
+                    {upcomingSessionsDisplay.map((session) => (
                       <li key={session.id} className="py-4 first:pt-0 last:pb-0">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
@@ -450,6 +539,124 @@ const Dashboard = () => {
                   })}
                 </div>
               </section>
+            )}
+          </div>
+        )}
+
+        {currentTab === 'mega-sessions' && user?.role === 'mentor' && (
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-gray-200/80 bg-white p-6 sm:p-8">
+              <div className="flex items-center gap-3 mb-2">
+                <HiOutlineSparkles className="w-5 h-5 text-gray-400" />
+                <h2 className="text-lg font-bold text-gray-900 tracking-tight">Mega session requests</h2>
+              </div>
+              <p className="text-sm text-gray-500 max-w-2xl leading-relaxed">
+                Admin-assigned group sessions appear here for your review. Accept to publish them
+                to users and create the calendar event, or reject to release the time slot.
+              </p>
+            </div>
+
+            {loadingPendingMega ? (
+              <div className="space-y-4">
+                {[...Array(2)].map((_, i) => (
+                  <div key={i} className="rounded-2xl border border-gray-100 bg-white p-6 animate-pulse">
+                    <div className="h-4 bg-gray-100 rounded w-48 mb-3" />
+                    <div className="h-3 bg-gray-100 rounded w-full max-w-md mb-2" />
+                    <div className="h-3 bg-gray-100 rounded w-32" />
+                  </div>
+                ))}
+              </div>
+            ) : pendingMegaSessions.length === 0 ? (
+              <div className="rounded-2xl border border-gray-200/80 bg-white p-10 text-center">
+                <p className="text-sm font-medium text-gray-700">No pending requests</p>
+                <p className="text-sm text-gray-400 mt-1 max-w-sm mx-auto">
+                  When an admin schedules a mega session for you, it will show up here for approval.
+                </p>
+              </div>
+            ) : (
+              <ul className="space-y-4">
+                {pendingMegaSessions.map((session) => {
+                  const schedule = formatMegaSessionSchedule(
+                    session.startTimeUTC,
+                    session.mentorTimezone
+                  );
+                  const adminName = session.createdBy
+                    ? `${session.createdBy.firstName} ${session.createdBy.lastName}`
+                    : 'Admin';
+                  const isProcessing = actionId === session._id;
+
+                  return (
+                    <li
+                      key={session._id}
+                      className="rounded-2xl border border-gray-200/80 bg-white overflow-hidden"
+                    >
+                      <div className="p-5 sm:p-6">
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                              <span className="text-xs font-medium text-amber-700">Awaiting approval</span>
+                            </div>
+                            <h3 className="text-base font-semibold text-gray-900">
+                              {session.title || 'Mega Session'}
+                            </h3>
+                            <p className="text-sm text-gray-400 mt-0.5">Requested by {adminName}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-lg font-bold text-gray-900 tabular-nums leading-none">
+                              {session.price?.amount}
+                              <span className="text-sm font-semibold text-gray-400 ml-1">{session.price?.currency}</span>
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">{session.durationMinutes} minutes</p>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-gray-100 pt-4 space-y-3">
+                          <div>
+                            <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Schedule</p>
+                            <p className="text-sm font-medium text-gray-900 mt-0.5">{schedule.dateStr}</p>
+                            <p className="text-sm text-gray-600">
+                              {schedule.time}
+                              <span className="text-gray-400"> · {schedule.tz}</span>
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Capacity</p>
+                            <p className="text-sm text-gray-700 mt-0.5">
+                              Up to {session.maxParticipants} participants
+                            </p>
+                          </div>
+                          {session.description && (
+                            <div>
+                              <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Description</p>
+                              <p className="text-sm text-gray-600 mt-0.5 leading-relaxed">{session.description}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-2 mt-5 pt-4 border-t border-gray-100">
+                          <button
+                            type="button"
+                            disabled={isProcessing}
+                            onClick={() => handleAcceptMegaSession(session._id)}
+                            className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary-500 rounded-xl hover:bg-primary-600 disabled:opacity-50 transition-colors"
+                          >
+                            Accept session
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isProcessing}
+                            onClick={() => handleRejectMegaSession(session._id)}
+                            className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
         )}

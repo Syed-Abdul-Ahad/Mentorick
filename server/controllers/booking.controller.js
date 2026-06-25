@@ -176,7 +176,7 @@ exports.createMegaSession = async (req, res) => {
       });
     }
 
-    // Create mega session booking
+    // Create mega session booking — pending until mentor accepts
     const megaSession = await Booking.create({
       mentor: mentorId,
       mentorProfile: mentorProfile._id,
@@ -194,38 +194,159 @@ exports.createMegaSession = async (req, res) => {
       price: {
         amount: priceAmount,
         currency
-      }
+      },
+      status: 'pending',
     });
-
-    // Create calendar event for mentor
-    const mentorUser = await User.findById(mentorId);
-
-    const meeting = await createMegaSessionCalendarEvent({
-      mentorId,
-      mentorEmail: mentorUser.email,
-      startUTC: startUTC.toJSDate(),
-      endUTC: endUTC.toJSDate(),
-      title: megaSession.title,
-      description: megaSession.description
-    });
-
-    megaSession.meeting = {
-      provider: 'google',
-      meetingLink: meeting.meetingLink,
-      calendarEventId: meeting.calendarEventId
-    };
-
-    megaSession.status = 'confirmed';
-    await megaSession.save();
 
     res.status(201).json({
       success: true,
-      megaSession
+      megaSession,
+      message: 'Mega session submitted for mentor approval',
     });
   } catch (error) {
     console.error('Error creating mega session:', error);
     res.status(500).json({
-      message: 'Internal server error while creating mega session'
+      message: 'Internal server error while creating mega session',
+    });
+  }
+};
+
+/* ======================================================
+   GET PENDING MEGA SESSIONS (Mentor)
+====================================================== */
+exports.getPendingMegaSessions = async (req, res) => {
+  try {
+    const pendingSessions = await Booking.find({
+      isMegaSession: true,
+      mentor: req.user.id,
+      status: 'pending',
+    })
+      .populate('createdBy', 'firstName lastName email')
+      .sort({ startTimeUTC: 1 });
+
+    res.status(200).json({
+      success: true,
+      pendingSessions,
+      total: pendingSessions.length,
+    });
+  } catch (error) {
+    console.error('Error fetching pending mega sessions:', error);
+    res.status(500).json({
+      message: 'Internal server error while fetching pending mega sessions',
+    });
+  }
+};
+
+/* ======================================================
+   ACCEPT MEGA SESSION (Mentor)
+====================================================== */
+exports.acceptMegaSession = async (req, res) => {
+  try {
+    const { megaSessionId } = req.params;
+    const mentorId = req.user.id;
+
+    const megaSession = await Booking.findOne({
+      _id: megaSessionId,
+      isMegaSession: true,
+      mentor: mentorId,
+      status: 'pending',
+    });
+
+    if (!megaSession) {
+      return res.status(404).json({ message: 'Pending mega session not found' });
+    }
+
+    if (!megaSession.meeting?.calendarEventId) {
+      const mentorUser = await User.findById(mentorId);
+      if (!mentorUser) {
+        return res.status(404).json({ message: 'Mentor account not found' });
+      }
+
+      try {
+        const meeting = await createMegaSessionCalendarEvent({
+          mentorId,
+          mentorEmail: mentorUser.email,
+          startUTC: megaSession.startTimeUTC,
+          endUTC: megaSession.endTimeUTC,
+          title: megaSession.title,
+          description: megaSession.description,
+        });
+
+        megaSession.meeting = {
+          provider: 'google',
+          meetingLink: meeting.meetingLink,
+          calendarEventId: meeting.calendarEventId,
+        };
+      } catch (calendarError) {
+        console.error('Error creating mega session calendar event:', calendarError);
+        return res.status(502).json({
+          message: 'Failed to create Google Calendar event. Please reconnect Google Calendar and try again.',
+        });
+      }
+    }
+
+    megaSession.status = 'confirmed';
+    await megaSession.save();
+
+    res.status(200).json({
+      success: true,
+      megaSession,
+      message: 'Mega session confirmed and is now visible to users',
+    });
+  } catch (error) {
+    console.error('Error accepting mega session:', error);
+    res.status(500).json({
+      message: 'Internal server error while accepting mega session',
+    });
+  }
+};
+
+/* ======================================================
+   REJECT MEGA SESSION (Mentor)
+====================================================== */
+exports.rejectMegaSession = async (req, res) => {
+  try {
+    const { megaSessionId } = req.params;
+    const mentorId = req.user.id;
+
+    const megaSession = await Booking.findOne({
+      _id: megaSessionId,
+      isMegaSession: true,
+      mentor: mentorId,
+      status: 'pending',
+    });
+
+    if (!megaSession) {
+      return res.status(404).json({ message: 'Pending mega session not found' });
+    }
+
+    if (megaSession.participants?.length > 0) {
+      return res.status(400).json({
+        message: 'Cannot reject a mega session that already has participants',
+      });
+    }
+
+    const childRegistrations = await Booking.countDocuments({
+      parentMegaSession: megaSessionId,
+      status: { $in: ['pending', 'confirmed'] },
+    });
+
+    if (childRegistrations > 0) {
+      return res.status(400).json({
+        message: 'Cannot reject a mega session that has active registrations',
+      });
+    }
+
+    await Booking.deleteOne({ _id: megaSessionId });
+
+    res.status(200).json({
+      success: true,
+      message: 'Mega session rejected and removed',
+    });
+  } catch (error) {
+    console.error('Error rejecting mega session:', error);
+    res.status(500).json({
+      message: 'Internal server error while rejecting mega session',
     });
   }
 };
