@@ -13,11 +13,32 @@ exports.createBooking = async (req, res) => {
     const mentorProfile = await MentorProfile.findOne({ user: mentorId });
     if (!mentorProfile) return res.status(404).json({ message: 'Mentor not found' });
 
+    if (!mentorProfile.paypal?.isConnected) {
+      return res.status(400).json({ message: 'Mentor has not connected PayPal account' });
+    }
+
     const startUTC = DateTime
       .fromISO(startTime, { zone: timezone })
       .toUTC();
 
     const endUTC = startUTC.plus({ minutes: duration });
+
+    const exactBooking = await Booking.findOne({
+      mentor: mentorId,
+      mentee: menteeId,
+      startTimeUTC: startUTC.toJSDate(),
+      endTimeUTC: endUTC.toJSDate(),
+      durationMinutes: duration,
+      status: { $in: ['pending', 'confirmed'] }
+    });
+
+    if (exactBooking) {
+      return res.status(200).json({
+        success: true,
+        booking: exactBooking,
+        paymentRequired: exactBooking.status !== 'confirmed'
+      });
+    }
 
     const overlap = await Booking.findOne({
       mentor: mentorId,
@@ -60,40 +81,21 @@ exports.createBooking = async (req, res) => {
       price: {
         amount: priceAmount,
         currency
-      }
+      },
+      payment: {
+        provider: 'paypal',
+        amount: priceAmount,
+        currency,
+        status: 'pending'
+      },
+      status: 'pending'
     });
-
-    // ⬇ Google Calendar integration happens here
-    // const meeting = await createCalendarEvent(...)
-    // booking.meeting = meeting
-    // booking.status = 'confirmed'
-    // await booking.save()
-
-    const mentorUser = await User.findById(mentorId);
-    const menteeUser = await User.findById(menteeId);
-
-    const meeting = await createCalendarEvent({
-      mentorId,
-      mentorEmail: mentorUser.email,
-      menteeEmail: menteeUser.email,
-      // mentorTimezone: mentorProfile.timezone,
-      startUTC: startUTC.toJSDate(),
-      endUTC: endUTC.toJSDate()
-    });
-
-    booking.meeting = {
-      provider: 'google',
-      meetingLink: meeting.meetingLink,
-      calendarEventId: meeting.calendarEventId
-    };
-
-    booking.status = 'confirmed';
-    await booking.save();
 
 
     res.status(201).json({
       success: true,
-      booking
+      booking,
+      paymentRequired: true
     });
   } catch (error) {
     console.error('Error creating booking:', error);
@@ -289,43 +291,33 @@ exports.joinMegaSession = async (req, res) => {
       return res.status(400).json({ message: 'Cannot join past sessions' });
     }
 
-    // Check if already joined
-    if (megaSession.participants.some(p => p._id.toString() === menteeId)) {
-      return res.status(400).json({ message: 'Already joined this session' });
+    const existingParticipantBooking = await Booking.findOne({
+      parentMegaSession: megaSessionId,
+      mentee: menteeId,
+      status: { $in: ['pending', 'confirmed'] }
+    });
+
+    if (existingParticipantBooking) {
+      return res.status(200).json({
+        success: true,
+        participantBooking: existingParticipantBooking,
+        megaSession: {
+          ...megaSession.toObject(),
+          participantCount: megaSession.participants.length
+        },
+        paymentRequired: existingParticipantBooking.status !== 'confirmed'
+      });
     }
 
-    // Check if session is full
-    if (megaSession.participants.length >= megaSession.maxParticipants) {
+    const activeRegistrations = await Booking.countDocuments({
+      parentMegaSession: megaSessionId,
+      status: { $in: ['pending', 'confirmed'] }
+    });
+
+    if (activeRegistrations >= megaSession.maxParticipants) {
       return res.status(400).json({ message: 'Session is full' });
     }
 
-    // Add mentee to participants
-    megaSession.participants.push(menteeId);
-    await megaSession.save();
-
-    // Update calendar event with new attendee
-    const menteeUser = await User.findById(menteeId);
-    
-    // Get all participant emails (need to populate the updated participants array)
-    const participantUsers = await User.find({ 
-      _id: { $in: megaSession.participants } 
-    }).select('email');
-    
-    const allAttendeeEmails = [
-      megaSession.mentor.email,
-      ...participantUsers.map(p => p.email).filter(email => email), // Filter out any null/undefined emails
-      menteeUser.email
-    ].filter(email => email); // Remove any undefined emails
-
-    await updateMegaSessionAttendees({
-      mentorId: megaSession.mentor._id,
-      calendarEventId: megaSession.meeting.calendarEventId,
-      attendeeEmails: allAttendeeEmails,
-      title: megaSession.title,
-      description: megaSession.description
-    });
-
-    // Create individual booking record for tracking
     const participantBooking = await Booking.create({
       mentor: megaSession.mentor._id,
       mentee: menteeId,
@@ -337,19 +329,24 @@ exports.joinMegaSession = async (req, res) => {
       menteeTimezone: req.body.timezone || megaSession.menteeTimezone,
       isMegaSession: false,
       price: megaSession.price,
-      status: 'confirmed',
-      meeting: megaSession.meeting,
+      payment: {
+        provider: 'paypal',
+        amount: megaSession.price.amount,
+        currency: megaSession.price.currency,
+        status: 'pending'
+      },
+      status: 'pending',
       parentMegaSession: megaSessionId
     });
 
     res.status(200).json({
       success: true,
-      message: 'Successfully joined mega session',
       participantBooking,
       megaSession: {
         ...megaSession.toObject(),
         participantCount: megaSession.participants.length
-      }
+      },
+      paymentRequired: true
     });
 
   } catch (error) {
@@ -378,7 +375,8 @@ exports.getMyBookings = async (req, res) => {
 
     // Add status filter if provided
     if (status && status !== 'all') {
-      baseQuery.status = status;
+      const statusValues = status.split(',').map(value => value.trim()).filter(Boolean);
+      baseQuery.status = statusValues.length > 1 ? { $in: statusValues } : statusValues[0];
     }
 
     // Add upcoming filter (only future bookings)

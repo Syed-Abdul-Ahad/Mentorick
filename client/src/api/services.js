@@ -267,6 +267,30 @@ class BookingService extends ApiService {
   }
 }
 
+class PaymentService extends ApiService {
+  constructor() {
+    super('/payments');
+  }
+
+  async createOrder(payload) {
+    try {
+      const response = await apiClient.post('/payments/orders', payload);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async captureOrder(payload) {
+    try {
+      const response = await apiClient.post('/payments/orders/capture', payload);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+}
+
 class MegaSessionService extends ApiService {
   constructor() {
     super('/mega-sessions');
@@ -351,4 +375,5 @@ export const mentorService = new MentorService();
 export const menteeService = new MenteeService();
 export const availabilityService = new AvailabilityService();
 export const bookingService = new BookingService();
+export const paymentService = new PaymentService();
 export const megaSessionService = new MegaSessionService();

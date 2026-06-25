@@ -1,6 +1,6 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import Button from '../shared/Button';
+import PayPalCheckout from '../shared/PayPalCheckout';
 import { formatTimeTo12Hour } from '../../utils/timezone';
 
 /**
@@ -14,7 +14,9 @@ const BookingSummary = ({
   mentorName, 
   timezone,
   description, 
-  onConfirm, 
+  onCreateOrder,
+  onCaptureOrder,
+  onPaymentSuccess,
   onBack, 
   loading,
   error 
@@ -82,29 +84,26 @@ const BookingSummary = ({
         </div>
       )}
 
-      <div className="flex space-x-3">
+      <div className="space-y-4">
+        <PayPalCheckout
+          onCreateOrder={onCreateOrder}
+          onApprove={async (data) => {
+            const result = await onCaptureOrder(data.orderID);
+            if (onPaymentSuccess) {
+              onPaymentSuccess(result.booking);
+            }
+          }}
+          onError={() => {}}
+          helperText="Pay securely with PayPal to confirm this booking."
+        />
+
         <Button
           variant="secondary"
           onClick={onBack}
           disabled={loading}
-          className="flex-1"
+          className="w-full"
         >
           Back
-        </Button>
-        
-        <Button
-          onClick={onConfirm}
-          disabled={loading}
-          className="flex-1"
-        >
-          {loading ? (
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Booking...
-            </div>
-          ) : (
-            'Confirm Booking'
-          )}
         </Button>
       </div>
     </div>

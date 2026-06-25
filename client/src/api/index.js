@@ -12,6 +12,7 @@ export {
   menteeService,
   availabilityService, 
   bookingService, 
+  paymentService,
   megaSessionService 
 } from './services';
 

@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -14,6 +15,7 @@ const menteeProfileRoutes = require('./routes/menteeProfileRoutes');
 const availabilityRoutes = require('./routes/mentorAvailability.routes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const megaSessionRoutes = require('./routes/megaSessionRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 const googleRoutes = require('./routes/googleRoutes');
 
 // Import middleware
@@ -21,6 +23,7 @@ const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
 
 const app = express();
+app.set('trust proxy', true);
 app.use(cookieParser());
 
 // Security middleware
@@ -33,6 +36,7 @@ const limiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
+  validate: { trustProxy: false },
 });
 app.use(limiter);
 
@@ -82,6 +86,10 @@ app.use('/api/mentee', menteeProfileRoutes);
 app.use('/api/mentor/availability', availabilityRoutes);
 app.use('/api/booking', bookingRoutes);
 app.use('/api/mega-sessions', megaSessionRoutes);
+app.use('/api/payments', paymentRoutes);
+app.post('/api/paypal/webhook', require('./controllers/paymentController').paypalWebhook);
+app.get('/api/paypal/verify-merchant', require('./middleware/auth').authenticate, require('./controllers/paymentController').verifyMerchant);
+app.post('/api/paypal/verify-merchant', require('./middleware/auth').authenticate, require('./controllers/paymentController').verifyMerchant);
 app.use('/auth', googleRoutes);
 
 

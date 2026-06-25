@@ -1,14 +1,42 @@
+import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUser } from '../../store/hooks';
 import { clearUser } from '../../store/slices/authSlice';
 import { authService } from '../../api';
+import apiClient from '../../api/axiosConfig';
 import MainLayout from '../../components/layout/MainLayout';
+import toast from 'react-hot-toast';
 
 const Dashboard = () => {
   const user = useUser();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  const currentTab = searchParams.get('tab') || 'overview';
+  
+  const [mentorProfile, setMentorProfile] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+
+  useEffect(() => {
+    if (user?.role === 'mentor' && currentTab === 'payments') {
+      const fetchProfile = async () => {
+        setLoadingProfile(true);
+        try {
+          const res = await apiClient.get('/mentor/my-profile');
+          if (res.data && res.data.data) {
+            setMentorProfile(res.data.data);
+          }
+        } catch (error) {
+          console.error("Error fetching mentor profile:", error);
+        } finally {
+          setLoadingProfile(false);
+        }
+      };
+      fetchProfile();
+    }
+  }, [user, currentTab]);
 
   const handleLogout = async () => {
     try {
@@ -21,11 +49,23 @@ const Dashboard = () => {
     }
   };
 
+  const handleConnectPayPal = async () => {
+    try {
+      const res = await apiClient.get('/payments/connect');
+      if (res.data && res.data.url) {
+        window.location.href = res.data.url;
+      }
+    } catch (error) {
+      console.error("Error connecting PayPal:", error);
+      toast.error('Failed to initiate PayPal connection');
+    }
+  };
+
   return (
     <MainLayout>
-      <div className="p-6">
+      <div className="p-6 max-w-7xl mx-auto">
         {/* Header with logout */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
           <button
             onClick={handleLogout}
@@ -35,10 +75,29 @@ const Dashboard = () => {
           </button>
         </div>
 
-        {/* Overview Content */}
-        <div className="space-y-8">
-          {/* Welcome Section */}
-          <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-8 text-white">
+        {/* Tabs */}
+        {user?.role === 'mentor' && (
+          <div className="flex border-b border-gray-200 mb-8 space-x-6">
+            <button
+              onClick={() => setSearchParams({ tab: 'overview' })}
+              className={`pb-3 font-semibold text-lg transition-colors ${currentTab === 'overview' ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setSearchParams({ tab: 'payments' })}
+              className={`pb-3 font-semibold text-lg transition-colors ${currentTab === 'payments' ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              💳 Payment Settings
+            </button>
+          </div>
+        )}
+
+        {/* Content based on tab */}
+        {currentTab === 'overview' && (
+          <div className="space-y-8">
+            {/* Welcome Section */}
+            <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-8 text-white">
             <div className="max-w-4xl">
               <h2 className="text-3xl font-bold mb-4">
                 Welcome back, {user?.firstName || user?.name || 'User'}! 👋
@@ -232,6 +291,52 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+        )}
+
+        {currentTab === 'payments' && user?.role === 'mentor' && (
+          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+            <h2 className="text-2xl font-bold mb-6">Payment Settings</h2>
+            
+            {loadingProfile ? (
+              <p className="text-gray-500">Loading your profile...</p>
+            ) : mentorProfile?.paypal?.isConnected ? (
+              <div className="bg-green-50 border border-green-200 p-6 rounded-lg">
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="text-green-600 text-3xl">✅</div>
+                  <div>
+                    <h3 className="text-lg font-bold text-green-800">PayPal Connected</h3>
+                    <p className="text-green-700">You are ready to receive payments.</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-green-200 text-green-800">
+                  <p><strong>Email:</strong> {mentorProfile.paypal.email}</p>
+                  <p><strong>Merchant ID:</strong> {mentorProfile.paypal.merchantId}</p>
+                  <p><strong>Connected on:</strong> {new Date(mentorProfile.paypal.connectedAt).toLocaleDateString()}</p>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="bg-red-50 border border-red-200 p-6 rounded-lg mb-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="text-red-600 text-3xl">⚠️</div>
+                    <div>
+                      <h3 className="text-lg font-bold text-red-800">PayPal Not Connected</h3>
+                      <p className="text-red-700">You have not connected your PayPal account. You cannot receive payments for your sessions.</p>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleConnectPayPal}
+                  className="bg-[#0070ba] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#003087] transition-all duration-200 flex items-center space-x-2"
+                >
+                  <span>💳</span>
+                  <span>Connect PayPal</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </MainLayout>
   );

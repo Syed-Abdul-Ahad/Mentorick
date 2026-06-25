@@ -103,6 +103,17 @@ const MentorProfileSchema = new mongoose.Schema({
   isAvailableForBooking: {
     type: Boolean,
     default: true
+  },
+
+  paypal: {
+    isConnected: { type: Boolean, default: false },
+    merchantId: String,
+    email: String,
+    connectedAt: Date,
+    payments_receivable: { type: Boolean, default: false },
+    trackingId: String,
+    onboardingPending: { type: Boolean, default: false },
+    onboardingStartedAt: Date
   }
 
 }, { timestamps: true });

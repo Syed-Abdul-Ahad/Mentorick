@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { megaSessionService } from '../api/services';
+import { megaSessionService, paymentService } from '../api';
 import { toast } from 'react-hot-toast';
 import MainLayout from '../components/layout/MainLayout';
 import Button from '../components/shared/Button';
 import Card from '../components/shared/Card';
+import PayPalCheckout from '../components/shared/PayPalCheckout';
 
 const MegaSessions = () => {
   const { user } = useSelector((state) => state.auth);
   const [megaSessions, setMegaSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [joiningSession, setJoiningSession] = useState(null);
+  const [activePaymentSessionId, setActivePaymentSessionId] = useState(null);
+  const [pendingParticipantBooking, setPendingParticipantBooking] = useState(null);
 
   // Fetch mega sessions
   useEffect(() => {
@@ -29,38 +32,73 @@ const MegaSessions = () => {
     fetchMegaSessions();
   }, []);
 
+  const handleOpenPayment = (sessionId) => {
+    setActivePaymentSessionId(sessionId);
+  };
+
+  const handleCancelPayment = () => {
+    setActivePaymentSessionId(null);
+    setPendingParticipantBooking(null);
+  };
+
   // Join mega session
-  const handleJoinSession = async (sessionId) => {
+  const handleCreateJoinOrder = async (session) => {
     if (!user) {
       toast.error('Please log in to join sessions');
-      return;
+      throw new Error('Please log in to join sessions');
     }
 
-    setJoiningSession(sessionId);
+    setJoiningSession(session._id);
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const response = await megaSessionService.joinMegaSession(sessionId, { timezone });
-      
-      console.log('Join session response:', response);
-      
-      // Check for successful response
-      if (response.success || response.message) {
-        toast.success(response.message || 'Successfully joined the mega session!');
-        
-        // Refresh sessions to show updated participant count
-        const sessionsResponse = await megaSessionService.getMegaSessions({ upcoming: true });
-        setMegaSessions(sessionsResponse.megaSessions || []);
-      } else {
-        toast.error('Failed to join session');
+      const response = await megaSessionService.joinMegaSession(session._id, { timezone });
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to start payment for this session');
       }
-      
+
+      setPendingParticipantBooking(response.participantBooking);
+
+      const orderResponse = await paymentService.createOrder({
+        bookingId: response.participantBooking._id
+      });
+
+      if (!orderResponse.success) {
+        throw new Error(orderResponse.error || 'Failed to create PayPal order');
+      }
+
+      return orderResponse.orderID;
     } catch (error) {
       console.error('Join session error:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to join session';
       toast.error(errorMessage);
+      throw error;
     } finally {
       setJoiningSession(null);
     }
+  };
+
+  const handleCaptureJoinOrder = async (orderId) => {
+    if (!pendingParticipantBooking?._id) {
+      throw new Error('Participant booking is missing');
+    }
+
+    const response = await paymentService.captureOrder({
+      bookingId: pendingParticipantBooking._id,
+      orderId
+    });
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to complete session payment');
+    }
+
+    toast.success('Successfully joined the mega session!');
+
+    const sessionsResponse = await megaSessionService.getMegaSessions({ upcoming: true });
+    setMegaSessions(sessionsResponse.megaSessions || []);
+    handleCancelPayment();
+
+    return response;
   };
 
   // Format time for user's timezone
@@ -263,13 +301,41 @@ const MegaSessions = () => {
                         Log in to Join
                       </Button>
                     ) : (
-                      <Button
-                        className="w-full"
-                        onClick={() => handleJoinSession(session._id)}
-                        disabled={joiningSession === session._id}
-                      >
-                        {joiningSession === session._id ? 'Joining...' : 'Join Session'}
-                      </Button>
+                      <div className="space-y-3">
+                        <Button
+                          className="w-full"
+                          onClick={() => {
+                            if (activePaymentSessionId === session._id) {
+                              handleCancelPayment();
+                              return;
+                            }
+
+                            handleOpenPayment(session._id);
+                          }}
+                          disabled={joiningSession === session._id}
+                        >
+                          {activePaymentSessionId === session._id
+                            ? 'Hide Payment'
+                            : joiningSession === session._id
+                            ? 'Preparing...'
+                            : 'Join Session'}
+                        </Button>
+
+                        {activePaymentSessionId === session._id && (
+                          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                            <PayPalCheckout
+                              amount={session.price.amount}
+                              currency={session.price.currency}
+                              helperText="Pay securely to reserve your seat in this mega session."
+                              onCreateOrder={() => handleCreateJoinOrder(session)}
+                              onApprove={async (data) => {
+                                await handleCaptureJoinOrder(data.orderID);
+                              }}
+                              onCancel={handleCancelPayment}
+                            />
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </Card>

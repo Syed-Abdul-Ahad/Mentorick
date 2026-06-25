@@ -33,7 +33,8 @@ export const useCreateBooking = () => {
       if (response?.success) {
         return {
           success: true,
-          booking: response.booking
+          booking: response.booking,
+          paymentRequired: response.paymentRequired !== false
         };
       } else {
         throw new Error('Booking creation failed');

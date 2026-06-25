@@ -92,7 +92,10 @@ server/
    MONGODB_URI=mongodb://localhost:27017/mentorick
    JWT_SECRET=your_super_secret_jwt_key_here
    JWT_EXPIRE=30d
-   CLIENT_URL=http://localhost:3000
+   CLIENT_URL=http://localhost:5173
+   PAYPAL_CLIENT_ID=your_paypal_client_id
+   PAYPAL_CLIENT_SECRET=your_paypal_client_secret
+   PAYPAL_ENV=sandbox
    ```
 
 4. **Start MongoDB**
@@ -151,6 +154,10 @@ The server will start on `http://localhost:5000`
 - `PUT /api/sessions/:id/complete` - Complete session (Mentor only)
 - `POST /api/sessions/:id/feedback` - Add session feedback
 - `GET /api/sessions/stats` - Get session statistics (Admin only)
+
+### Payments
+- `POST /api/payments/orders` - Create a PayPal order for a pending booking
+- `POST /api/payments/orders/capture` - Capture a PayPal order and finalize the booking
 
 ## Data Models
 

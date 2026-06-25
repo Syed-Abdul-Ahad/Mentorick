@@ -7,6 +7,7 @@ import DurationSelector from './DurationSelector';
 import BookingSummary from './BookingSummary';
 import { useMentorAvailability } from '../../hooks/useMentorAvailability';
 import { useCreateBooking } from '../../hooks/useCreateBooking';
+import { paymentService } from '../../api';
 
 /**
  * Main booking modal component that orchestrates the entire booking flow
@@ -21,6 +22,8 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedDuration, setSelectedDuration] = useState(null);
   const [description, setDescription] = useState('');
+  const [draftBooking, setDraftBooking] = useState(null);
+  const [paymentError, setPaymentError] = useState('');
 
   // Fetch mentor availability
   const { availability, loading: availabilityLoading, error: availabilityError, timezone } = useMentorAvailability(mentorId);
@@ -36,6 +39,8 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
       setSelectedSlot(null);
       setSelectedDuration(null);
       setDescription('');
+      setDraftBooking(null);
+      setPaymentError('');
       clearError();
     }
   }, [isOpen, clearError]);
@@ -44,27 +49,35 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
     setSelectedDate(date);
     setSelectedSlot(null);
     setSelectedDuration(null);
+    setDraftBooking(null);
+    setPaymentError('');
     setCurrentStep(2);
   };
 
   const handleSlotSelect = (slot) => {
     setSelectedSlot(slot);
     setSelectedDuration(null);
+    setDraftBooking(null);
+    setPaymentError('');
     setCurrentStep(3);
   };
 
   const handleDurationSelect = (duration) => {
     setSelectedDuration(duration);
+    setDraftBooking(null);
+    setPaymentError('');
     setCurrentStep(4);
   };
 
   const handleDescriptionNext = () => {
+    setDraftBooking(null);
+    setPaymentError('');
     setCurrentStep(5);
   };
 
-  const handleConfirmBooking = async () => {
+  const handleCreateOrder = async () => {
     if (!selectedDate || !selectedSlot || !selectedDuration) {
-      return;
+      throw new Error('Please complete your booking selection first');
     }
 
     // Format the startTime as ISO string (without timezone offset)
@@ -78,18 +91,51 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
       description: description.trim()
     };
 
-    const result = await createBooking(bookingData);
-    
-    if (result.success) {
-      if (onBookingSuccess) {
-        onBookingSuccess(result.booking);
-      }
-      onClose();
+    const bookingResult = await createBooking(bookingData);
+
+    if (!bookingResult.success) {
+      setPaymentError(bookingResult.error || 'Failed to create booking draft');
+      throw new Error(bookingResult.error || 'Failed to create booking draft');
     }
+
+    setDraftBooking(bookingResult.booking);
+
+    const orderResult = await paymentService.createOrder({
+      bookingId: bookingResult.booking._id
+    });
+
+    if (!orderResult.success) {
+      setPaymentError(orderResult.error || 'Failed to create PayPal order');
+      throw new Error(orderResult.error || 'Failed to create PayPal order');
+    }
+
+    return orderResult.orderID;
+  };
+
+  const handleCaptureOrder = async (orderId) => {
+    if (!draftBooking?._id) {
+      throw new Error('Booking draft is missing');
+    }
+
+    const result = await paymentService.captureOrder({
+      bookingId: draftBooking._id,
+      orderId
+    });
+
+    if (!result.success) {
+      setPaymentError(result.error || 'Failed to capture PayPal payment');
+      throw new Error(result.error || 'Failed to capture PayPal payment');
+    }
+
+    return result;
   };
 
   const handleBack = () => {
     if (currentStep > 1) {
+      if (currentStep === 5) {
+        setDraftBooking(null);
+        setPaymentError('');
+      }
       setCurrentStep(currentStep - 1);
       if (currentStep === 2) {
         setSelectedSlot(null);
@@ -113,7 +159,7 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
     2: 'Select Time',
     3: 'Select Duration',
     4: 'Add Description',
-    5: 'Confirm Booking'
+    5: 'Complete Payment'
   };
 
   if (!isOpen) return null;
@@ -300,10 +346,18 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
                   mentorName={mentorName}
                   timezone={timezone}
                   description={description}
-                  onConfirm={handleConfirmBooking}
+                  onCreateOrder={handleCreateOrder}
+                  onCaptureOrder={handleCaptureOrder}
+                  onPaymentSuccess={(booking) => {
+                    setPaymentError('');
+                    if (onBookingSuccess) {
+                      onBookingSuccess(booking);
+                    }
+                    onClose();
+                  }}
                   onBack={handleBack}
                   loading={bookingLoading}
-                  error={bookingError}
+                  error={paymentError || bookingError}
                 />
               </motion.div>
             )}

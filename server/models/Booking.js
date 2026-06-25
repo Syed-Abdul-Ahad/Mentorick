@@ -28,9 +28,18 @@ const BookingSchema = new mongoose.Schema({
   },
 
   payment: {
-    provider: String,
-    transactionId: String,
-    status: { type: String }
+    provider: { type: String, default: 'paypal' },
+    orderId: { type: String },
+    captureId: { type: String },
+    transactionId: { type: String },
+    payerEmail: { type: String },
+    payerId: { type: String },
+    amount: { type: Number },
+    currency: { type: String, enum: ['USD', 'PKR'] },
+    status: { type: String, default: 'pending' },
+    capturedAt: { type: Date },
+    platformFee: { type: Number },
+    mentorPayoutAmount: { type: Number }
   },
 
   status: {
@@ -48,5 +57,7 @@ const BookingSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 BookingSchema.index({ mentor: 1, startTimeUTC: 1, endTimeUTC: 1 });
+BookingSchema.index({ parentMegaSession: 1, mentee: 1, status: 1 });
+BookingSchema.index({ 'payment.orderId': 1 }, { sparse: true });
 
 module.exports = mongoose.model('Booking', BookingSchema);

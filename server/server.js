@@ -1,6 +1,6 @@
+require('dotenv').config();
 const app = require('./app');
 const connectDB = require('./config/database');
-require('dotenv').config();
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
