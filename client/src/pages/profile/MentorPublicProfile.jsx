@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaLinkedin, FaTwitter, FaInstagram} from 'react-icons/fa';
 import { CiGlobe } from "react-icons/ci";
@@ -11,6 +11,7 @@ import currencyService from '../../api/currencyService';
 import { useUser } from '../../store/hooks';
 import BookingModal from '../../components/booking/BookingModal';
 import Toast from '../../components/shared/Toast';
+import MegaSessionCard from '../../components/megaSession/MegaSessionCard';
 import { megaSessionService } from '../../api/services';
 
 
@@ -467,83 +468,25 @@ const MentorPublicProfile = () => {
               Upcoming Mega Sessions with {profile?.fullName}
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mentorMegaSessions.map((session) => {
-                const startDate = new Date(session.startTimeUTC);
-                const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                const localTime = startDate.toLocaleTimeString([], { 
-                  hour: '2-digit', 
-                  minute: '2-digit',
-                  timeZone: userTimezone
-                });
-                const localDate = startDate.toLocaleDateString([], {
-                  weekday: 'long',
-                  month: 'short',
-                  day: 'numeric',
-                  timeZone: userTimezone
-                });
-
-                return (
-                  <div key={session._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                    <div className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
-                          {session.title}
-                        </h3>
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                          Open
-                        </span>
-                      </div>
-
-                      {session.description && (
-                        <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                          {session.description}
-                        </p>
-                      )}
-
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <HiOutlineClock className="w-4 h-4 mr-2" />
-                          <div>
-                            <div>{localDate} at {localTime}</div>
-                            <div className="text-xs text-gray-500">
-                              ({startDate.toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit',
-                                timeZone: 'UTC'
-                              })} UTC)
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center text-sm text-gray-600">
-                          <HiOutlineUsers className="w-4 h-4 mr-2" />
-                          {session.participants?.length || 0} / {session.maxParticipants} participants
-                        </div>
-
-                        <div className="flex items-center text-sm text-gray-600">
-                          <HiOutlineBriefcase className="w-4 h-4 mr-2" />
-                          {session.price?.amount > 0 ? `${session.price.currency} ${session.price.amount}` : 'Free'}
-                        </div>
-
-                        <div className="flex items-center text-sm text-gray-600">
-                          <HiOutlineClock className="w-4 h-4 mr-2" />
-                          {session.durationMinutes} minutes
-                        </div>
-                      </div>
-
-                      <div className="pt-4 border-t">
-                        <a 
-                          href="/mega-sessions" 
-                          className="inline-block w-full text-center bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
-                        >
-                          View Details & Join
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start">
+              {mentorMegaSessions.map((session) => (
+                <MegaSessionCard
+                  key={session._id}
+                  session={session}
+                  mentorProfile={{
+                    fullName: profile?.fullName,
+                    title: profile?.title,
+                    headshot: profile?.headshot,
+                  }}
+                >
+                  <Link
+                    to="/mega-sessions"
+                    className="flex w-full items-center justify-center rounded-lg !bg-gradient-to-r !from-violet-600 !to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:!from-violet-700 hover:!to-indigo-700"
+                  >
+                    View Details & Join
+                  </Link>
+                </MegaSessionCard>
+              ))}
             </div>
           </div>
         </section>

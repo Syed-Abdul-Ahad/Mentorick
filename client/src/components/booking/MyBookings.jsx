@@ -102,15 +102,12 @@ const MyBookings = () => {
 
   const statCards = analytics
     ? [
-        { label: 'Upcoming', value: analytics.upcomingBookings, color: 'text-blue-600', bg: 'from-blue-50 to-white', ring: 'ring-blue-100' },
-        { label: 'Completed', value: analytics.statusBreakdown.completed || 0, color: 'text-emerald-600', bg: 'from-emerald-50 to-white', ring: 'ring-emerald-100' },
-        { label: 'Pending', value: analytics.statusBreakdown.pending || 0, color: 'text-amber-600', bg: 'from-amber-50 to-white', ring: 'ring-amber-100' },
+        { label: 'Upcoming', value: analytics.upcomingBookings },
+        { label: 'Completed', value: analytics.statusBreakdown.completed || 0 },
+        { label: 'Pending', value: analytics.statusBreakdown.pending || 0 },
         {
           label: 'Total',
           value: Object.values(analytics.statusBreakdown).reduce((a, b) => a + b, 0),
-          color: 'text-gray-700',
-          bg: 'from-gray-50 to-white',
-          ring: 'ring-gray-100',
         },
       ]
     : [];
@@ -128,10 +125,10 @@ const MyBookings = () => {
             {statCards.map((stat) => (
               <div
                 key={stat.label}
-                className={`rounded-2xl bg-gradient-to-b ${stat.bg} border border-gray-100 ring-1 ${stat.ring} p-4 sm:p-5`}
+                className="rounded-2xl bg-white border border-gray-200 p-4 sm:p-5"
               >
                 <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{stat.label}</p>
-                <p className={`mt-1 text-2xl sm:text-3xl font-bold tabular-nums ${stat.color}`}>
+                <p className="mt-1 text-2xl sm:text-3xl font-bold tabular-nums text-gray-900">
                   {stat.value}
                 </p>
               </div>
@@ -157,7 +154,7 @@ const MyBookings = () => {
           </p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredBookings.map((booking) => {
             const userTimezone =
               booking.userRole === 'mentor' ? booking.mentorTimezone : booking.menteeTimezone;

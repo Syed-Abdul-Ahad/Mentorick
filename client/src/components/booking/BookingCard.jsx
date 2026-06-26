@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { HiOutlineVideoCamera } from 'react-icons/hi2';
-import Button from '../shared/Button';
+import {
+  HiOutlineVideoCamera,
+  HiOutlineCalendar,
+  HiOutlineClock,
+} from 'react-icons/hi2';
 
 const resolveImageUrl = (src) => {
   if (!src) return null;
@@ -16,55 +19,107 @@ const getInitials = (firstName = '', lastName = '') => {
   return (first + last).toUpperCase() || '?';
 };
 
-const ParticipantAvatar = ({ src, firstName, lastName, label, sublabel, variant = 'mentor' }) => {
+const getOrdinal = (day) => {
+  if (day > 3 && day < 21) return 'th';
+  switch (day % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
+  }
+};
+
+const formatCardDate = (utcDate, timezone) => {
+  const date = new Date(utcDate);
+  const weekday = date.toLocaleDateString('en-US', { weekday: 'short', timeZone: timezone });
+  const dayNum = parseInt(
+    date.toLocaleDateString('en-US', { day: 'numeric', timeZone: timezone }),
+    10
+  );
+  const month = date.toLocaleDateString('en-US', { month: 'long', timeZone: timezone });
+  const year = date.toLocaleDateString('en-US', { year: 'numeric', timeZone: timezone });
+  return `${weekday}, ${dayNum}${getOrdinal(dayNum)} ${month}, ${year}`;
+};
+
+const formatTimezoneLabel = (timezone) => {
+  if (!timezone) return 'UTC';
+  return timezone.split('/').map((part) => part.replace(/_/g, ' ')).join(' / ');
+};
+
+const formatPrice = (amount, currency) => {
+  if (currency === 'USD') return `$ ${amount}`;
+  return `${currency} ${amount}`;
+};
+
+const formatUtcTooltip = (utcDate) => {
+  const date = new Date(utcDate);
+  const time = date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'UTC',
+    hour12: true,
+  });
+  const dateStr = date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+  return `${time} UTC · ${dateStr}`;
+};
+
+const UtcInfoTooltip = ({ text }) => (
+  <span className="group/utc relative inline-flex">
+    <button
+      type="button"
+      className="flex h-[18px] w-[18px] cursor-help items-center justify-center rounded-full bg-[#E0E0E0] text-[9px] font-bold leading-none text-[#888888] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+      aria-label={`UTC: ${text}`}
+    >
+      i
+    </button>
+    <span
+      role="tooltip"
+      className="pointer-events-none absolute bottom-full right-0 z-30 mb-1.5 whitespace-nowrap rounded-md bg-[#333333] px-2.5 py-1.5 text-[10px] font-medium leading-none text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover/utc:opacity-100 group-focus-within/utc:opacity-100"
+    >
+      {text}
+    </span>
+  </span>
+);
+
+const STATUS_BADGE = {
+  pending: 'bg-[#F59E0B]',
+  confirmed: 'bg-[#28B463]',
+  completed: 'bg-[#3B82F6]',
+  cancelled: 'bg-[#EF4444]',
+  'no-show': 'bg-[#9CA3AF]',
+};
+
+const ParticipantAvatar = ({ src, firstName, lastName }) => {
   const [imgError, setImgError] = useState(false);
   const imageUrl = resolveImageUrl(src);
   const showImage = imageUrl && !imgError;
   const initials = getInitials(firstName, lastName);
-  const isMentor = variant === 'mentor';
 
   return (
-    <div className="flex flex-col items-center text-center min-w-0 flex-1">
-      <div
-        className={`
-          relative w-14 h-14 rounded-full ring-2 ring-white shadow-md overflow-hidden flex-shrink-0
-          ${isMentor
-            ? 'bg-gradient-to-br from-primary-400 to-primary-600'
-            : 'bg-gradient-to-br from-slate-400 to-slate-600'}
-        `}
-      >
-        {showImage && (
-          <img
-            src={imageUrl}
-            alt={`${firstName} ${lastName}`}
-            className="w-full h-full object-cover"
-            onError={() => setImgError(true)}
-          />
-        )}
-        {!showImage && (
-          <div className="absolute inset-0 flex items-center justify-center text-white font-semibold text-sm tracking-wide">
-            {initials}
-          </div>
-        )}
-      </div>
-      <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">{label}</p>
-      <p className="text-sm font-semibold text-gray-900 truncate w-full px-1" title={sublabel}>
-        {sublabel}
-      </p>
+    <div className="relative h-[92px] w-[92px] flex-shrink-0 overflow-hidden rounded-full border-[2.5px] border-[#28B463] bg-gradient-to-br from-primary-400 to-primary-600">
+      {showImage && (
+        <img
+          src={imageUrl}
+          alt={`${firstName} ${lastName}`}
+          className="h-full w-full object-cover"
+          onError={() => setImgError(true)}
+        />
+      )}
+      {!showImage && (
+        <div className="absolute inset-0 flex items-center justify-center text-xl font-semibold text-white">
+          {initials}
+        </div>
+      )}
     </div>
   );
 };
 
-const STATUS_META = {
-  pending: { dot: 'bg-amber-500', text: 'text-amber-700' },
-  confirmed: { dot: 'bg-emerald-500', text: 'text-emerald-700' },
-  completed: { dot: 'bg-blue-500', text: 'text-blue-700' },
-  cancelled: { dot: 'bg-red-500', text: 'text-red-600' },
-  'no-show': { dot: 'bg-gray-400', text: 'text-gray-600' },
-};
-
 const BookingCard = ({ booking, timeInfo, utcTimeInfo, userTimezone }) => {
-  const isMega = booking.isMegaSession || booking.parentMegaSession;
   const mentorName = booking.mentor
     ? `${booking.mentor.firstName} ${booking.mentor.lastName}`
     : 'Mentor';
@@ -74,162 +129,144 @@ const BookingCard = ({ booking, timeInfo, utcTimeInfo, userTimezone }) => {
 
   const mentorHeadshot = booking.mentorHeadshot || booking.mentorProfile?.headshot;
   const menteeHeadshot = booking.menteeHeadshot || booking.menteeProfile?.headshot;
-  const megaImage = booking.megaSessionImage || '/mega-session.jpg';
 
-  const roleLabel = booking.userRole === 'mentor' ? 'As mentor' : 'As mentee';
-  const statusMeta = STATUS_META[booking.status] || STATUS_META['no-show'];
   const statusLabel = booking.status.charAt(0).toUpperCase() + booking.status.slice(1);
+  const statusBadgeClass = STATUS_BADGE[booking.status] || STATUS_BADGE['no-show'];
+
+  const isMentorView = booking.userRole === 'mentor';
+  const displayPerson = booking.isMegaSession
+    ? {
+        headshot: mentorHeadshot,
+        firstName: booking.mentor?.firstName,
+        lastName: booking.mentor?.lastName,
+        name: mentorName,
+        roleLabel: 'As Mentor',
+      }
+    : isMentorView
+    ? {
+        headshot: menteeHeadshot,
+        firstName: booking.mentee?.firstName,
+        lastName: booking.mentee?.lastName,
+        name: menteeName,
+        roleLabel: 'As Mentee',
+      }
+    : {
+        headshot: mentorHeadshot,
+        firstName: booking.mentor?.firstName,
+        lastName: booking.mentor?.lastName,
+        name: mentorName,
+        roleLabel: 'As Mentor',
+      };
+
+  const cardDate = formatCardDate(booking.startTimeUTC, userTimezone);
+  const timezoneLabel = formatTimezoneLabel(userTimezone);
+  const utcTooltip = formatUtcTooltip(booking.startTimeUTC);
+  const agendaText = booking.description?.trim() || 'No agenda provided';
 
   return (
-    <article
-      className={`
-        group relative flex flex-col h-full rounded-2xl border bg-white overflow-hidden
-        transition-shadow duration-200 hover:shadow-lg
-        ${isMega ? 'border-violet-100' : 'border-gray-200/80'}
-      `}
-    >
-      <div className="flex flex-col flex-1 p-5">
-        {/* Header — flat metadata, no pills */}
-        <div className="flex items-start justify-between gap-4 mb-5">
-          <div className="min-w-0 space-y-1">
-            <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full shrink-0 ${statusMeta.dot}`} />
-              <span className={`text-sm font-medium ${statusMeta.text}`}>{statusLabel}</span>
-            </div>
-            <p className="text-xs text-gray-400">
-              {roleLabel}
-              {isMega && (
-                <>
-                  <span className="mx-1.5 text-gray-300">·</span>
-                  <span className={booking.isMegaSession ? 'text-violet-600' : 'text-violet-500'}>
-                    Mega session
-                  </span>
-                </>
-              )}
-            </p>
-          </div>
+    <article className="relative flex aspect-square w-full flex-col rounded-[20px] border border-[#E0E0E0] bg-white">
+      {/* Corner status badge */}
+      <span
+        className={`absolute right-0 top-0 z-10 rounded-bl-[14px] px-3.5 py-[6px] text-[11px] font-semibold text-white ${statusBadgeClass}`}
+      >
+        {statusLabel}
+      </span>
 
-          <div className="text-right shrink-0">
-            <p className="text-xl font-bold text-gray-900 tabular-nums leading-none">
-              {booking.price.amount}
-              <span className="text-sm font-semibold text-gray-400 ml-1">{booking.price.currency}</span>
+      {/* Top — profile | pricing */}
+      <div className="relative flex min-h-0 flex-[1.5]">
+        {/* Inset vertical divider — gap from top, stops before horizontal rule */}
+        <div
+          className="pointer-events-none absolute left-1/2 top-[14px] bottom-[8px] w-px -translate-x-1/2 bg-[#E0E0E0]"
+          aria-hidden="true"
+        />
+
+        {/* Left — profile */}
+        <div className="flex w-1/2 flex-col items-center justify-center px-3 pb-3 pt-5">
+          <ParticipantAvatar
+            src={displayPerson.headshot}
+            firstName={displayPerson.firstName}
+            lastName={displayPerson.lastName}
+          />
+          <p className="mt-2.5 max-w-full truncate px-1 text-center text-[17px] font-bold leading-tight text-[#1A1A1A]">
+            {displayPerson.name}
+          </p>
+          <p className="mt-0.5 text-center text-[12px] text-[#AAAAAA]">{displayPerson.roleLabel}</p>
+          {booking.isMegaSession && (
+            <p className="mt-1 max-w-full truncate px-1 text-center text-[10px] font-medium text-violet-600">
+              Mega · {booking.participants?.length || 0}/{booking.maxParticipants}
             </p>
-            <p className="text-xs text-gray-400 mt-1">{booking.durationMinutes} minutes</p>
-          </div>
+          )}
+          {booking.parentMegaSession && booking.title && (
+            <p className="mt-0.5 max-w-full truncate px-1 text-center text-[10px] font-medium text-violet-600">
+              {booking.title}
+            </p>
+          )}
         </div>
 
-        {/* Participants — unchanged */}
-        {booking.isMegaSession ? (
-          <div className="mb-5">
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-violet-50/80 to-indigo-50/50 border border-violet-100/80">
-              <ParticipantAvatar
-                src={mentorHeadshot}
-                firstName={booking.mentor?.firstName}
-                lastName={booking.mentor?.lastName}
-                label="Mentor"
-                sublabel={mentorName}
-                variant="mentor"
-              />
-              <div className="flex flex-col items-center flex-shrink-0 px-1">
-                <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-[10px] font-semibold text-violet-600 tabular-nums">
-                  {booking.participants?.length || 0}/{booking.maxParticipants}
-                </div>
-              </div>
-              <ParticipantAvatar
-                src={megaImage}
-                firstName=""
-                lastName=""
-                label="Group"
-                sublabel={booking.title || 'Mega Session'}
-                variant="mentee"
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="mb-5">
-            <div className="flex items-center gap-2 p-4 rounded-xl bg-gray-50/80 border border-gray-100">
-              <ParticipantAvatar
-                src={mentorHeadshot}
-                firstName={booking.mentor?.firstName}
-                lastName={booking.mentor?.lastName}
-                label="Mentor"
-                sublabel={mentorName}
-                variant="mentor"
-              />
-              <div className="flex-1 flex items-center justify-center px-1">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent max-w-[60px]" />
-                <span className="mx-2 text-[10px] font-medium text-gray-400 uppercase tracking-widest">with</span>
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent max-w-[60px]" />
-              </div>
-              <ParticipantAvatar
-                src={menteeHeadshot}
-                firstName={booking.mentee?.firstName}
-                lastName={booking.mentee?.lastName}
-                label="Mentee"
-                sublabel={menteeName}
-                variant="mentee"
-              />
-            </div>
-            {booking.parentMegaSession && booking.title && (
-              <p className="mt-2 text-xs text-violet-600 font-medium text-center">
-                Part of: {booking.title}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Schedule + footer — clearer hierarchy */}
-        <div className="mt-auto border-t border-gray-100 pt-4">
-          <p className="text-base font-semibold text-gray-900 leading-snug">
-            {timeInfo.day}, {timeInfo.date}
+        {/* Right — price & join */}
+        <div className="flex w-1/2 flex-col items-center justify-center px-3 pb-3 pt-8">
+          <p className="text-[26px] font-bold leading-none text-[#1A1A1A] tabular-nums">
+            {formatPrice(booking.price.amount, booking.price.currency)}
+          </p>
+          <p className="mt-2 flex items-center gap-1 text-[12px] text-[#AAAAAA]">
+            <HiOutlineClock className="h-[14px] w-[14px] shrink-0" strokeWidth={1.8} />
+            <span>{booking.durationMinutes} Minutes</span>
           </p>
 
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-            <div>
-              <p className="text-[11px] text-gray-400 mb-0.5">Your time</p>
-              <p className="text-sm font-medium text-gray-800">
-                {timeInfo.time}
-                <span className="block text-xs font-normal text-gray-400 mt-0.5">{userTimezone}</span>
-              </p>
-            </div>
-            <div>
-              <p className="text-[11px] text-gray-400 mb-0.5">UTC</p>
-              <p className="text-sm font-medium text-gray-800">
-                {utcTimeInfo.time}
-                <span className="block text-xs font-normal text-gray-400 mt-0.5">{utcTimeInfo.date}</span>
-              </p>
-            </div>
-          </div>
-
-          {booking.description && (
-            <div className="mt-4">
-              <p className="text-[11px] text-gray-400 mb-1">Agenda</p>
-              <p className="text-sm text-gray-600 leading-relaxed">{booking.description}</p>
-            </div>
-          )}
-
-          {booking.meeting?.meetingLink && (
-            <div className="mt-4">
-              <Button
-                variant="solid"
-                size="sm"
-                onClick={() => window.open(booking.meeting.meetingLink, '_blank')}
-                className={`w-full flex items-center justify-center gap-2 ${
-                  isMega ? 'bg-violet-600 hover:bg-violet-700 active:bg-violet-800' : ''
-                }`}
-              >
-                <HiOutlineVideoCamera className="w-4 h-4" />
-                Join meeting
-              </Button>
-            </div>
-          )}
-
-          {booking.status === 'pending' && booking.userRole === 'mentee' && (
-            <p className="mt-3 text-xs text-amber-700/90 leading-relaxed">
-              Waiting for confirmation — a meeting link will appear here once the session is confirmed.
-            </p>
+          {booking.meeting?.meetingLink ? (
+            <button
+              type="button"
+              onClick={() => window.open(booking.meeting.meetingLink, '_blank')}
+              className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#28B463] px-8 py-[10px] text-[12px] font-semibold text-white transition-colors hover:bg-[#239954]"
+            >
+              <span className="text-[16px] font-semibold">Join</span>
+              <HiOutlineVideoCamera className="h-[18px] w-[18px]" strokeWidth={2} />
+            </button>
+          ) : (
+            <div className="mt-3 h-[30px]" aria-hidden="true" />
           )}
         </div>
+      </div>
+
+      {/* Inset horizontal divider — gap at centre so it never meets the vertical line */}
+      <div className="mx-5 flex shrink-0 items-center gap-5" aria-hidden="true">
+        <div className="h-px flex-1 bg-[#E0E0E0]" />
+        <div className="h-px flex-1 bg-[#E0E0E0]" />
+      </div>
+
+      {/* Bottom — schedule & agenda */}
+      <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            <HiOutlineCalendar className="h-[16px] w-[16px] shrink-0 text-[#333333]" strokeWidth={2} />
+            <p className="truncate text-[15px] font-bold leading-tight text-[#1A1A1A]">{cardDate}</p>
+          </div>
+
+          <div className="relative shrink-0 text-right">
+            <div className="flex items-center justify-end gap-1">
+              <HiOutlineClock className="h-[16px] w-[16px] shrink-0 text-[#333333]" strokeWidth={2} />
+              <p className="text-[15px] font-bold text-[#1A1A1A]">{timeInfo.time}</p>
+              <UtcInfoTooltip text={utcTooltip} />
+            </div>
+            <p className="mt-0.5 text-[12px] text-[#AAAAAA]">{timezoneLabel}</p>
+          </div>
+        </div>
+
+        <div
+          title={agendaText}
+          className="mt-2.5 h-[60px] shrink-0 overflow-hidden rounded-[14px] bg-[#F0F0F0] px-3 py-2 mt-5"
+        >
+          <p className="line-clamp-2 text-[11px] leading-[1.45] text-[#888888]">{agendaText}</p>
+        </div>
+
+        {booking.status === 'pending' && booking.userRole === 'mentee' && !booking.meeting?.meetingLink && (
+          <p
+            className="mt-1 truncate text-[10px] text-amber-600"
+            title="Waiting for confirmation — meeting link will appear once confirmed."
+          >
+            Waiting for confirmation
+          </p>
+        )}
       </div>
     </article>
   );
