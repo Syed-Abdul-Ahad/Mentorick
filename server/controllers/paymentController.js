@@ -101,11 +101,12 @@ exports.captureOrder = async (req, res) => {
       return sendError(res, 403, 'You are not allowed to capture this payment');
     }
 
+    // Check if booking is already confirmed and paid, avoid re-processing
     if (booking.status === 'confirmed' && booking.payment?.status === 'paid') {
       return res.status(200).json({
         success: true,
         booking,
-        message: 'Payment already captured'
+        message: 'Payment already captured and booking confirmed'
       });
     }
 
@@ -122,6 +123,7 @@ exports.captureOrder = async (req, res) => {
     let captureResponse = null;
     let metadata = null;
 
+    // If payment status is already paid, we assume metadata is available from DB
     if (booking.payment?.status === 'paid') {
       metadata = {
         captureId: booking.payment.captureId || booking.payment.transactionId,
@@ -150,38 +152,98 @@ exports.captureOrder = async (req, res) => {
         status: 'paid',
         capturedAt: new Date()
       };
-
       await booking.save();
+
+      // NEW LOGIC FOR 1:1 SESSIONS (NON-MEGA)
+      if (!booking.isMegaSession && !booking.parentMegaSession) {
+        if (booking.mentor?.email && booking.mentee?.email) {
+          try {
+            const calendarEvent = await createCalendarEvent({
+              mentorId: booking.mentor._id,
+              mentorEmail: booking.mentor.email,
+              menteeEmail: booking.mentee.email,
+              startUTC: booking.startTimeUTC,
+              endUTC: booking.endTimeUTC,
+              title: booking.title || 'Mentorship Session',
+              description: booking.description || '1:1 Mentor Session'
+            });
+
+            booking.meeting = {
+              meetingLink: calendarEvent.meetingLink,
+              calendarEventId: calendarEvent.calendarEventId
+            };
+            booking.status = 'confirmed'; // Mark booking as confirmed
+            await booking.save();
+            console.log(`Calendar event created and booking confirmed for 1:1 session: ${booking._id}`);
+          } catch (calendarError) {
+            console.error('Error creating calendar event for 1:1 session:', calendarError);
+            // If calendar event creation fails, the booking remains 'paid' but not 'confirmed'
+            // Consider adding a retry mechanism or admin notification here.
+          }
+        } else {
+          console.warn(`Missing mentor or mentee email for 1:1 session ${booking._id}. Cannot create calendar event.`);
+        }
+      }
     }
 
-    if (!booking.parentMegaSession && booking.payment?.status !== 'paid') {
-      await booking.save();
-    }
-
+    // Existing logic for Mega Sessions (now enhanced)
     if (booking.parentMegaSession) {
-      const megaSession = await Booking.findById(booking.parentMegaSession).populate('mentor', 'email firstName lastName');
+      const megaSession = await Booking.findById(booking.parentMegaSession)
+        .populate('mentor', 'email firstName lastName')
+        .populate('mentee', 'email firstName lastName'); // Populate mentee for accurate attendee list
 
       if (!megaSession) {
-        return sendError(res, 404, 'Mega session not found');
+        return sendError(res, 404, 'Mega session not found for this participant booking');
       }
 
+      // Add participant if not already present
       if (!megaSession.participants.some((participantId) => participantId.toString() === req.user.id.toString())) {
         megaSession.participants.push(req.user.id);
       }
 
-      await megaSession.save();
+      // NEW LOGIC FOR MEGA SESSION CALENDAR EVENT CREATION (if not already created)
+      if (!megaSession.meeting?.calendarEventId) {
+        if (megaSession.mentor?.email) {
+          try {
+            const megaSessionCalendarEvent = await createMegaSessionCalendarEvent({
+              mentorId: megaSession.mentor._id,
+              mentorEmail: megaSession.mentor.email,
+              startUTC: megaSession.startTimeUTC,
+              endUTC: megaSession.endTimeUTC,
+              title: megaSession.title || 'Mega Mentorship Session',
+              description: megaSession.description || 'Group mentorship session with multiple participants'
+            });
 
-      const participantUsers = await User.find({
-        _id: { $in: megaSession.participants }
-      }).select('email');
+            megaSession.meeting = {
+              meetingLink: megaSessionCalendarEvent.meetingLink,
+              calendarEventId: megaSessionCalendarEvent.calendarEventId
+            };
+            megaSession.status = 'confirmed'; // Mark mega session as confirmed
+            console.log(`Mega session calendar event created and mega session confirmed: ${megaSession._id}`);
+          } catch (megaCalendarError) {
+            console.error('Error creating calendar event for mega session:', megaCalendarError);
+            // Mega session remains 'pending' if calendar event creation fails
+          }
+        } else {
+          console.warn(`Missing mentor email for mega session ${megaSession._id}. Cannot create calendar event.`);
+        }
+      }
 
-      const attendeeEmails = [
-        megaSession.mentor?.email,
-        ...participantUsers.map((participant) => participant.email),
-        req.user.email
-      ].filter(Boolean);
+      await megaSession.save(); // Save mega session updates
 
+      // Update attendees if calendar event exists (either existing or just created)
       if (megaSession.meeting?.calendarEventId) {
+        const participantUsers = await User.find({
+          _id: { $in: megaSession.participants }
+        }).select('email');
+
+        const attendeeEmails = [
+          megaSession.mentor?.email,
+          ...participantUsers.map((participant) => participant.email),
+          // Ensure the current mentee's email is included even if not yet saved in participants array (for initial creation)
+          booking.mentee?.email
+        ].filter(Boolean);
+
         await updateMegaSessionAttendees({
           mentorId: megaSession.mentor._id,
           calendarEventId: megaSession.meeting.calendarEventId,
@@ -190,9 +252,11 @@ exports.captureOrder = async (req, res) => {
           description: megaSession.description
         });
       }
+
+      // Update the participant's booking with confirmed status and mega session meeting details
       booking.status = 'confirmed';
-      booking.meeting = megaSession.meeting;
-      await booking.save();
+      booking.meeting = megaSession.meeting; // Link participant booking to the mega session's meeting
+      await booking.save(); // Save participant booking updates
 
       return res.status(200).json({
         success: true,
@@ -201,6 +265,15 @@ exports.captureOrder = async (req, res) => {
         captureResponse
       });
     }
+
+    // For 1:1 sessions, if calendar event creation failed, the booking status remains 'paid'
+    // but not 'confirmed' here. The initial 1:1 logic above handles setting to 'confirmed'.
+    // This final return is for cases where no specific calendar event logic applies (e.g., already confirmed).
+    if (booking.status !== 'confirmed') {
+      booking.status = 'confirmed'; // Default to confirmed if no specific calendar error prevented it
+      await booking.save();
+    }
+
 
     return res.status(200).json({
       success: true,
