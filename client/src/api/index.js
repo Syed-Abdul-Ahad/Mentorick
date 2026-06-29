@@ -13,7 +13,8 @@ export {
   availabilityService, 
   bookingService, 
   paymentService,
-  megaSessionService 
+  megaSessionService,
+  reviewService,
 } from './services';
 
 // Export everything for convenience

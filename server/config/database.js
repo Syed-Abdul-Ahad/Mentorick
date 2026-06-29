@@ -1,5 +1,26 @@
 const mongoose = require('mongoose');
 
+const LEGACY_REVIEW_INDEXES = [
+  'session_1_mentee_1',
+  'session_1',
+];
+
+const syncReviewIndexes = async () => {
+  const Review = require('../models/Review');
+  const collection = Review.collection;
+  const indexes = await collection.indexes();
+
+  for (const indexName of LEGACY_REVIEW_INDEXES) {
+    if (indexes.some((index) => index.name === indexName)) {
+      await collection.dropIndex(indexName);
+      console.log(`🧹 Dropped legacy review index: ${indexName}`);
+    }
+  }
+
+  await Review.syncIndexes();
+  console.log('✅ Review indexes synced');
+};
+
 const connectDB = async () => {
   try {
     const mongoURI = process.env.NODE_ENV === 'test' 
@@ -12,6 +33,8 @@ const connectDB = async () => {
     });
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+
+    await syncReviewIndexes();
 
     // Handle connection events
     mongoose.connection.on('error', (err) => {
@@ -36,3 +59,4 @@ const connectDB = async () => {
 };
 
 module.exports = connectDB;
+module.exports.syncReviewIndexes = syncReviewIndexes;

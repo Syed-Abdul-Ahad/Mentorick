@@ -16,6 +16,7 @@ const availabilityRoutes = require('./routes/mentorAvailability.routes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const megaSessionRoutes = require('./routes/megaSessionRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 const googleRoutes = require('./routes/googleRoutes');
 
 // Import middleware
@@ -87,6 +88,7 @@ app.use('/api/mentor/availability', availabilityRoutes);
 app.use('/api/booking', bookingRoutes);
 app.use('/api/mega-sessions', megaSessionRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/reviews', reviewRoutes);
 app.post('/api/paypal/webhook', require('./controllers/paymentController').paypalWebhook);
 app.get('/api/paypal/verify-merchant', require('./middleware/auth').authenticate, require('./controllers/paymentController').verifyMerchant);
 app.post('/api/paypal/verify-merchant', require('./middleware/auth').authenticate, require('./controllers/paymentController').verifyMerchant);

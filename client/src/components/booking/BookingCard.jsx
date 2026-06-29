@@ -101,7 +101,7 @@ const ParticipantAvatar = ({ src, firstName, lastName }) => {
   const initials = getInitials(firstName, lastName);
 
   return (
-    <div className="relative h-[92px] w-[92px] flex-shrink-0 overflow-hidden rounded-full border-[2.5px] border-[#28B463] bg-gradient-to-br from-primary-400 to-primary-600">
+    <div className="relative 2xl:h-[92px] 2xl:w-[92px] xl:h-[80px] xl:w-[80px] h-[72px] w-[72px] flex-shrink-0 overflow-hidden rounded-full border-[2.5px] border-[#28B463] bg-gray-200">
       {showImage && (
         <img
           src={imageUrl}
@@ -176,7 +176,7 @@ const BookingCard = ({ booking, timeInfo, utcTimeInfo, userTimezone }) => {
       <div className="relative flex min-h-0 flex-[1.5]">
         {/* Inset vertical divider — gap from top, stops before horizontal rule */}
         <div
-          className="pointer-events-none absolute left-1/2 top-[14px] bottom-[8px] w-px -translate-x-1/2 bg-[#E0E0E0]"
+          className="pointer-events-none absolute left-1/2 top-[25px] bottom-[30px] w-px -translate-x-1/2 bg-[#E0E0E0]"
           aria-hidden="true"
         />
 
@@ -217,10 +217,10 @@ const BookingCard = ({ booking, timeInfo, utcTimeInfo, userTimezone }) => {
             <button
               type="button"
               onClick={() => window.open(booking.meeting.meetingLink, '_blank')}
-              className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#28B463] px-8 py-[10px] text-[12px] font-semibold text-white transition-colors hover:bg-[#239954]"
+              className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#28B463] px-4 py-[6px] text-[12px] font-semibold text-white transition-colors hover:bg-[#239954]"
             >
-              <span className="text-[16px] font-semibold">Join</span>
-              <HiOutlineVideoCamera className="h-[18px] w-[18px]" strokeWidth={2} />
+              <span className="xl:text-[16px] text-[12px] font-semibold">Join</span>
+              <HiOutlineVideoCamera className="xl:h-[18px] xl:w-[18px] h-[14px] w-[14px]" strokeWidth={2} />
             </button>
           ) : (
             <div className="mt-3 h-[30px]" aria-hidden="true" />
@@ -231,11 +231,11 @@ const BookingCard = ({ booking, timeInfo, utcTimeInfo, userTimezone }) => {
       {/* Inset horizontal divider — gap at centre so it never meets the vertical line */}
       <div className="mx-5 flex shrink-0 items-center gap-5" aria-hidden="true">
         <div className="h-px flex-1 bg-[#E0E0E0]" />
-        <div className="h-px flex-1 bg-[#E0E0E0]" />
+        {/* <div className="h-px flex-1 bg-[#E0E0E0]" /> */}
       </div>
 
       {/* Bottom — schedule & agenda */}
-      <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-3">
+      <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-5">
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
             <HiOutlineCalendar className="h-[16px] w-[16px] shrink-0 text-[#333333]" strokeWidth={2} />
@@ -254,7 +254,7 @@ const BookingCard = ({ booking, timeInfo, utcTimeInfo, userTimezone }) => {
 
         <div
           title={agendaText}
-          className="mt-2.5 h-[60px] shrink-0 overflow-hidden rounded-[14px] bg-[#F0F0F0] px-3 py-2 mt-5"
+          className="mt-2.5 h-[60px] shrink-0 overflow-hidden rounded-[14px] bg-[#F0F0F0] px-3 py-2 mt-10 mb-5"
         >
           <p className="line-clamp-2 text-[11px] leading-[1.45] text-[#888888]">{agendaText}</p>
         </div>

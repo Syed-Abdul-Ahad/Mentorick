@@ -9,10 +9,11 @@ import { BiHappyBeaming } from "react-icons/bi";
 import apiClient from '../../api/axiosConfig';
 import currencyService from '../../api/currencyService';
 import { useUser } from '../../store/hooks';
+import toast from 'react-hot-toast';
 import BookingModal from '../../components/booking/BookingModal';
-import Toast from '../../components/shared/Toast';
 import MegaSessionCard from '../../components/megaSession/MegaSessionCard';
-import { megaSessionService } from '../../api/services';
+import MentorReviewsPreview from '../../components/reviews/MentorReviewsPreview';
+import { megaSessionService, reviewService } from '../../api/services';
 
 
 const MentorPublicProfile = () => {
@@ -24,9 +25,10 @@ const MentorPublicProfile = () => {
   const [convertedSessions, setConvertedSessions] = useState([]);
   const [pricesLoading, setPricesLoading] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [openFaq, setOpenFaq] = useState(null);
   const [mentorMegaSessions, setMentorMegaSessions] = useState([]);
+  const [reviewStats, setReviewStats] = useState({ averageRating: 0, reviewCount: 0 });
+  const [mentorReviews, setMentorReviews] = useState([]);
 
   const faqs = [
     {
@@ -142,6 +144,22 @@ const MentorPublicProfile = () => {
           console.error('Error fetching mega sessions:', error);
           setMentorMegaSessions([]);
         }
+
+        try {
+          const reviewsData = await reviewService.getMentorReviews(id, { page: 1, limit: 3 });
+          setReviewStats(reviewsData.stats || {
+            averageRating: profileData.averageRating || 0,
+            reviewCount: profileData.reviewCount || 0,
+          });
+          setMentorReviews(reviewsData.reviews || []);
+        } catch (error) {
+          console.error('Error fetching mentor reviews:', error);
+          setReviewStats({
+            averageRating: profileData.averageRating || 0,
+            reviewCount: profileData.reviewCount || 0,
+          });
+          setMentorReviews([]);
+        }
       } catch (e) {
         setProfile(null);
       } finally {
@@ -159,7 +177,7 @@ const MentorPublicProfile = () => {
     }
 
     if (user.role === 'mentor') {
-      showToast('Mentor cannot book a session', 'error');
+      toast.error('Mentor cannot book a session');
       console.log("Mentor cannot book a session")
       return;
     }
@@ -169,12 +187,7 @@ const MentorPublicProfile = () => {
 
   const handleBookingSuccess = (booking) => {
     setShowBookingModal(false);
-    showToast('Session booked successfully! Check your dashboard for details.');
-  };
-
-  const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 5000);
+    toast.success('Session booked successfully! Check your dashboard for details.');
   };
 
   if (loading) {
@@ -373,8 +386,14 @@ const MentorPublicProfile = () => {
                 <div className="flex justify-center mb-3">
                   <HiOutlineStar className="text-2xl text-primary" />
                 </div>
-                <div className="text-2xl font-bold text-primary mb-1">4.9</div>
-                <div className="text-sm text-gray-600">Rating</div>
+                <div className="text-2xl font-bold text-primary mb-1">
+                  {reviewStats.reviewCount > 0
+                    ? reviewStats.averageRating.toFixed(1)
+                    : (profile.averageRating > 0 ? profile.averageRating.toFixed(1) : 'New')}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Rating{reviewStats.reviewCount > 0 ? ` (${reviewStats.reviewCount})` : ''}
+                </div>
               </div>
               <div className="bg-white rounded-xl shadow-sm p-6 text-center">
                 <div className="flex justify-center mb-3">
@@ -492,6 +511,13 @@ const MentorPublicProfile = () => {
         </section>
       )}
 
+      <MentorReviewsPreview
+        mentorId={id}
+        mentorName={profile?.fullName}
+        stats={reviewStats}
+        reviews={mentorReviews}
+      />
+
       {/* FAQ Section */}
       <section className="bg-white py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -547,15 +573,6 @@ const MentorPublicProfile = () => {
         mentorName={profile?.fullName}
         onBookingSuccess={handleBookingSuccess}
       />
-
-      {/* Toast Notification */}
-      {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast({ show: false, message: '', type: 'success' })}
-        />
-      )}
     </div>
   );
 };

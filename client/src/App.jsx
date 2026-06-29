@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import MentorProfileForm from "./pages/profile/MentorProfileForm";
 import MenteeProfileForm from "./pages/profile/MenteeProfileForm";
 import MentorPublicProfile from "./pages/profile/MentorPublicProfile";
+import MentorReviewsPage from "./pages/profile/MentorReviewsPage";
 import Homepage from "./pages/Homepage";
 import Mentors from "./pages/Mentors";
 import OurWhy from "./pages/OurWhy";
@@ -146,6 +147,7 @@ function AuthenticatedApp() {
         />
         {/* Mentor public profile */}
         <Route path="/mentor/:id" element={<MentorPublicProfile />} />
+        <Route path="/mentor/:id/reviews" element={<MentorReviewsPage />} />
         
         {/* Mega Sessions (public for mentees) */}
         <Route 

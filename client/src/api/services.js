@@ -398,6 +398,45 @@ class MenteeService extends ApiService {
   }
 }
 
+class ReviewService extends ApiService {
+  constructor() {
+    super('/reviews');
+  }
+
+  async getMentorReviews(mentorId, { page = 1, limit = 10 } = {}) {
+    try {
+      const response = await apiClient.get(`/reviews/mentor/${mentorId}`, {
+        params: { page, limit },
+      });
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getMentorReviewStats(mentorId) {
+    try {
+      const response = await apiClient.get(`/reviews/mentor/${mentorId}/stats`);
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async createReview({ mentorId, rating, comment = '' }) {
+    try {
+      const response = await apiClient.post('/reviews', {
+        mentorId,
+        rating,
+        comment,
+      });
+      return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+}
+
 // Export service instances
 export const authService = new AuthService();
 export const userService = new UserService();
@@ -407,3 +446,4 @@ export const availabilityService = new AvailabilityService();
 export const bookingService = new BookingService();
 export const paymentService = new PaymentService();
 export const megaSessionService = new MegaSessionService();
+export const reviewService = new ReviewService();

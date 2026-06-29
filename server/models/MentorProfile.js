@@ -114,7 +114,19 @@ const MentorProfileSchema = new mongoose.Schema({
     trackingId: String,
     onboardingPending: { type: Boolean, default: false },
     onboardingStartedAt: Date
-  }
+  },
+
+  averageRating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5,
+  },
+  reviewCount: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
 
 }, { timestamps: true });
 
