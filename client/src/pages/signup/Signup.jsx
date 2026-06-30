@@ -7,6 +7,7 @@ import Button from "../../components/shared/Button";
 import FormInput from "../../components/shared/FormInput";
 import AuthFormLayout from "../../components/shared/AuthFormLayout";
 import AuthRightSection from "../../components/shared/AuthRightSection";
+import Seo from "../../components/seo/Seo";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -84,6 +85,12 @@ const Signup = () => {
 
   return (
     <div className="min-h-screen flex">
+      <Seo
+        title="Create Account | Mentorick"
+        description="Sign up for Mentorick to book 1:1 mentorship sessions with world-class experts."
+        canonical="/signup"
+        noindex
+      />
       <AuthFormLayout
         title="Create your account"
         subtitle="Join our mentoring community"

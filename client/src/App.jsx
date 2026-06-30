@@ -24,6 +24,9 @@ import MentorReviewsPage from "./pages/profile/MentorReviewsPage";
 import Homepage from "./pages/Homepage";
 import Mentors from "./pages/Mentors";
 import OurWhy from "./pages/OurWhy";
+import Privacy from "./pages/legal/Privacy";
+import Terms from "./pages/legal/Terms";
+import Contact from "./pages/legal/Contact";
 import Toast from "./components/shared/Toast";
 
 function AuthenticatedApp() {
@@ -88,6 +91,9 @@ function AuthenticatedApp() {
         />
         <Route path="/mentors" element={<Mentors />} />
         <Route path="/our-why" element={<OurWhy />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/contact" element={<Contact />} />
         <Route
           path="/login"
           element={

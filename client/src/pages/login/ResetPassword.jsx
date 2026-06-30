@@ -8,6 +8,7 @@ import Button from '../../components/shared/Button';
 import FormInput from '../../components/shared/FormInput';
 import AuthFormLayout from '../../components/shared/AuthFormLayout';
 import AuthRightSection from '../../components/shared/AuthRightSection';
+import Seo from '../../components/seo/Seo';
 
 const ResetPassword = () => {
   const [formData, setFormData] = useState({
@@ -86,6 +87,12 @@ const ResetPassword = () => {
 
   return (
     <div className="min-h-screen flex">
+      <Seo
+        title="Reset Password | Mentorick"
+        description="Reset your Mentorick account password."
+        canonical="/reset-password"
+        noindex
+      />
       <AuthFormLayout
         title="Reset Your Password"
         subtitle="Enter your new password below to regain access to your account."

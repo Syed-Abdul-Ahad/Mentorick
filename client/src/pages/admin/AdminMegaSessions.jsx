@@ -11,6 +11,7 @@ import DurationSelector from '../../components/booking/DurationSelector';
 import { useMentorAvailability } from '../../hooks/useMentorAvailability';
 import { formatTimeTo12Hour } from '../../utils/timezone';
 import { formatDurationLabel } from '../../utils/durationDisplay';
+import Seo from '../../components/seo/Seo';
 
 const AdminMegaSessions = () => {
   const { user } = useSelector((state) => state.auth);
@@ -39,6 +40,7 @@ const AdminMegaSessions = () => {
   if (user?.role !== 'admin') {
     return (
       <MainLayout>
+        <Seo title="Admin | Mentorick" canonical="/admin/mega-sessions" noindex />
         <div className="text-center py-12">
           <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
           <p className="text-gray-600">You need admin privileges to access this page.</p>
@@ -142,6 +144,12 @@ const AdminMegaSessions = () => {
 
   return (
     <MainLayout>
+      <Seo
+        title="Admin Mega Sessions | Mentorick"
+        description="Admin tools for creating mega mentorship sessions."
+        canonical="/admin/mega-sessions"
+        noindex
+      />
       <div className="max-w-6xl mx-auto p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Mega Session</h1>

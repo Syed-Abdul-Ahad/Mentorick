@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Our Why  Mentorick">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#312e81"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <text x="600" y="270" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="56" font-weight="700">Our Why</text>
+  <text x="600" y="340" text-anchor="middle" fill="#ddd6fe" font-family="system-ui, sans-serif" font-size="32">Accessible mentorship for everyone</text>
+  <text x="600" y="400" text-anchor="middle" fill="#ede9fe" font-family="system-ui, sans-serif" font-size="24">Mentorick</text>
+</svg>

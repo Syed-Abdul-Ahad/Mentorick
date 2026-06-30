@@ -14,6 +14,10 @@ import BookingModal from '../../components/booking/BookingModal';
 import MegaSessionCard from '../../components/megaSession/MegaSessionCard';
 import MentorReviewsPreview from '../../components/reviews/MentorReviewsPreview';
 import { megaSessionService, reviewService } from '../../api/services';
+import Seo from '../../components/seo/Seo';
+import JsonLd from '../../components/seo/JsonLd';
+import { resolveMediaUrl } from '../../utils/siteUrl';
+import { buildPersonSchema, buildBreadcrumbSchema } from '../../utils/structuredData';
 
 
 const MentorPublicProfile = () => {
@@ -219,14 +223,43 @@ const MentorPublicProfile = () => {
     instagram: FaInstagram
   };
 
+  const mentorHeadshotUrl = resolveMediaUrl(profile.headshot);
+  const mentorOgImage = mentorHeadshotUrl || '/seo/og-mentor-default.svg';
+  const mentorTopics = profile.topics?.slice(0, 3).join(', ') || 'mentorship';
+  const seoDescription = `Book a 1:1 mentoring session with ${profile.fullName}. ${profile.title}. Topics include ${mentorTopics}.`;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header/Navbar */}
-      <div className="bg-white shadow-sm border-b border-gray-300">
+      <Seo
+        title={`${profile.fullName} | ${profile.title} | Mentorick`}
+        description={seoDescription}
+        canonical={`/mentor/${id}`}
+        image={mentorOgImage}
+        type="profile"
+      />
+      <JsonLd
+        data={[
+          buildPersonSchema({
+            fullName: profile.fullName,
+            title: profile.title,
+            about: profile.about,
+            headshotUrl: mentorHeadshotUrl,
+            topics: profile.topics,
+            socialLinks: profile.socialLinks,
+            mentorId: id,
+          }),
+          buildBreadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Mentors', path: '/mentors' },
+            { name: profile.fullName, path: `/mentor/${id}` },
+          ]),
+        ]}
+      />
+      <header className="bg-white shadow-sm border-b border-gray-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-bold text-primary">Mentorick</h1>
+              <Link to="/" className="text-xl font-bold text-primary">Mentorick</Link>
             </div>
             <div className="flex items-center space-x-4">
               <button className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
@@ -235,10 +268,9 @@ const MentorPublicProfile = () => {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Profile Card */}
           <div className="lg:col-span-2">
@@ -248,6 +280,7 @@ const MentorPublicProfile = () => {
                   <img 
                     src={profile.headshot || '/api/placeholder/120/120'} 
                     alt={profile.fullName}
+                    loading="lazy"
                     className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-gray-100"
                   />
                 </div>
@@ -477,7 +510,6 @@ const MentorPublicProfile = () => {
             </div>
           </div>
         </div>
-      </div>
 
       {/* Mega Sessions Section */}
       {mentorMegaSessions.length > 0 && (
@@ -564,6 +596,8 @@ const MentorPublicProfile = () => {
           </div>
         </div>
       </section>
+
+      </main>
 
       {/* Booking Modal */}
       <BookingModal

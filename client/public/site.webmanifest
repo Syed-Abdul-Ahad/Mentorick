@@ -1,0 +1,17 @@
+{
+  "name": "Mentorick",
+  "short_name": "Mentorick",
+  "description": "1:1 video mentorship with world-class leaders",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

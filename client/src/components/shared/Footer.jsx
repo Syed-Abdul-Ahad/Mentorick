@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import {
   FaCcVisa,
   FaCcMastercard,
@@ -24,79 +25,64 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="font-semibold mb-4">Company</h4>
+            <h2 className="font-semibold mb-4 text-base">Company</h2>
             <ul className="space-y-2 text-sm text-gray-400">
               <li>
-                <a href="#" className="hover:text-white">
+                <Link to="/our-why" className="hover:text-white">
                   About Us
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white">
-                  Our Mission
-                </a>
+                <Link to="/mentor-signup" className="hover:text-white">
+                  Become a Mentor
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white">
-                  Careers
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white">
-                  Press
-                </a>
+                <Link to="/mentors" className="hover:text-white">
+                  Find Mentors
+                </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-4">Support</h4>
+            <h2 className="font-semibold mb-4 text-base">Support</h2>
             <ul className="space-y-2 text-sm text-gray-400">
               <li>
-                <a href="#" className="hover:text-white">
-                  Help Center
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white">
+                <Link to="/contact" className="hover:text-white">
                   Contact Us
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white">
+                <Link to="/privacy" className="hover:text-white">
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white">
+                <Link to="/terms" className="hover:text-white">
                   Terms of Service
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-4">Connect</h4>
+            <h2 className="font-semibold mb-4 text-base">Explore</h2>
             <ul className="space-y-2 text-sm text-gray-400">
               <li>
-                <a href="#" className="hover:text-white">
-                  Twitter
-                </a>
+                <Link to="/" className="hover:text-white">
+                  Home
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white">
-                  LinkedIn
-                </a>
+                <Link to="/mentors" className="hover:text-white">
+                  Search Mentors
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white">
-                  Instagram
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white">
-                  Facebook
-                </a>
+                <Link to="/our-why" className="hover:text-white">
+                  Our Why
+                </Link>
               </li>
             </ul>
           </div>
@@ -105,12 +91,12 @@ const Footer = () => {
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
             <div className="text-center sm:text-left">
-              <p className="text-sm text-gray-400">&copy; 2024 Mentorick. All rights reserved.</p>
+              <p className="text-sm text-gray-400">&copy; {new Date().getFullYear()} Mentorick. All rights reserved.</p>
             </div>
             
             <div className="flex flex-col items-center sm:items-end">
               <p className="text-sm text-gray-400 mb-3">Secure payments with</p>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2" aria-hidden="true">
                 <FaCcVisa className="h-6 w-8 text-gray-400" />
                 <FaCcMastercard className="h-6 w-8 text-gray-400" />
                 <FaCcAmex className="h-6 w-8 text-gray-400" />

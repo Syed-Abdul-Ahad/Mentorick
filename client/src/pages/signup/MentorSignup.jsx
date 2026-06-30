@@ -7,6 +7,7 @@ import Button from "../../components/shared/Button";
 import FormInput from "../../components/shared/FormInput";
 import AuthFormLayout from "../../components/shared/AuthFormLayout";
 import AuthRightSection from "../../components/shared/AuthRightSection";
+import Seo from "../../components/seo/Seo";
 
 const MentorSignup = () => {
   const [formData, setFormData] = useState({
@@ -86,6 +87,12 @@ const MentorSignup = () => {
 
   return (
     <div className="min-h-screen flex">
+      <Seo
+        title="Become a Mentor | Mentorick"
+        description="Apply to mentor on Mentorick. Share your expertise through structured, paid 1:1 video sessions."
+        canonical="/mentor-signup"
+        image="/seo/og-mentor-signup.svg"
+      />
       <AuthFormLayout
         title="Become a Mentor"
         subtitle="Share your expertise and guide the next generation"

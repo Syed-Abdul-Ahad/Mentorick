@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import MainLayout from "../components/layout/MainLayout";
 import MobileMenuButton from "../components/layout/MobileMenuButton";
@@ -7,6 +7,7 @@ import Button from "../components/shared/Button";
 import FormInput from "../components/shared/FormInput";
 import MentorSlider from "../components/shared/MentorSlider";
 import Footer from "../components/shared/Footer";
+import Seo from "../components/seo/Seo";
 import { mentorService } from "../api/services";
 import currencyService from "../api/currencyService";
 import {
@@ -165,6 +166,7 @@ const Mentors = () => {
               <img
                 src={mentor.image}
                 alt={mentor.name}
+                loading="lazy"
                 className="w-full h-full rounded-full object-cover"
               />
             </div>
@@ -218,6 +220,7 @@ const Mentors = () => {
             <img
               src={mentor.image}
               alt={mentor.name}
+              loading="lazy"
               className="w-full h-full object-cover"
               onError={(e) => {
                 e.target.src = '/mentor-signup.jpg'; // Fallback image
@@ -278,19 +281,25 @@ const Mentors = () => {
 
   return (
     <MainLayout hideMobileHeader>
+      <Seo
+        title="Find Mentors | Mentorick"
+        description="Search and book world-class mentors for 1:1 video sessions. Filter by expertise, industry, and price on Mentorick."
+        canonical="/mentors"
+        image="/seo/og-home.svg"
+      />
       <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <div className="bg-white shadow-sm">
+        <header className="bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
-              <h1 className="text-2xl font-bold text-primary-600">Mentorick</h1>
-              <div className="lg:hidden">
+              <Link to="/" className="text-2xl font-bold text-primary-600">Mentorick</Link>
+              <nav className="lg:hidden" aria-label="Mobile navigation">
                 <MobileMenuButton />
-              </div>
+              </nav>
             </div>
           </div>
-        </div>
+        </header>
 
+        <main>
         {/* Hero Section */}
         <section className="bg-gradient-to-br from-primary-50 to-primary-100 py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -458,6 +467,8 @@ const Mentors = () => {
             )}
           </div>
         </section>
+
+        </main>
 
         <Footer />
       </div>

@@ -8,6 +8,9 @@ import MainLayout from '../../components/layout/MainLayout';
 import ReviewCard from '../../components/reviews/ReviewCard';
 import ReviewForm from '../../components/reviews/ReviewForm';
 import StarRating from '../../components/reviews/StarRating';
+import Seo from '../../components/seo/Seo';
+import JsonLd from '../../components/seo/JsonLd';
+import { buildBreadcrumbSchema } from '../../utils/structuredData';
 
 const MentorReviewsPage = () => {
   const { id: mentorId } = useParams();
@@ -95,6 +98,20 @@ const MentorReviewsPage = () => {
 
   return (
     <MainLayout>
+      <Seo
+        title={`${mentorName} Reviews | Mentorick`}
+        description={`Read reviews and ratings for ${mentorName} on Mentorick.`}
+        canonical={`/mentor/${mentorId}/reviews`}
+        image="/seo/og-mentor-default.svg"
+      />
+      <JsonLd
+        data={buildBreadcrumbSchema([
+          { name: 'Home', path: '/' },
+          { name: 'Mentors', path: '/mentors' },
+          { name: mentorName, path: `/mentor/${mentorId}` },
+          { name: 'Reviews', path: `/mentor/${mentorId}/reviews` },
+        ])}
+      />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <Link
           to={`/mentor/${mentorId}`}

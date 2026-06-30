@@ -306,6 +306,7 @@ const MentorSlider = ({ mentors = [], searchQuery = "", sortBy = "rating" }) => 
                       <img
                         src={mentor.image}
                         alt={mentor.name}
+                        loading="lazy"
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           e.target.src = '/mentor-signup.jpg'; // Fallback image

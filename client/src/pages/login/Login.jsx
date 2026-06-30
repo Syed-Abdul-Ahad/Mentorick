@@ -9,6 +9,7 @@ import FormInput from '../../components/shared/FormInput';
 import AuthFormLayout from '../../components/shared/AuthFormLayout';
 import AuthRightSection from '../../components/shared/AuthRightSection';
 import ForgotPasswordModal from '../../components/shared/ForgotPasswordModal';
+import Seo from '../../components/seo/Seo';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -62,6 +63,12 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex">
+      <Seo
+        title="Sign In | Mentorick"
+        description="Sign in to Mentorick to book mentors, manage sessions, and access your dashboard."
+        canonical="/login"
+        noindex
+      />
       <AuthFormLayout
         title="Sign in to your account"
         subtitle="Log in to connect, learn, and grow with your mentor."

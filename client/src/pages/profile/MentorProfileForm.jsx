@@ -9,6 +9,7 @@ import { CiGlobe } from "react-icons/ci";
 import toast from 'react-hot-toast';
 import Toast from '../../components/shared/Toast';
 import { bookingService } from '../../api';
+import Seo from '../../components/seo/Seo';
 
 const initialState = {
   fullName: '',
@@ -244,6 +245,12 @@ const handleSessionPrice = (duration, field, value) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Seo
+        title="Mentor Profile Settings | Mentorick"
+        description="Edit your public mentor profile on Mentorick."
+        canonical="/profile/edit"
+        noindex
+      />
       <Toast />
       <div className="w-full px-8 py-6">
         <h1 className="text-2xl font-bold text-primary-500 mb-1">Profile Settings</h1>

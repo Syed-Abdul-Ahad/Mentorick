@@ -18,6 +18,7 @@ import apiClient from '../../api/axiosConfig';
 import MainLayout from '../../components/layout/MainLayout';
 import toast from 'react-hot-toast';
 import { formatDurationLabel } from '../../utils/durationDisplay';
+import Seo from '../../components/seo/Seo';
 
 const STATUS_DOT = {
   completed: 'bg-blue-500',
@@ -306,6 +307,12 @@ const Dashboard = () => {
 
   return (
     <MainLayout>
+      <Seo
+        title="Dashboard | Mentorick"
+        description="Your Mentorick dashboard for bookings, sessions, and account settings."
+        canonical="/dashboard"
+        noindex
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

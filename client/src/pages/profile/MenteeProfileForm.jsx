@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { HiOutlineStar } from 'react-icons/hi2';
 import Button from '../../components/shared/Button';
 import { menteeService } from '../../api';
+import Seo from '../../components/seo/Seo';
 
 const initialState = {
   fullName: '',
@@ -156,6 +157,12 @@ const MenteeProfileForm = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Seo
+        title="Mentee Profile Settings | Mentorick"
+        description="Edit your mentee profile on Mentorick."
+        canonical="/profile/edit"
+        noindex
+      />
       <Toast />
       <div className="w-full px-8 py-6">
         <h1 className="text-2xl font-bold text-primary-500 mb-1">Profile Settings</h1>

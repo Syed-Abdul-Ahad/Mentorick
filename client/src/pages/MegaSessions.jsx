@@ -11,6 +11,7 @@ import MainLayout from '../components/layout/MainLayout';
 import Button from '../components/shared/Button';
 import MegaSessionCard from '../components/megaSession/MegaSessionCard';
 import MegaSessionPaymentModal from '../components/megaSession/MegaSessionPaymentModal';
+import Seo from '../components/seo/Seo';
 
 const MegaSessions = () => {
   const { user } = useSelector((state) => state.auth);
@@ -109,6 +110,12 @@ const MegaSessions = () => {
 
   return (
     <MainLayout>
+      <Seo
+        title="Mega Sessions | Mentorick"
+        description="Browse and join group mega mentorship sessions on Mentorick."
+        canonical="/mega-sessions"
+        noindex
+      />
       <div className="max-w-6xl mx-auto p-6">
         <div className="mb-10">
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-2">Mega Sessions</h1>
@@ -215,7 +222,7 @@ const MegaSessions = () => {
           await handleCaptureJoinOrder(data.orderID);
         }}
         onCancel={handleCancelPayment}
-      />/
+      />
     </MainLayout>
   );
 };

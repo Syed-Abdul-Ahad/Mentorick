@@ -1,16 +1,23 @@
 import { Link } from 'react-router-dom';
+import Seo from '../components/seo/Seo';
 
 const NotFound = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <Seo
+        title="Page Not Found | Mentorick"
+        description="The page you requested could not be found on Mentorick."
+        canonical="/404"
+        noindex
+      />
       <div className="max-w-md w-full space-y-8 text-center">
         <div>
-          <h1 className="text-9xl font-bold text-gray-200">404</h1>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+          <p className="text-9xl font-bold text-gray-200" aria-hidden="true">404</p>
+          <h1 className="mt-6 text-3xl font-extrabold text-gray-900">
             Page not found
-          </h2>
+          </h1>
           <p className="mt-2 text-sm text-gray-600">
-            Sorry, we couldn't find the page you're looking for.
+            Sorry, we couldn&apos;t find the page you&apos;re looking for.
           </p>
         </div>
         <div className="mt-6">

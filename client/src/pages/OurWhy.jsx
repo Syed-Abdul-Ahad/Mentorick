@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Footer from '../components/shared/Footer';
 import Button from '../components/shared/Button';
 import Card from '../components/shared/Card';
+import Seo from '../components/seo/Seo';
 import { 
   AiOutlineSearch, 
   AiOutlineHeart, 
@@ -35,7 +36,14 @@ const OurWhy = () => {
 
   return (
     <>
+      <Seo
+        title="About Us — Our Why | Mentorick"
+        description="Learn why Mentorick exists: accessible 1:1 mentorship with world-class leaders who guide founders, professionals, and creators."
+        canonical="/our-why"
+        image="/seo/og-our-why.svg"
+      />
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+        <main>
         {/* Hero Section */}
         <div className="relative overflow-hidden bg-gradient-to-br from-primary-50 to-white">
           <div className="container mx-auto px-4 py-20">
@@ -526,6 +534,7 @@ const OurWhy = () => {
             </motion.div>
           </div>
         </div>
+        </main>
       </div>
       <Footer />
       </>

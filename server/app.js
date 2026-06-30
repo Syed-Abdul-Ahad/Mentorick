@@ -18,6 +18,7 @@ const megaSessionRoutes = require('./routes/megaSessionRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const googleRoutes = require('./routes/googleRoutes');
+const seoRoutes = require('./routes/seoRoutes');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -79,6 +80,10 @@ app.use('/uploads', (req, res, next) => {
   res.header('Access-Control-Allow-Credentials', 'true');
   next();
 }, require('express').static(require('path').join(__dirname, 'uploads')));
+
+// SEO routes (sitemap, robots) — proxied from client dev server in development
+app.use('/', seoRoutes);
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
