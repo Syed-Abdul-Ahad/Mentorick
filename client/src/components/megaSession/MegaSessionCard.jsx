@@ -1,5 +1,6 @@
 import { HiOutlineSparkles } from 'react-icons/hi2';
 import Card from '../shared/Card';
+import { formatDurationLabel } from '../../utils/durationDisplay';
 
 export const formatMegaSessionTime = (utcTime, userTimezone) => {
   const utcDate = new Date(utcTime);
@@ -102,7 +103,7 @@ const MegaSessionCard = ({ session, mentorProfile, children }) => {
           <p className="text-xs text-gray-400 mt-2.5">
             {participantCount}/{session.maxParticipants} seats
             <span className="mx-1.5 text-gray-300">·</span>
-            {session.durationMinutes} min
+            {formatDurationLabel(session.durationMinutes)}
           </p>
         </div>
 

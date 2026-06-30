@@ -8,6 +8,7 @@ import { HiOutlineBriefcase, HiOutlineClock, HiOutlineUsers, HiOutlineHeart, HiO
 import { CiGlobe } from "react-icons/ci";
 import toast from 'react-hot-toast';
 import Toast from '../../components/shared/Toast';
+import { bookingService } from '../../api';
 
 const initialState = {
   fullName: '',
@@ -22,12 +23,6 @@ const initialState = {
   headshot: '',
   socialLinks: { linkedin: '', twitter: '', instagram: '' },
 };
-
-const sessionOptions = [
-  { duration: '30 min', label: '30 min' },
-  { duration: '60 min', label: '60 min' },
-  { duration: '90 min', label: '90 min' },
-];
 
 const currencyOptions = [
   { code: 'USD', symbol: '$', name: 'US Dollar' },
@@ -75,11 +70,29 @@ const languageOptions = [
 
 const MentorProfileForm = () => {
   const [form, setForm] = useState(initialState);
+  const [sessionOptions, setSessionOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
   const fileInputRef = useRef();
   const { user } = useSelector(state => state.auth);
+
+  useEffect(() => {
+    const fetchDurationOptions = async () => {
+      try {
+        const response = await bookingService.getDurationOptions();
+        const options = (response.durations || []).map((entry) => ({
+          duration: entry.label,
+          label: entry.label,
+        }));
+        setSessionOptions(options);
+      } catch {
+        setSessionOptions([]);
+      }
+    };
+
+    fetchDurationOptions();
+  }, []);
 
   useEffect(() => {
     // Prefill form

@@ -17,7 +17,7 @@ const BookingSchema = new mongoose.Schema({
   startTimeUTC: { type: Date, required: true },
   endTimeUTC: { type: Date, required: true },
 
-  durationMinutes: { type: Number, enum: [15, 30, 60], required: true },
+  durationMinutes: { type: Number, enum: [15, 30, 60, 90], required: true },
 
   mentorTimezone: { type: String, required: true },
   menteeTimezone: { type: String, required: true },

@@ -21,7 +21,7 @@ export const useCreateBooking = () => {
       const payload = {
         mentorId: bookingData.mentorId,
         startTime: bookingData.startTime, // Should be ISO string without timezone offset
-        duration: bookingData.duration, // 15, 30, or 60
+        duration: bookingData.duration,
         timezone: timezone,
         currency: bookingData.currency || 'USD',
         description: bookingData.description || ''

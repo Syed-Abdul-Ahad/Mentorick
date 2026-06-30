@@ -174,7 +174,7 @@ const DayAvailabilityCard = ({
             Available slots: {selectedSlots.length}
           </div>
           <div className="text-xs text-gray-400">
-            Available for 15, 30, or 60 min sessions
+            Sessions can be booked in the session lengths you configure in your profile settings.
           </div>
         </div>
       )}

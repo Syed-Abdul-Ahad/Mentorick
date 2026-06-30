@@ -1,12 +1,26 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import {
+  formatDurationLabel,
+  getDurationDescription,
+} from '../../utils/durationDisplay';
 
 /**
- * Duration selector component for booking flow
- * Shows available durations for selected time slot
+ * Duration selector — presentation only.
+ * Available durations come from the API (backend booking engine).
  */
 const DurationSelector = ({ availableDurations, selectedDuration, onDurationSelect, disabled }) => {
-  if (!availableDurations || availableDurations.length === 0) {
+  const normalizedDurations = (availableDurations || [])
+    .map((duration) => {
+      if (typeof duration === 'number') return duration;
+      const parsed = parseInt(String(duration).replace(/\D/g, ''), 10);
+      return Number.isFinite(parsed) ? parsed : null;
+    })
+    .filter((duration) => duration !== null);
+
+  const normalizedSelected = typeof selectedDuration === 'number'
+    ? selectedDuration
+    : parseInt(String(selectedDuration).replace(/\D/g, ''), 10);
+
+  if (normalizedDurations.length === 0) {
     return (
       <div className="p-6 text-center">
         <p className="text-gray-600">Please select a time slot first</p>
@@ -14,26 +28,18 @@ const DurationSelector = ({ availableDurations, selectedDuration, onDurationSele
     );
   }
 
-  const durationInfo = {
-    15: { label: '15 min', description: 'Quick consultation' },
-    30: { label: '30 min', description: 'Standard session' },
-    60: { label: '60 min', description: 'Deep dive session' }
-  };
-
   return (
     <div className="p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Duration</h3>
       <div className="space-y-3">
-        {availableDurations.map((duration) => {
-          const isSelected = selectedDuration === duration;
-          const info = durationInfo[duration] || { label: `${duration} min`, description: 'Session' };
-          
+        {normalizedDurations.map((duration) => {
+          const isSelected = normalizedSelected === duration;
+
           return (
-            <motion.button
+            <button
               key={duration}
+              type="button"
               onClick={() => onDurationSelect(duration)}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
               disabled={disabled}
               className={`w-full p-4 rounded-lg border-2 transition-all duration-200 text-left ${
                 isSelected
@@ -44,10 +50,10 @@ const DurationSelector = ({ availableDurations, selectedDuration, onDurationSele
               <div className="flex items-center justify-between">
                 <div>
                   <div className={`font-semibold ${isSelected ? 'text-primary-700' : 'text-gray-900'}`}>
-                    {info.label}
+                    {formatDurationLabel(duration)}
                   </div>
                   <div className="text-sm text-gray-500 mt-1">
-                    {info.description}
+                    {getDurationDescription(duration)}
                   </div>
                 </div>
                 <div className={`w-5 h-5 rounded-full border-2 ${
@@ -56,11 +62,11 @@ const DurationSelector = ({ availableDurations, selectedDuration, onDurationSele
                     : 'border-gray-300'
                 }`}>
                   {isSelected && (
-                    <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                    <div className="w-full h-full rounded-full bg-white scale-50" />
                   )}
                 </div>
               </div>
-            </motion.button>
+            </button>
           );
         })}
       </div>

@@ -10,6 +10,7 @@ import TimeSlotGrid from '../../components/booking/TimeSlotGrid';
 import DurationSelector from '../../components/booking/DurationSelector';
 import { useMentorAvailability } from '../../hooks/useMentorAvailability';
 import { formatTimeTo12Hour } from '../../utils/timezone';
+import { formatDurationLabel } from '../../utils/durationDisplay';
 
 const AdminMegaSessions = () => {
   const { user } = useSelector((state) => state.auth);
@@ -17,7 +18,7 @@ const AdminMegaSessions = () => {
   const [selectedMentor, setSelectedMentor] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [selectedDuration, setSelectedDuration] = useState(60);
+  const [selectedDuration, setSelectedDuration] = useState(null);
   const [sessionForm, setSessionForm] = useState({
     title: '',
     description: '',
@@ -66,7 +67,7 @@ const AdminMegaSessions = () => {
     setSelectedMentor(mentor);
     setSelectedDate(null);
     setSelectedSlot(null);
-    setSelectedDuration(60);
+    setSelectedDuration(null);
     setStep(2);
   };
 
@@ -80,6 +81,7 @@ const AdminMegaSessions = () => {
   // Handle slot selection (using existing component)
   const handleSlotSelect = (slot) => {
     setSelectedSlot(slot);
+    setSelectedDuration(null);
     setStep(4);
   };
 
@@ -122,7 +124,7 @@ const AdminMegaSessions = () => {
       setSelectedMentor(null);
       setSelectedDate(null);
       setSelectedSlot(null);
-      setSelectedDuration(60);
+      setSelectedDuration(null);
       setStep(1);
       setSessionForm({
         title: '',
@@ -283,7 +285,7 @@ const AdminMegaSessions = () => {
 
             <Card>
               <DurationSelector
-                availableDurations={selectedMentor?.sessionDurations?.map(session => session.duration) || []}
+                availableDurations={selectedSlot?.durations || []}
                 selectedDuration={selectedDuration}
                 onDurationSelect={handleDurationSelect}
               />
@@ -400,7 +402,7 @@ const AdminMegaSessions = () => {
 
                   <div>
                     <span className="text-sm font-medium text-gray-600">Duration:</span>
-                    <p className="font-medium">{selectedDuration} minutes</p>
+                    <p className="font-medium">{formatDurationLabel(selectedDuration)}</p>
                   </div>
 
                   {sessionForm.title && (

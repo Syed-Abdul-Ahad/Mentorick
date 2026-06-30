@@ -1,107 +1,42 @@
 const MentorProfile = require('../models/MentorProfile');
 const MenteeProfile = require('../models/MenteeProfile');
 const Booking = require('../models/Booking');
-const { createCalendarEvent, createMegaSessionCalendarEvent, updateMegaSessionAttendees } = require('../utils/calendar.util');
+const { createCalendarEvent, createMegaSessionCalendarEvent } = require('../utils/calendar.util');
 const User = require('../models/User');
-const { DateTime } = require('luxon');
 const mongoose = require('mongoose');
+const bookingService = require('../services/bookingService');
 
 exports.createBooking = async (req, res) => {
   try {
     const { mentorId, startTime, duration, timezone, currency, description } = req.body;
-    const menteeId = req.user.id;
 
-    const mentorProfile = await MentorProfile.findOne({ user: mentorId });
-    if (!mentorProfile) return res.status(404).json({ message: 'Mentor not found' });
-
-    if (!mentorProfile.paypal?.isConnected) {
-      return res.status(400).json({ message: 'Mentor has not connected PayPal account' });
+    if (!mentorId || !startTime || !duration || !timezone || !currency) {
+      return res.status(400).json({ message: 'Missing required booking fields' });
     }
 
-    const startUTC = DateTime
-      .fromISO(startTime, { zone: timezone })
-      .toUTC();
-
-    const endUTC = startUTC.plus({ minutes: duration });
-
-    const exactBooking = await Booking.findOne({
-      mentor: mentorId,
-      mentee: menteeId,
-      startTimeUTC: startUTC.toJSDate(),
-      endTimeUTC: endUTC.toJSDate(),
-      durationMinutes: duration,
-      status: { $in: ['pending', 'confirmed'] }
-    });
-
-    if (exactBooking) {
-      return res.status(200).json({
-        success: true,
-        booking: exactBooking,
-        paymentRequired: exactBooking.status !== 'confirmed'
-      });
-    }
-
-    const overlap = await Booking.findOne({
-      mentor: mentorId,
-      startTimeUTC: { $lt: endUTC.toJSDate() },
-      endTimeUTC: { $gt: startUTC.toJSDate() },
-      status: { $in: ['pending', 'confirmed'] }
-    });
-
-    if (overlap) {
-      return res.status(409).json({ message: 'Slot already booked' });
-    }
-
-    const priceInfo = mentorProfile.sessionDurations.find(
-      s => parseInt(s.duration) === parseInt(duration)
-    );
-
-    if (!priceInfo) {
-      return res.status(400).json({ 
-        message: `Session duration of ${duration} minutes is not available for this mentor`
-      });
-    }
-
-    const priceAmount = priceInfo[`price${currency}`];
-    if (priceAmount === undefined) {
-      return res.status(400).json({ 
-        message: `Pricing for ${currency} currency is not available`
-      });
-    }
-
-    const booking = await Booking.create({
-      mentor: mentorId,
-      mentee: menteeId,
-      mentorProfile: mentorProfile._id,
-      startTimeUTC: startUTC.toJSDate(),
-      endTimeUTC: endUTC.toJSDate(),
-      durationMinutes: duration,
-      mentorTimezone: mentorProfile.timezone, // Automatically capture mentor's timezone
-      menteeTimezone: timezone, // Use timezone from request as mentee's timezone
+    const result = await bookingService.createBookingRecord({
+      mentorId,
+      menteeId: req.user.id,
+      startTime,
+      duration,
+      timezone,
+      currency,
       description,
-      price: {
-        amount: priceAmount,
-        currency
-      },
-      payment: {
-        provider: 'paypal',
-        amount: priceAmount,
-        currency,
-        status: 'pending'
-      },
-      status: 'pending'
     });
 
+    if (!result.ok) {
+      return res.status(result.statusCode).json({ message: result.message });
+    }
 
-    res.status(201).json({
+    res.status(result.statusCode).json({
       success: true,
-      booking,
-      paymentRequired: true
+      booking: result.booking,
+      paymentRequired: result.paymentRequired,
     });
   } catch (error) {
     console.error('Error creating booking:', error);
     res.status(500).json({
-      message: 'Internal server error while creating booking'
+      message: 'Internal server error while creating booking',
     });
   }
 };
@@ -111,96 +46,43 @@ exports.createBooking = async (req, res) => {
 ====================================================== */
 exports.createMegaSession = async (req, res) => {
   try {
-    const { 
-      mentorId, 
-      startTime, 
-      duration, 
-      timezone, 
-      currency, 
-      title, 
-      description, 
-      maxParticipants = 10 
+    const {
+      mentorId,
+      startTime,
+      duration,
+      timezone,
+      currency,
+      title,
+      description,
+      maxParticipants = 10,
     } = req.body;
-    
-    // Parse duration to extract number (handle "30 min" or just "30")
-    const durationMinutes = typeof duration === 'string' 
-      ? parseInt(duration.toString().replace(/\D/g, '')) 
-      : parseInt(duration);
-      
-    if (!durationMinutes || ![15, 30, 60].includes(durationMinutes)) {
-      return res.status(400).json({ 
-        message: 'Invalid duration. Must be 15, 30, or 60 minutes' 
-      });
-    }
-    
-    const adminId = req.user.id;
 
-    const mentorProfile = await MentorProfile.findOne({ user: mentorId });
-    if (!mentorProfile) return res.status(404).json({ message: 'Mentor not found' });
-
-    const startUTC = DateTime
-      .fromISO(startTime, { zone: timezone })
-      .toUTC();
-
-    const endUTC = startUTC.plus({ minutes: durationMinutes });
-
-    // Check for conflicts with existing bookings
-    const overlap = await Booking.findOne({
-      mentor: mentorId,
-      startTimeUTC: { $lt: endUTC.toJSDate() },
-      endTimeUTC: { $gt: startUTC.toJSDate() },
-      status: { $in: ['pending', 'confirmed'] }
-    });
-
-    if (overlap) {
-      return res.status(409).json({ 
-        message: 'Time slot conflicts with existing booking',
-        conflictingBooking: overlap
-      });
+    if (!mentorId || !startTime || !duration || !timezone || !currency) {
+      return res.status(400).json({ message: 'Missing required mega session fields' });
     }
 
-    const priceInfo = mentorProfile.sessionDurations.find(
-      s => parseInt(s.duration) === parseInt(durationMinutes)
-    );
-
-    if (!priceInfo) {
-      return res.status(400).json({ 
-        message: `Session duration of ${durationMinutes} minutes is not available for this mentor`
-      });
-    }
-
-    const priceAmount = priceInfo[`price${currency}`];
-    if (priceAmount === undefined) {
-      return res.status(400).json({ 
-        message: `Pricing for ${currency} currency is not available`
-      });
-    }
-
-    // Create mega session booking — pending until mentor accepts
-    const megaSession = await Booking.create({
-      mentor: mentorId,
-      mentorProfile: mentorProfile._id,
-      startTimeUTC: startUTC.toJSDate(),
-      endTimeUTC: endUTC.toJSDate(),
-      durationMinutes: durationMinutes,
-      mentorTimezone: mentorProfile.timezone,
-      menteeTimezone: timezone,
-      isMegaSession: true,
-      title: title || 'Mega Mentorship Session',
-      description: description || 'Group mentorship session with multiple participants',
+    const result = await bookingService.createMegaSessionRecord({
+      mentorId,
+      adminId: req.user.id,
+      startTime,
+      duration,
+      timezone,
+      currency,
+      title,
+      description,
       maxParticipants,
-      participants: [],
-      createdBy: adminId,
-      price: {
-        amount: priceAmount,
-        currency
-      },
-      status: 'pending',
     });
 
-    res.status(201).json({
+    if (!result.ok) {
+      return res.status(result.statusCode).json({
+        message: result.message,
+        ...(result.overlap && { conflictingBooking: result.overlap }),
+      });
+    }
+
+    res.status(result.statusCode).json({
       success: true,
-      megaSession,
+      megaSession: result.megaSession,
       message: 'Mega session submitted for mentor approval',
     });
   } catch (error) {
@@ -786,4 +668,11 @@ exports.getBookingAnalytics = async (req, res) => {
       message: 'Internal server error while fetching analytics',
     });
   }
+};
+
+exports.getDurationOptions = (req, res) => {
+  res.json({
+    success: true,
+    durations: bookingService.getDurationOptions(),
+  });
 };

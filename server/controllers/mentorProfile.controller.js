@@ -3,6 +3,13 @@ const User = require('../models/User');
 const path = require('path');
 const paypalService = require('../services/paypalService');
 
+const {
+  isValidDuration,
+  formatDurationLabel,
+  parseDurationMinutes,
+  ALL_DURATIONS,
+} = require('../utils/booking');
+
 // Currency conversion function using real-time rates
 async function convertCurrency(amount, fromCurrency, toCurrency) {
   try {
@@ -84,9 +91,16 @@ exports.createOrUpdateMentorProfile = async (req, res, next) => {
       
       // Convert each session duration to both USD and PKR
       for (const session of sessionData) {
+        const durationMinutes = parseDurationMinutes(session.duration);
+        if (!isValidDuration(durationMinutes)) {
+          return res.status(400).json({
+            message: `Invalid session duration: ${session.duration}. Supported durations are ${ALL_DURATIONS.join(', ')} minutes.`,
+          });
+        }
+
         const convertedPrices = await getBothCurrencies(session.price, session.currency);
         processedSessionDurations.push({
-          duration: session.duration,
+          duration: formatDurationLabel(durationMinutes),
           priceUSD: convertedPrices.usd,
           pricePKR: convertedPrices.pkr
         });

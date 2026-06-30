@@ -4,6 +4,7 @@ import {
   HiOutlineCalendar,
   HiOutlineClock,
 } from 'react-icons/hi2';
+import { formatDurationLabel } from '../../utils/durationDisplay';
 
 const resolveImageUrl = (src) => {
   if (!src) return null;
@@ -210,7 +211,7 @@ const BookingCard = ({ booking, timeInfo, utcTimeInfo, userTimezone }) => {
           </p>
           <p className="mt-2 flex items-center gap-1 text-[12px] text-[#AAAAAA]">
             <HiOutlineClock className="h-[14px] w-[14px] shrink-0" strokeWidth={1.8} />
-            <span>{booking.durationMinutes} Minutes</span>
+            <span>{formatDurationLabel(booking.durationMinutes)}</span>
           </p>
 
           {booking.meeting?.meetingLink ? (

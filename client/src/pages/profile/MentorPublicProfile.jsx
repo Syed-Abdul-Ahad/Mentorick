@@ -37,7 +37,7 @@ const MentorPublicProfile = () => {
     },
     {
       question: "What's the usual duration of a session?",
-      answer: "Most mentors offer flexible time slots—typically 20, 40, or 60 minutes. You'll be able to choose the length that suits your goals best during the booking process."
+      answer: "Mentors offer sessions in 15, 30, 60, or 90 minute lengths (based on what each mentor supports). You'll choose the duration that suits your goals during booking."
     },
     {
       question: "Is 20 minutes really enough to get value?",

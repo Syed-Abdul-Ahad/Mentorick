@@ -265,6 +265,15 @@ class BookingService extends ApiService {
       throw this.handleError(error);
     }
   }
+
+  async getDurationOptions() {
+    try {
+      const response = await apiClient.get('/booking/duration-options');
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
 }
 
 class PaymentService extends ApiService {

@@ -2,6 +2,7 @@ import React from 'react';
 import Button from '../shared/Button';
 import PayPalCheckout from '../shared/PayPalCheckout';
 import { formatTimeTo12Hour } from '../../utils/timezone';
+import { formatDurationLabel } from '../../utils/durationDisplay';
 
 /**
  * Booking summary component for booking flow
@@ -60,7 +61,7 @@ const BookingSummary = ({
         
         <div className="flex justify-between py-3 border-b border-gray-100">
           <span className="text-gray-600">Duration</span>
-          <span className="font-medium text-gray-900">{selectedDuration} minutes</span>
+          <span className="font-medium text-gray-900">{formatDurationLabel(selectedDuration)}</span>
         </div>
         
         <div className="flex justify-between py-3 border-b border-gray-100">

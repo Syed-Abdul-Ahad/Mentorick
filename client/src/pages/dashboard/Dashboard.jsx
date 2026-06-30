@@ -17,6 +17,7 @@ import { authService, bookingService, megaSessionService } from '../../api';
 import apiClient from '../../api/axiosConfig';
 import MainLayout from '../../components/layout/MainLayout';
 import toast from 'react-hot-toast';
+import { formatDurationLabel } from '../../utils/durationDisplay';
 
 const STATUS_DOT = {
   completed: 'bg-blue-500',
@@ -491,7 +492,7 @@ const Dashboard = () => {
                           </div>
                           <div className="text-right shrink-0">
                             <p className="text-sm font-semibold text-gray-900 tabular-nums">
-                              {session.durationMinutes} min
+                              {formatDurationLabel(session.durationMinutes)}
                             </p>
                             <p className="text-xs text-gray-400 mt-0.5 capitalize">{session.status}</p>
                           </div>
@@ -607,7 +608,7 @@ const Dashboard = () => {
                               {session.price?.amount}
                               <span className="text-sm font-semibold text-gray-400 ml-1">{session.price?.currency}</span>
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">{session.durationMinutes} minutes</p>
+                            <p className="text-xs text-gray-400 mt-1">{formatDurationLabel(session.durationMinutes)}</p>
                           </div>
                         </div>
 
