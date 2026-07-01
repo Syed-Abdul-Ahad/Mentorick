@@ -7,6 +7,8 @@ import Button from "../../components/shared/Button";
 import FormInput from "../../components/shared/FormInput";
 import AuthFormLayout from "../../components/shared/AuthFormLayout";
 import AuthRightSection from "../../components/shared/AuthRightSection";
+import GoogleAuthButton from "../../components/shared/GoogleAuthButton";
+import { AuthDivider } from "../../components/shared/AuthDivider";
 import Seo from "../../components/seo/Seo";
 
 const MentorSignup = () => {
@@ -98,6 +100,9 @@ const MentorSignup = () => {
         subtitle="Share your expertise and guide the next generation"
         error={error}
       >
+        <GoogleAuthButton role="mentor" label="Sign up with Google" />
+        <AuthDivider />
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Name Fields */}
           <div className="grid grid-cols-2 gap-4">

@@ -101,6 +101,13 @@ const login = async (req, res, next) => {
       });
     }
 
+    if (!user.password && user.googleId) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'This account uses Google sign in. Please continue with Google.',
+      });
+    }
+
     // Check if password matches
     const isMatch = await user.comparePassword(password);
 

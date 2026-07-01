@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { setUser } from '../../store/slices/authSlice';
 import { authService } from '../../api';
@@ -9,9 +9,19 @@ import FormInput from '../../components/shared/FormInput';
 import AuthFormLayout from '../../components/shared/AuthFormLayout';
 import AuthRightSection from '../../components/shared/AuthRightSection';
 import ForgotPasswordModal from '../../components/shared/ForgotPasswordModal';
+import GoogleAuthButton from '../../components/shared/GoogleAuthButton';
+import { AuthDivider } from '../../components/shared/AuthDivider';
 import Seo from '../../components/seo/Seo';
 
+const GOOGLE_ERROR_MESSAGES = {
+  google_auth_cancelled: 'Google sign in was cancelled.',
+  google_auth_failed: 'Google sign in failed. Please try again.',
+  google_no_email: 'Google did not provide an email address for this account.',
+  account_deactivated: 'Your account is deactivated. Please contact support.',
+};
+
 const Login = () => {
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -23,6 +33,13 @@ const Login = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const errorCode = searchParams.get('error');
+    if (errorCode) {
+      setError(GOOGLE_ERROR_MESSAGES[errorCode] || 'Sign in failed. Please try again.');
+    }
+  }, [searchParams]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -39,7 +56,7 @@ const Login = () => {
 
     try {
       const response = await authService.login(formData);
-      dispatch(setUser(response));
+      dispatch(setUser(response.user));
       navigate('/dashboard');
     } catch (error) {
       setError(error.message || 'Login failed');
@@ -74,6 +91,9 @@ const Login = () => {
         subtitle="Log in to connect, learn, and grow with your mentor."
         error={error}
       >
+        <GoogleAuthButton role="mentee" />
+        <AuthDivider />
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Email Field */}
           <FormInput

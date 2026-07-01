@@ -13,6 +13,7 @@ const MentorSlider = ({ mentors = [], searchQuery = "", sortBy = "rating" }) => 
   const [scrollLeft, setScrollLeft] = useState(0);
   const [fetchedMentors, setFetchedMentors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const sliderRef = useRef(null);
 
   // Fetch mentors from backend
@@ -49,9 +50,11 @@ const MentorSlider = ({ mentors = [], searchQuery = "", sortBy = "rating" }) => 
         );
         
         setFetchedMentors(transformedMentors);
+        setFetchError(false);
       } catch (error) {
         console.error('Error fetching mentors:', error);
-        // Keep fallback data if API fails
+        setFetchedMentors([]);
+        setFetchError(true);
       } finally {
         setLoading(false);
       }
@@ -70,52 +73,7 @@ const MentorSlider = ({ mentors = [], searchQuery = "", sortBy = "rating" }) => 
     setCurrentIndex(0);
   }, [searchQuery, sortBy]);
   
-  // Mock data as fallback
-  const mockMentors = [
-    {
-      id: 'mock-1',
-      name: 'Sarah Johnson',
-      title: 'Senior Marketing',
-      image: '/mentor-signup.jpg',
-      tags: ['Marketing', 'Strategy'],
-      price: '$50/session',
-      rating: 4.9
-    },
-    {
-      id: 'mock-2',
-      name: 'Robert Anderson',
-      title: 'Business Strategy',
-      image: '/mentor-signup-2.jpeg',
-      tags: ['Business', 'Strategy'],
-      price: '$75/session',
-      rating: 4.8
-    },
-    {
-      id: 'mock-3',
-      name: 'Sophie Johnson',
-      title: 'UX Design Lead',
-      image: '/mentor-signup-3.jpeg',
-      tags: ['Design', 'UX'],
-      price: '$60/session',
-      rating: 4.9
-    },
-    {
-      id: 'mock-4',
-      name: 'Sarah Johnson',
-      title: 'Product Manager',
-      image: '/mentor-signup-4.jpeg',
-      tags: ['Product', 'Management'],
-      price: '$80/session',
-      rating: 4.7
-    }
-  ];
-
-  // Use provided mentors, fetched mentors, or fallback to mock data
-  const baseMentors = mentors.length > 0 
-    ? mentors 
-    : fetchedMentors.length > 0 
-      ? fetchedMentors 
-      : mockMentors;
+  const baseMentors = mentors.length > 0 ? mentors : fetchedMentors;
 
   // Filter mentors based on search query
   const filteredMentors = baseMentors.filter(mentor => {
@@ -250,9 +208,15 @@ const MentorSlider = ({ mentors = [], searchQuery = "", sortBy = "rating" }) => 
         </div>
       ) : displayMentors.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="text-gray-500 text-lg mb-2">No mentors found</div>
+          <div className="text-gray-500 text-lg mb-2">
+            {searchQuery ? 'No mentors found' : 'No mentors available'}
+          </div>
           <div className="text-gray-400 text-sm">
-            {searchQuery ? `Try adjusting your search for "${searchQuery}"` : "Try changing your filters"}
+            {searchQuery
+              ? `Try adjusting your search for "${searchQuery}"`
+              : fetchError
+                ? 'Unable to load mentors right now. Please try again later.'
+                : 'Check back soon — new mentors are joining regularly.'}
           </div>
         </div>
       ) : (
@@ -291,7 +255,6 @@ const MentorSlider = ({ mentors = [], searchQuery = "", sortBy = "rating" }) => 
               onTouchEnd={handleTouchEnd}
               onDragStart={(e) => e.preventDefault()} // Prevent default drag behavior
             >
-              {console.log("displayMentors", displayMentors)}
               {displayMentors.map((mentor) => (
                 <div 
                   key={mentor.id} 

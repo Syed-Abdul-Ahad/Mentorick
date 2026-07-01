@@ -27,6 +27,7 @@ import OurWhy from "./pages/OurWhy";
 import Privacy from "./pages/legal/Privacy";
 import Terms from "./pages/legal/Terms";
 import Contact from "./pages/legal/Contact";
+import GoogleCallback from "./pages/auth/GoogleCallback";
 import Toast from "./components/shared/Toast";
 
 function AuthenticatedApp() {
@@ -83,12 +84,7 @@ function AuthenticatedApp() {
       <Toast />
       <Routes>
         {/* Public routes */}
-        <Route path="/" 
-          //   element={
-          //   isAuthenticated ? <Homepage /> : <Navigate to="/login" />
-          // }
-          element={<Homepage />}
-        />
+        <Route path="/" element={<Homepage />} />
         <Route path="/mentors" element={<Mentors />} />
         <Route path="/our-why" element={<OurWhy />} />
         <Route path="/privacy" element={<Privacy />} />
@@ -118,6 +114,7 @@ function AuthenticatedApp() {
             isAuthenticated ? <Navigate to="/" /> : <MentorSignup />
           }
         />
+        <Route path="/auth/google/callback" element={<GoogleCallback />} />
 
         {/* Protected routes */}
         <Route
@@ -172,13 +169,6 @@ function AuthenticatedApp() {
         />
 
 
-        {/* Default redirects */}
-        <Route
-          path="/"
-          element={
-            isAuthenticated ? <Homepage /> : <Navigate to="/login" />
-          }
-        />
         <Route
           path="*"
           element={<NotFound />}

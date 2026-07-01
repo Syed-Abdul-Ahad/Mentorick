@@ -131,7 +131,7 @@ const Homepage = () => {
 
                 {!user && (
               <Button onClick={() => navigate('/login')} variant="solid" size="sm">
-                Login
+                Sign in
               </Button>
                 )}
               {/* Mobile hamburger menu - right of login */}

@@ -12,9 +12,17 @@ const {
   resetPassword,
   verifyEmail,
 } = require('../controllers/authController');
+const {
+  googleLogin,
+  googleLoginCallback,
+} = require('../controllers/googleAuthController');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Google OAuth login/signup (separate from mentor calendar OAuth at /auth/google)
+router.get('/google/login', googleLogin);
+router.get('/google/callback', googleLoginCallback);
 
 // @desc    Register user
 // @route   POST /api/auth/register

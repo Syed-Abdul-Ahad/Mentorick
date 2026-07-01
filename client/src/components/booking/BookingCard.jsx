@@ -95,14 +95,17 @@ const STATUS_BADGE = {
   'no-show': 'bg-[#9CA3AF]',
 };
 
-const ParticipantAvatar = ({ src, firstName, lastName }) => {
+const ParticipantAvatar = ({ src, firstName, lastName, isMegaSession = false }) => {
   const [imgError, setImgError] = useState(false);
   const imageUrl = resolveImageUrl(src);
   const showImage = imageUrl && !imgError;
   const initials = getInitials(firstName, lastName);
 
-  return (
-    <div className="relative 2xl:h-[92px] 2xl:w-[92px] xl:h-[80px] xl:w-[80px] h-[72px] w-[72px] flex-shrink-0 overflow-hidden rounded-full border-[2.5px] border-[#28B463] bg-gray-200">
+  const sizeClass =
+    '2xl:h-[92px] 2xl:w-[92px] xl:h-[80px] xl:w-[80px] h-[72px] w-[72px] flex-shrink-0';
+
+  const avatarInner = (
+    <>
       {showImage && (
         <img
           src={imageUrl}
@@ -116,6 +119,26 @@ const ParticipantAvatar = ({ src, firstName, lastName }) => {
           {initials}
         </div>
       )}
+    </>
+  );
+
+  if (isMegaSession) {
+    return (
+      <div
+        className={`relative rounded-full bg-gradient-to-br from-violet-400 via-violet-500 to-indigo-500 p-[2.5px] ${sizeClass}`}
+      >
+        <div className="relative h-full w-full overflow-hidden rounded-full bg-gray-200">
+          {avatarInner}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`relative overflow-hidden rounded-full border-[2.5px] border-[#28B463] bg-gray-200 ${sizeClass}`}
+    >
+      {avatarInner}
     </div>
   );
 };
@@ -163,6 +186,7 @@ const BookingCard = ({ booking, timeInfo, utcTimeInfo, userTimezone }) => {
   const timezoneLabel = formatTimezoneLabel(userTimezone);
   const utcTooltip = formatUtcTooltip(booking.startTimeUTC);
   const agendaText = booking.description?.trim() || 'No agenda provided';
+  const isMega = booking.isMegaSession || booking.parentMegaSession;
 
   return (
     <article className="relative flex aspect-square w-full flex-col rounded-[20px] border border-[#E0E0E0] bg-white">
@@ -187,6 +211,7 @@ const BookingCard = ({ booking, timeInfo, utcTimeInfo, userTimezone }) => {
             src={displayPerson.headshot}
             firstName={displayPerson.firstName}
             lastName={displayPerson.lastName}
+            isMegaSession={isMega}
           />
           <p className="mt-2.5 max-w-full truncate px-1 text-center text-[17px] font-bold leading-tight text-[#1A1A1A]">
             {displayPerson.name}
@@ -218,7 +243,11 @@ const BookingCard = ({ booking, timeInfo, utcTimeInfo, userTimezone }) => {
             <button
               type="button"
               onClick={() => window.open(booking.meeting.meetingLink, '_blank')}
-              className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#28B463] px-4 py-[6px] text-[12px] font-semibold text-white transition-colors hover:bg-[#239954]"
+              className={`mt-3 inline-flex items-center gap-2 rounded-full px-4 py-[6px] text-[12px] font-semibold text-white transition-colors ${
+                isMega
+                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700'
+                  : 'bg-[#28B463] hover:bg-[#239954]'
+              }`}
             >
               <span className="xl:text-[16px] text-[12px] font-semibold">Join</span>
               <HiOutlineVideoCamera className="xl:h-[18px] xl:w-[18px] h-[14px] w-[14px]" strokeWidth={2} />

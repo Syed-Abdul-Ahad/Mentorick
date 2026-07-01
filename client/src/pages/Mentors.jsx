@@ -10,6 +10,7 @@ import Footer from "../components/shared/Footer";
 import Seo from "../components/seo/Seo";
 import { mentorService } from "../api/services";
 import currencyService from "../api/currencyService";
+import { useUser } from "../store/hooks";
 import {
   AiOutlineSearch,
   AiOutlineStar,
@@ -22,11 +23,13 @@ import { BsGrid3X3Gap, BsListUl } from "react-icons/bs";
 
 const Mentors = () => {
   const navigate = useNavigate();
+  const user = useUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("rating");
   const [viewMode, setViewMode] = useState("grid"); // 'grid' or 'list'
   const [mentors, setMentors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [priceRange, setPriceRange] = useState("all");
 
@@ -97,8 +100,11 @@ const Mentors = () => {
         );
         
         setMentors(transformedMentors);
+        setFetchError(false);
       } catch (error) {
         console.error('Error fetching mentors:', error);
+        setMentors([]);
+        setFetchError(true);
       } finally {
         setLoading(false);
       }
@@ -292,9 +298,16 @@ const Mentors = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <Link to="/" className="text-2xl font-bold text-primary-600">Mentorick</Link>
-              <nav className="lg:hidden" aria-label="Mobile navigation">
-                <MobileMenuButton />
-              </nav>
+              <div className="flex items-center gap-3">
+                {!user && (
+                  <Button onClick={() => navigate('/login')} variant="solid" size="sm">
+                    Sign in
+                  </Button>
+                )}
+                <nav className="lg:hidden" aria-label="Mobile navigation">
+                  <MobileMenuButton />
+                </nav>
+              </div>
             </div>
           </div>
         </header>
@@ -447,10 +460,19 @@ const Mentors = () => {
                 {sortedMentors.length === 0 && (
                   <div className="text-center py-16">
                     <AiOutlineSearch className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No mentors found</h3>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      {mentors.length === 0 && !searchQuery && selectedCategory === "all" && priceRange === "all"
+                        ? 'No mentors available'
+                        : 'No mentors found'}
+                    </h3>
                     <p className="text-gray-600 mb-4">
-                      Try adjusting your filters or search terms to find the perfect mentor.
+                      {mentors.length === 0 && !searchQuery && selectedCategory === "all" && priceRange === "all"
+                        ? fetchError
+                          ? 'Unable to load mentors right now. Please try again later.'
+                          : 'Check back soon — new mentors are joining regularly.'
+                        : 'Try adjusting your filters or search terms to find the perfect mentor.'}
                     </p>
+                    {(searchQuery || selectedCategory !== "all" || priceRange !== "all") && (
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -461,6 +483,7 @@ const Mentors = () => {
                     >
                       Clear All Filters
                     </Button>
+                    )}
                   </div>
                 )}
               </>

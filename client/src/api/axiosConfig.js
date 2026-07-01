@@ -27,10 +27,16 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Handle common error responses
+    // Only redirect to login on 401 for protected pages — guests can browse home and mentors
     if (error.response?.status === 401) {
-      // Unauthorized - redirect to login (cookie will be cleared by server)
-      window.location.href = '/login';
+      const publicPaths = ['/', '/mentors', '/our-why', '/privacy', '/terms', '/contact', '/login', '/signup', '/mentor-signup', '/auth/google/callback'];
+      const isPublicPath = publicPaths.includes(window.location.pathname)
+        || window.location.pathname.startsWith('/mentor/')
+        || window.location.pathname.startsWith('/reset-password/');
+
+      if (!isPublicPath) {
+        window.location.href = '/login';
+      }
     }
     
     return Promise.reject(error);
