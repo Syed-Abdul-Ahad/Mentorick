@@ -35,10 +35,11 @@ const decodeState = (state) => {
 const setAuthCookie = (res, user) => {
   const token = user.generateAuthToken();
 
-  res.cookie('token', token, {
+  res.cookie("token", token, {
     expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     httpOnly: true,
-    sameSite: 'strict',
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
   });
 };
 
