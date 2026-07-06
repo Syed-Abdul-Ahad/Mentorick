@@ -46,7 +46,7 @@ const AvailabilityPage = () => {
   }, []);
 
   useEffect(() => {
-  axios.get('http://localhost:5000/auth/google/status', {
+  axios.get(`${import.meta.env.VITE_API_BASE_URL.split('/api')[0]}auth/google/status`, {
     withCredentials: true
   }).then(res => {
     setGoogleConnected(res.data.connected);
