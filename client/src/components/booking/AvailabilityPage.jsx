@@ -46,7 +46,7 @@ const AvailabilityPage = () => {
   }, []);
 
   useEffect(() => {
-  axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/google/status`, {
+  axios.get('http://localhost:5000/auth/google/status', {
     withCredentials: true
   }).then(res => {
     setGoogleConnected(res.data.connected);
@@ -210,7 +210,7 @@ if (connected === 'true') {
                 ) : (
                   <button
                     onClick={() => {
-                      window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
+                      window.location.href = `${import.meta.env.VITE_API_BASE_URL.split('/api')[0]}/auth/google`;
                     }}
                     className="flex items-center space-x-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded-full border border-blue-200 transition-colors duration-200"
                   >
