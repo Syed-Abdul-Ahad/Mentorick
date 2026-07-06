@@ -56,7 +56,7 @@ exports.googleCallback = async (req, res, next) => {
       { upsert: true }
     );
 
-   return res.redirect('http://localhost:5173/sessions?connected=true');
+    return res.redirect(`${process.env.CLIENT_URL}/sessions?connected=true`);
   } catch (err) {
     console.error(err);
     return res.status(500).send('Google auth failed');
