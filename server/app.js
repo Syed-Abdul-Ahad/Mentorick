@@ -47,7 +47,7 @@ app.use(compression());
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.CLIENT_URL || 'http://localhost:5173' || 'mentorick-blush.vercel.app',
+  origin: process.env.CLIENT_URL || 'http://localhost:5173' || 'https://mentorick-blush.vercel.app',
   credentials: true,
   optionsSuccessStatus: 200,
 };
@@ -76,7 +76,7 @@ app.get('/health', (req, res) => {
 
 // Serve uploads as static with CORS headers
 app.use('/uploads', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:5173');
+  res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:5173' || 'https://mentorick-blush.vercel.app');
   res.header('Access-Control-Allow-Credentials', 'true');
   next();
 }, require('express').static(require('path').join(__dirname, 'uploads')));
