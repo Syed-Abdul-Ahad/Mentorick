@@ -210,7 +210,7 @@ if (connected === 'true') {
                 ) : (
                   <button
                     onClick={() => {
-                      window.location.href = 'http://localhost:5000/auth/google';
+                      window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
                     }}
                     className="flex items-center space-x-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded-full border border-blue-200 transition-colors duration-200"
                   >
