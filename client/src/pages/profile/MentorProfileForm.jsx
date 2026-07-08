@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import Toast from '../../components/shared/Toast';
 import { bookingService } from '../../api';
 import Seo from '../../components/seo/Seo';
+import MainLayout from '../../components/layout/MainLayout';
 
 const initialState = {
   fullName: '',
@@ -244,7 +245,7 @@ const handleSessionPrice = (duration, field, value) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <MainLayout>
       <Seo
         title="Mentor Profile Settings | Mentorick"
         description="Edit your public mentor profile on Mentorick."
@@ -604,7 +605,7 @@ const handleSessionPrice = (duration, field, value) => {
           </div>
         </form>
       </div>
-    </div>
+    </MainLayout>
   );
 };
 

@@ -6,6 +6,7 @@ import { HiOutlineStar } from 'react-icons/hi2';
 import Button from '../../components/shared/Button';
 import { menteeService } from '../../api';
 import Seo from '../../components/seo/Seo';
+import MainLayout from '../../components/layout/MainLayout';
 
 const initialState = {
   fullName: '',
@@ -156,7 +157,7 @@ const MenteeProfileForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <MainLayout>
       <Seo
         title="Mentee Profile Settings | Mentorick"
         description="Edit your mentee profile on Mentorick."
@@ -320,7 +321,7 @@ const MenteeProfileForm = () => {
         </form>
         )}
       </div>
-    </div>
+    </MainLayout>
   );
 };
 
