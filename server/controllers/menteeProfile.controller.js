@@ -1,6 +1,5 @@
 const MenteeProfile = require('../models/MenteeProfile');
 const User = require('../models/User');
-const path = require('path');
 
 // Create or update mentee profile
 exports.createOrUpdateMenteeProfile = async (req, res, next) => {
@@ -8,8 +7,8 @@ exports.createOrUpdateMenteeProfile = async (req, res, next) => {
     const userId = req.user._id;
     const data = req.body;
     let headshotUrl = req.body.headshot;
-    if (req.file) {
-      headshotUrl = `${req.protocol}://${req.get('host')}/uploads/mentees/${req.file.filename}`;
+    if (req.file?.cloudinaryUrl) {
+      headshotUrl = req.file.cloudinaryUrl;
     }
     const profileData = {
       ...data,
