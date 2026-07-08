@@ -279,50 +279,91 @@ if (connected === 'true') {
 
       {/* Summary Section */}
       {initialized && (
-      <div className="mt-8 bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Availability Summary
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {weekDays.map((dayData) => {
-            const dayOfWeek = dayData.date.getDay();
-            const selectedSlots = getAvailableSlots(dayData.fullDate, dayOfWeek);
-            const isUnavailable = isDateUnavailable(dayData.fullDate);
-            
-            return (
-              <div key={dayData.fullDate} className="text-center">
-                <div className={`font-medium ${
-                  isUnavailable ? 'text-red-500' : selectedSlots.length > 0 ? 'text-primary-600' : 'text-gray-400'
-                }`}>
-                  {dayData.dayName}
-                </div>
-                <div className="text-sm text-gray-500 mt-1">
-                  {isUnavailable 
-                    ? 'Unavailable' 
-                    : selectedSlots.length > 0 
-                      ? `${selectedSlots.length} slots` 
-                      : 'No availability'
-                  }
-                </div>
-              </div>
-            );
-          })}
+      <div className="mt-8 bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Availability Summary
+          </h3>
+          <p className="text-sm text-gray-500 mt-1">
+            A quick look at your schedule for the next 7 days
+          </p>
         </div>
-        
-        {availabilityState.unavailability.length > 0 && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <h4 className="font-medium text-gray-900 mb-2">
-              Unavailable Periods
-            </h4>
-            <div className="space-y-1">
-              {availabilityState.unavailability.map((range, index) => (
-                <div key={index} className="text-sm text-gray-600">
-                  {new Date(range.from).toLocaleDateString()} - {new Date(range.to).toLocaleDateString()}
+
+        <div className="p-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            {weekDays.map((dayData) => {
+              const dayOfWeek = dayData.date.getDay();
+              const selectedSlots = getAvailableSlots(dayData.fullDate, dayOfWeek);
+              const isUnavailable = isDateUnavailable(dayData.fullDate);
+              const hasSlots = selectedSlots.length > 0;
+
+              const statusLabel = isUnavailable
+                ? 'Unavailable'
+                : hasSlots
+                  ? `${selectedSlots.length} slot${selectedSlots.length !== 1 ? 's' : ''}`
+                  : 'No availability';
+
+              const cardStyles = isUnavailable
+                ? 'border-gray-100 bg-gray-50'
+                : hasSlots
+                  ? 'border-primary-100 bg-primary-50/40'
+                  : 'border-gray-100 bg-white';
+
+              const statusBadgeStyles = isUnavailable
+                ? 'bg-red-50 text-red-600 border-red-100'
+                : hasSlots
+                  ? 'bg-primary-500 text-white border-primary-500'
+                  : 'bg-gray-50 text-gray-500 border-gray-100';
+
+              const dotStyles = isUnavailable
+                ? 'bg-red-400'
+                : hasSlots
+                  ? 'bg-primary-500'
+                  : 'bg-gray-300';
+
+              return (
+                <div
+                  key={dayData.fullDate}
+                  className={`rounded-lg border px-3 py-4 flex flex-col items-center text-center gap-2 ${cardStyles}`}
+                >
+                  <div>
+                    <p className={`text-sm font-semibold leading-tight ${
+                      isUnavailable ? 'text-gray-400' : 'text-gray-900'
+                    }`}>
+                      {dayData.dayName}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {dayData.dateString}
+                    </p>
+                  </div>
+
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusBadgeStyles}`}>
+                    {/* <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotStyles}`} /> */}
+                    {statusLabel}
+                  </span>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        )}
+
+          {availabilityState.unavailability.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                Unavailable Periods
+              </h4>
+              <ul className="space-y-2">
+                {availabilityState.unavailability.map((range, index) => (
+                  <li key={index} className="flex items-center gap-3 text-sm text-gray-600">
+                    <span className="flex-shrink-0 w-2 h-2 rounded-full bg-red-400" />
+                    <span>
+                      {new Date(range.from).toLocaleDateString()} – {new Date(range.to).toLocaleDateString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
       )}
 

@@ -54,11 +54,11 @@ const UnavailabilityModal = ({
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-lg max-w-md w-full shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h3 className="text-xl font-semibold text-gray-900">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">
             Set Unavailability Period
           </h3>
           <button
@@ -73,13 +73,9 @@ const UnavailabilityModal = ({
 
         {/* Content */}
         <div className="p-6">
-          <div className="mb-6">
-            <p className="text-gray-600 text-sm leading-relaxed">
-              If you want to turn off the recurring slot for a period of time, 
-              you can set the date range when you'll be unavailable. This will 
-              temporarily disable your availability during the selected period.
-            </p>
-          </div>
+          <p className="text-sm text-gray-500 mb-5">
+            Choose a date range to temporarily disable your availability.
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* From Date */}
