@@ -1,10 +1,13 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import {
   HiOutlineVideoCamera,
   HiOutlineCalendar,
   HiOutlineClock,
+  HiOutlineMapPin,
 } from 'react-icons/hi2';
+import { PiHourglassHigh } from "react-icons/pi";
 import { formatDurationLabel } from '../../utils/durationDisplay';
+
 
 const resolveImageUrl = (src) => {
   if (!src) return null;
@@ -69,6 +72,84 @@ const formatUtcTooltip = (utcDate) => {
   return `${time} UTC · ${dateStr}`;
 };
 
+/* ─── Status SVG Icons ─────────────────────────────────────────── */
+
+const CheckIcon = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const PendingIcon = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+const CancelledIcon = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
+const NoShowIcon = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+
+/* ─── Status Corner Ribbon ────────────────────────────────────── */
+
+const StatusRibbon = ({ status }) => {
+  const statusColors = {
+    pending: '#F59E0B',
+    confirmed: '#28B463',
+    completed: '#28B463',
+    cancelled: '#EF4444',
+    'no-show': '#9CA3AF',
+  };
+
+  const color = statusColors[status] || '#9CA3AF';
+
+  const getIcon = () => {
+    switch (status) {
+      case 'confirmed':
+      case 'completed':
+        return <CheckIcon className="w-3 h-3 text-white mr-0.5 mt-0.5" />;
+      case 'pending':
+        return <PendingIcon className="w-3.5 h-3.5 text-white" />;
+      case 'cancelled':
+        return <CancelledIcon className="w-3 h-3 text-white" />;
+      default:
+        return <NoShowIcon className="w-3.5 h-3.5 text-white" />;
+    }
+  };
+
+  return (
+    <div
+      className="absolute top-0 right-0 w-12 h-12 overflow-hidden pointer-events-none"
+      style={{ zIndex: 10 }}
+    >
+      <div
+        className="absolute top-0 right-0 w-0 h-0"
+        style={{
+          borderTop: `48px solid ${color}`,
+          borderLeft: '48px solid transparent',
+        }}
+      />
+      <div className="absolute top-[6px] right-[6px] flex items-center justify-center">
+        {getIcon()}
+      </div>
+    </div>
+  );
+};
+
+/* ─── UTC tooltip ───────────────────────────────────────────────── */
+
 const UtcInfoTooltip = ({ text }) => (
   <span className="group/utc relative inline-flex">
     <button
@@ -87,61 +168,35 @@ const UtcInfoTooltip = ({ text }) => (
   </span>
 );
 
-const STATUS_BADGE = {
-  pending: 'bg-[#F59E0B]',
-  confirmed: 'bg-[#28B463]',
-  completed: 'bg-[#3B82F6]',
-  cancelled: 'bg-[#EF4444]',
-  'no-show': 'bg-[#9CA3AF]',
-};
+/* ─── Main avatar ───────────────────────────────────────────────── */
 
-const ParticipantAvatar = ({ src, firstName, lastName, isMegaSession = false }) => {
+const MainAvatar = ({ src, firstName, lastName }) => {
   const [imgError, setImgError] = useState(false);
   const imageUrl = resolveImageUrl(src);
   const showImage = imageUrl && !imgError;
   const initials = getInitials(firstName, lastName);
 
-  const sizeClass =
-    '2xl:h-[92px] 2xl:w-[92px] xl:h-[80px] xl:w-[80px] h-[72px] w-[72px] flex-shrink-0';
-
-  const avatarInner = (
-    <>
-      {showImage && (
+  return (
+    <div className="relative flex-shrink-0 h-12 w-12 overflow-hidden rounded-full">
+      {showImage ? (
         <img
           src={imageUrl}
           alt={`${firstName} ${lastName}`}
           className="h-full w-full object-cover"
           onError={() => setImgError(true)}
         />
-      )}
-      {!showImage && (
-        <div className="absolute inset-0 flex items-center justify-center text-xl font-semibold text-white">
+      ) : (
+        <div
+          className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-white bg-[#28B463]"
+        >
           {initials}
         </div>
       )}
-    </>
-  );
-
-  if (isMegaSession) {
-    return (
-      <div
-        className={`relative rounded-full bg-gradient-to-br from-violet-400 via-violet-500 to-indigo-500 p-[2.5px] ${sizeClass}`}
-      >
-        <div className="relative h-full w-full overflow-hidden rounded-full bg-gray-200">
-          {avatarInner}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={`relative overflow-hidden rounded-full border-[2.5px] border-[#28B463] bg-gray-200 ${sizeClass}`}
-    >
-      {avatarInner}
     </div>
   );
 };
+
+/* ─── BookingCard ───────────────────────────────────────────────── */
 
 const BookingCard = ({ booking, timeInfo, utcTimeInfo, userTimezone }) => {
   const mentorName = booking.mentor
@@ -154,149 +209,132 @@ const BookingCard = ({ booking, timeInfo, utcTimeInfo, userTimezone }) => {
   const mentorHeadshot = booking.mentorHeadshot || booking.mentorProfile?.headshot;
   const menteeHeadshot = booking.menteeHeadshot || booking.menteeProfile?.headshot;
 
-  const statusLabel = booking.status.charAt(0).toUpperCase() + booking.status.slice(1);
-  const statusBadgeClass = STATUS_BADGE[booking.status] || STATUS_BADGE['no-show'];
-
   const isMentorView = booking.userRole === 'mentor';
-  const displayPerson = booking.isMegaSession
+  const isMega = booking.isMegaSession || booking.parentMegaSession;
+
+  const displayPerson = isMega
     ? {
-        headshot: mentorHeadshot,
-        firstName: booking.mentor?.firstName,
-        lastName: booking.mentor?.lastName,
-        name: mentorName,
-        roleLabel: 'As Mentor',
-      }
+      headshot: mentorHeadshot,
+      firstName: booking.mentor?.firstName,
+      lastName: booking.mentor?.lastName,
+      name: mentorName,
+      roleLabel: 'Mentor',
+    }
     : isMentorView
-    ? {
+      ? {
         headshot: menteeHeadshot,
         firstName: booking.mentee?.firstName,
         lastName: booking.mentee?.lastName,
         name: menteeName,
-        roleLabel: 'As Mentee',
+        roleLabel: 'Mentee',
       }
-    : {
+      : {
         headshot: mentorHeadshot,
         firstName: booking.mentor?.firstName,
         lastName: booking.mentor?.lastName,
         name: mentorName,
-        roleLabel: 'As Mentor',
+        roleLabel: 'Mentor',
       };
 
   const cardDate = formatCardDate(booking.startTimeUTC, userTimezone);
   const timezoneLabel = formatTimezoneLabel(userTimezone);
   const utcTooltip = formatUtcTooltip(booking.startTimeUTC);
   const agendaText = booking.description?.trim() || 'No agenda provided';
-  const isMega = booking.isMegaSession || booking.parentMegaSession;
 
   return (
-    <article className="relative flex aspect-square w-full flex-col rounded-[20px] border border-[#E0E0E0] bg-white">
-      {/* Corner status badge */}
-      <span
-        className={`absolute right-0 top-0 z-10 rounded-bl-[14px] px-3.5 py-[6px] text-[11px] font-semibold text-white ${statusBadgeClass}`}
-      >
-        {statusLabel}
-      </span>
+    <article
+      className="relative w-full rounded-[16px] border border-gray-200 bg-white p-5 shadow-sm flex flex-col sm:flex-row justify-between gap-6 transition-all duration-200 hover:shadow-md overflow-hidden"
+    >
+      {/* Corner Status Ribbon */}
+      <StatusRibbon status={booking.status} />
 
-      {/* Top — profile | pricing */}
-      <div className="relative flex min-h-0 flex-[1.5]">
-        {/* Inset vertical divider — gap from top, stops before horizontal rule */}
-        <div
-          className="pointer-events-none absolute left-1/2 top-[25px] bottom-[30px] w-px -translate-x-1/2 bg-[#E0E0E0]"
-          aria-hidden="true"
-        />
-
-        {/* Left — profile */}
-        <div className="flex w-1/2 flex-col items-center justify-center px-3 pb-3 pt-5">
-          <ParticipantAvatar
+      {/* Left side: Avatar + Info */}
+      <div className="flex-1 flex flex-col gap-3.5 min-w-0">
+        {/* Top row: Avatar & Name block */}
+        <div className="flex items-center gap-4">
+          <MainAvatar
             src={displayPerson.headshot}
             firstName={displayPerson.firstName}
             lastName={displayPerson.lastName}
-            isMegaSession={isMega}
           />
-          <p className="mt-2.5 max-w-full truncate px-1 text-center text-[17px] font-bold leading-tight text-[#1A1A1A]">
-            {displayPerson.name}
-          </p>
-          <p className="mt-0.5 text-center text-[12px] text-[#AAAAAA]">{displayPerson.roleLabel}</p>
-          {booking.isMegaSession && (
-            <p className="mt-1 max-w-full truncate px-1 text-center text-[10px] font-medium text-violet-600">
-              Mega · {booking.participants?.length || 0}/{booking.maxParticipants}
-            </p>
-          )}
-          {booking.parentMegaSession && booking.title && (
-            <p className="mt-0.5 max-w-full truncate px-1 text-center text-[10px] font-medium text-violet-600">
-              {booking.title}
-            </p>
-          )}
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-base font-bold text-gray-900 leading-tight">
+                {displayPerson.name}
+              </span>
+              <span className={`text-sm font-semibold ${isMega ? 'text-[#28B463]' : 'text-gray-500'}`}>
+                {isMega ? `Mega Session ( ${booking.participants?.length || 0}/${booking.maxParticipants} )` : '1-On-1 Session'}
+              </span>
+            </div>
+            <span className="text-sm text-gray-500 font-medium mt-0.5">
+              {displayPerson.roleLabel}
+            </span>
+          </div>
         </div>
 
-        {/* Right — price & join */}
-        <div className="flex w-1/2 flex-col items-center justify-center px-3 pb-3 pt-8">
-          <p className="text-[26px] font-bold leading-none text-[#1A1A1A] tabular-nums">
-            {formatPrice(booking.price.amount, booking.price.currency)}
-          </p>
-          <p className="mt-2 flex items-center gap-1 text-[12px] text-[#AAAAAA]">
-            <HiOutlineClock className="h-[14px] w-[14px] shrink-0" strokeWidth={1.8} />
-            <span>{formatDurationLabel(booking.durationMinutes)}</span>
-          </p>
+        {/* Middle row: Schedule details */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500 font-medium select-none">
+          <span className="inline-flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
+            <HiOutlineCalendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <span>{cardDate}</span>
+          </span>
 
+          <span className="inline-flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
+            <HiOutlineClock className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <span>{timeInfo.time}</span>
+            <span className="inline-flex items-center  ">
+              <UtcInfoTooltip text={utcTooltip} />
+            </span>
+          </span>
+
+          <span className="inline-flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
+            <PiHourglassHigh className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <span>{formatDurationLabel(booking.durationMinutes)}</span>
+          </span>
+
+          <span className="inline-flex items-center gap-1 border border-gray-300 rounded-full px-2 py-1">
+            <HiOutlineMapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <span>{timezoneLabel}</span>
+          </span>
+        </div>
+
+        {/* Bottom row: Description / Agenda */}
+        <p className="text-sm text-gray-800 leading-relaxed font-normal">
+          {isMega && booking.title ? (
+            <>
+              <span className="font-bold text-black">{booking.title}:</span>{' '}
+            </>
+          ) : null}
+          {agendaText}
+        </p>
+
+        {booking.status === 'pending' && booking.userRole === 'mentee' && !booking.meeting?.meetingLink && (
+          <p className="text-xs text-amber-600 font-semibold mt-1">Awaiting confirmation</p>
+        )}
+      </div>
+
+      {/* Right side: Price + Action */}
+      <div className="flex flex-row sm:flex-col sm:justify-between items-end sm:text-right shrink-0 min-w-[120px] self-stretch gap-4 sm:gap-0 select-none">
+        {/* Price */}
+        <div className="pr-6">
+          <span className="text-lg font-bold text-gray-900">
+            {formatPrice(booking.price.amount, booking.price.currency)}
+          </span>
+        </div>
+
+        {/* Action Button */}
+        <div className="mt-auto">
           {booking.meeting?.meetingLink ? (
             <button
               type="button"
               onClick={() => window.open(booking.meeting.meetingLink, '_blank')}
-              className={`mt-3 inline-flex items-center gap-2 rounded-full px-4 py-[6px] text-[12px] font-semibold text-white transition-colors ${
-                isMega
-                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700'
-                  : 'bg-[#28B463] hover:bg-[#239954]'
-              }`}
+              className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-semibold bg-[#28B463] hover:bg-[#239954] text-white shadow-sm hover:shadow transition-all duration-150 cursor-pointer"
             >
-              <span className="xl:text-[16px] text-[12px] font-semibold">Join</span>
-              <HiOutlineVideoCamera className="xl:h-[18px] xl:w-[18px] h-[14px] w-[14px]" strokeWidth={2} />
+              <HiOutlineVideoCamera className="h-[15px] w-[15px]" strokeWidth={2.5} />
+              Join Meeting
             </button>
-          ) : (
-            <div className="mt-3 h-[30px]" aria-hidden="true" />
-          )}
+          ) : null}
         </div>
-      </div>
-
-      {/* Inset horizontal divider — gap at centre so it never meets the vertical line */}
-      <div className="mx-5 flex shrink-0 items-center gap-5" aria-hidden="true">
-        <div className="h-px flex-1 bg-[#E0E0E0]" />
-        {/* <div className="h-px flex-1 bg-[#E0E0E0]" /> */}
-      </div>
-
-      {/* Bottom — schedule & agenda */}
-      <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-5">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            <HiOutlineCalendar className="h-[16px] w-[16px] shrink-0 text-[#333333]" strokeWidth={2} />
-            <p className="truncate text-[15px] font-bold leading-tight text-[#1A1A1A]">{cardDate}</p>
-          </div>
-
-          <div className="relative shrink-0 text-right">
-            <div className="flex items-center justify-end gap-1">
-              <HiOutlineClock className="h-[16px] w-[16px] shrink-0 text-[#333333]" strokeWidth={2} />
-              <p className="text-[15px] font-bold text-[#1A1A1A]">{timeInfo.time}</p>
-              <UtcInfoTooltip text={utcTooltip} />
-            </div>
-            <p className="mt-0.5 text-[12px] text-[#AAAAAA]">{timezoneLabel}</p>
-          </div>
-        </div>
-
-        <div
-          title={agendaText}
-          className="mt-2.5 h-[60px] shrink-0 overflow-hidden rounded-[14px] bg-[#F0F0F0] px-3 py-2 mt-10 mb-5"
-        >
-          <p className="line-clamp-2 text-[11px] leading-[1.45] text-[#888888]">{agendaText}</p>
-        </div>
-
-        {booking.status === 'pending' && booking.userRole === 'mentee' && !booking.meeting?.meetingLink && (
-          <p
-            className="mt-1 truncate text-[10px] text-amber-600"
-            title="Waiting for confirmation — meeting link will appear once confirmed."
-          >
-            Waiting for confirmation
-          </p>
-        )}
       </div>
     </article>
   );
