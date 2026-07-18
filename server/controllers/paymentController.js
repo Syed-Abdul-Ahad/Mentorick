@@ -295,7 +295,7 @@ exports.connectPayPal = async (req, res) => {
 
     const trackingId = req.user.id.toString(); // secure tracking reference
     // const redirectUri = `${req.protocol}://${req.get('host')}/api/payments/connect/callback`;
-    const redirectUri = `https://retrodirective-untattooed-ed.ngrok-free.dev/api/payments/connect/callback`;
+    const redirectUri = `${process.env.SERVER_URL}/api/payments/connect/callback`;
     console.log("Redirect URI:", redirectUri);
 
     const mentorProfile = await MentorProfile.findOne({ user: req.user.id });
