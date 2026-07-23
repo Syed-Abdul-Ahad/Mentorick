@@ -1,28 +1,326 @@
 import LegalPageLayout from '../../components/layout/LegalPageLayout';
 
+const SECTIONS = [
+  { id: 1, title: 'Introduction' },
+  { id: 2, title: 'Information We Collect' },
+  { id: 3, title: 'Legal Basis for Processing' },
+  { id: 4, title: 'How We Use Your Information' },
+  { id: 5, title: 'How We Share Information' },
+  { id: 6, title: 'Data Retention' },
+  { id: 7, title: "Children's Privacy" },
+  { id: 8, title: 'International Users and Data Transfers' },
+  { id: 9, title: 'Your Privacy Rights' },
+  { id: 10, title: 'Data Security' },
+  { id: 11, title: 'Cookies and Tracking' },
+  { id: 12, title: 'Third-Party Links' },
+  { id: 13, title: 'Changes to This Policy' },
+  { id: 14, title: 'Contact Us' },
+];
+
 const Privacy = () => (
   <LegalPageLayout
-    title="Privacy Policy"
-    description="How Mentorick collects, uses, and protects your personal information."
+    title="Mentorick Privacy Policy"
+    description="Effective Date: 18th July 2026 — Mentorick LLC"
     canonical="/privacy"
   >
-    <p>
-      This page is a placeholder for Mentorick&apos;s Privacy Policy. Final legal content will be
-      provided by the client and published here without changing the site structure or URLs.
-    </p>
-    <p>
-      Mentorick respects your privacy. When you create an account, book sessions, or communicate
-      with mentors, we process only the information needed to operate the platform — including
-      account details, booking records, and payment-related metadata handled by our payment
-      partners.
-    </p>
-    <p>
-      For questions about privacy before the full policy is published, contact us at{' '}
-      <a href="mailto:hello@mentorick.com" className="text-primary-600 hover:underline">
-        hello@mentorick.com
-      </a>
-      .
-    </p>
+    <div className="bg-primary-50/30 border border-primary-100/50 rounded-xl p-6 mb-8 not-prose">
+      <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+        Table of Contents
+      </h2>
+      <nav aria-label="Table of contents">
+        <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+          {SECTIONS.map((section) => (
+            <li key={section.id}>
+              <a
+                href={`#section-${section.id}`}
+                className="text-gray-655 hover:text-primary-600 transition-colors flex items-start gap-2 py-0.5 group"
+              >
+                <span className="text-primary-500 font-semibold font-mono text-xs w-5 pt-0.5 shrink-0 group-hover:text-primary-600">
+                  {section.id}.
+                </span>
+                <span className="group-hover:underline text-gray-700 font-medium">{section.title}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </div>
+
+    <div className="space-y-8">
+      <section id="section-1" className="scroll-mt-12 border-b border-gray-300 pb-8">
+        <h2 className="text-xl font-bold text-gray-950 mb-4 flex items-start gap-3">
+          <span className="text-primary-600 font-mono">1.</span>
+          <span>Introduction</span>
+        </h2>
+        <div className="space-y-4 text-gray-700 leading-relaxed">
+          <p>
+            {`This Privacy Policy explains how Mentorick LLC (“Mentorick,” “we,” “us,” “our”) collects, uses, discloses, and protects personal information when you use the Mentorick website, mobile applications, and related services (the “Platform”). By using the Platform, you agree to the practices described here. If you do not agree, please do not use the Platform.`}
+          </p>
+        </div>
+      </section>
+
+      <section id="section-2" className="scroll-mt-12 border-b border-gray-300 pb-8">
+        <h2 className="text-xl font-bold text-gray-950 mb-4 flex items-start gap-3">
+          <span className="text-primary-600 font-mono">2.</span>
+          <span>Information We Collect</span>
+        </h2>
+        <div className="space-y-6 text-gray-700 leading-relaxed">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 mb-2">2.1 Information You Provide</h3>
+            <ul className="list-disc pl-5 space-y-2 text-gray-700">
+              <li>{`Account information: name, email address, password, and phone number.`}</li>
+              <li>{`Profile information: photo, headline, biography, areas of expertise, and social/LinkedIn links (Mentors).`}</li>
+              <li>{`Booking information: selected Session or Grand Session, scheduled time, and any pre-session message or attachment you submit to a Mentor.`}</li>
+              <li>{`Payment information: billing details processed via our payment processor and escrow provider; Mentorick does not directly store full payment card numbers.`}</li>
+              <li>{`Communications: any messages you send to Mentorick support.`}</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 mb-2">2.2 Information Collected Automatically</h3>
+            <ul className="list-disc pl-5 space-y-2 text-gray-700">
+              <li>{`Device and usage data: IP address, browser type, operating system, device identifiers, pages viewed, and time spent on the Platform.`}</li>
+              <li>{`Approximate location, derived from IP address.`}</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 mb-2">2.3 Session and Grand Session Content</h3>
+            <p>
+              {`Sessions and Grand Sessions are conducted via Third-Party Platforms (Zoom and/or Google Meet). Where a Session or Grand Session is recorded, Mentorick may access, store, and process that recording (including audio, video, and any transcript or notes generated by the Third-Party Platform's own features, if enabled) to provide the Platform's services, including recording-access features and the marketing uses described in Section 4.`}
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 mb-2">2.4 Information from Third Parties</h3>
+            <p>
+              {`If you register or sign in using a third-party account (e.g., Google Single Sign-On), we receive basic profile information (such as name, email, and profile photo) from that provider, subject to that provider's own privacy practices.`}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="section-3" className="scroll-mt-12 border-b border-gray-300 pb-8">
+        <h2 className="text-xl font-bold text-gray-950 mb-4 flex items-start gap-3">
+          <span className="text-primary-600 font-mono">3.</span>
+          <span>Legal Basis for Processing</span>
+        </h2>
+        <div className="space-y-4 text-gray-700 leading-relaxed">
+          <p>
+            {`Where applicable law requires a legal basis, we process personal information on the basis of: performance of a contract with you (to provide the Platform and process bookings/payments); your consent (for example, the marketing/recording consent described in Section 4); our legitimate interests (such as fraud prevention, platform security, and improving our services); and compliance with legal obligations.`}
+          </p>
+        </div>
+      </section>
+
+      <section id="section-4" className="scroll-mt-12 border-b border-gray-300 pb-8">
+        <h2 className="text-xl font-bold text-gray-950 mb-4 flex items-start gap-3">
+          <span className="text-primary-600 font-mono">4.</span>
+          <span>How We Use Your Information</span>
+        </h2>
+        <div className="space-y-4 text-gray-700 leading-relaxed">
+          <ul className="list-disc pl-5 space-y-2 text-gray-700">
+            <li>{`To create and manage accounts, process bookings, and facilitate payment through our escrow provider.`}</li>
+            <li>{`To communicate with you about bookings, cancellations, reschedules, and support requests.`}</li>
+            <li>{`To detect and prevent fraud, abuse, and violations of our Terms.`}</li>
+            <li>{`To provide recording access to Mentees who purchased it.`}</li>
+            <li>{`To operate, maintain, and improve the Platform, and for internal research and development.`}</li>
+            <li>{`For marketing and promotional purposes, including using excerpts or full recordings of Sessions and Grand Sessions, subject to the explicit checkbox consent obtained from Mentors and Mentees at booking/onboarding, as described in our Terms & Conditions.`}</li>
+            <li>{`To comply with legal obligations and enforce our Terms.`}</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="section-5" className="scroll-mt-12 border-b border-gray-300 pb-8">
+        <h2 className="text-xl font-bold text-gray-950 mb-4 flex items-start gap-3">
+          <span className="text-primary-600 font-mono">5.</span>
+          <span>How We Share Information</span>
+        </h2>
+        <div className="space-y-6 text-gray-700 leading-relaxed">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">5.1 Service Providers</h3>
+            <p>
+              {`We share information with third-party service providers who support our operations, including payment processing and escrow, hosting, analytics, and customer support tools. These providers are contractually restricted to using your information only to provide services to us.`}
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">5.2 Third-Party Platforms (Zoom / Google Meet)</h3>
+            <p>
+              {`Sessions and Grand Sessions take place on Zoom and/or Google Meet. These providers process your information under their own privacy policies and terms, which we encourage you to review. Mentorick is not responsible for the privacy or security practices of these Third-Party Platforms.`}
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">5.3 Other Users</h3>
+            <p>
+              {`Certain profile information (such as your name and, for Mentors, professional background) is visible to other Users as necessary to facilitate bookings. As described in our Terms, Mentorick restricts direct sharing of personal contact details (such as personal email or phone number) between Mentors and Mentees for booking-circumvention and safety reasons.`}
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">5.4 Legal and Safety Disclosures</h3>
+            <p>
+              {`We may disclose information where required by law, legal process, or governmental request, or where necessary to protect the rights, property, or safety of Mentorick, our Users, or the public.`}
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">5.5 Business Transfers</h3>
+            <p>
+              {`In the event of a merger, acquisition, financing, or sale of assets, personal information may be transferred to the acquiring or surviving entity, subject to this Policy or a successor policy.`}
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">5.6 No Sale of Personal Information</h3>
+            <p>
+              {`Mentorick does not sell your personal information to third parties for monetary consideration.`}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="section-6" className="scroll-mt-12 border-b border-gray-300 pb-8">
+        <h2 className="text-xl font-bold text-gray-950 mb-4 flex items-start gap-3">
+          <span className="text-primary-600 font-mono">6.</span>
+          <span>Data Retention</span>
+        </h2>
+        <div className="space-y-4 text-gray-700 leading-relaxed">
+          <p>
+            {`We retain personal information for as long as necessary to operate the Platform, fulfill the purposes described in this Policy, resolve disputes, and comply with legal and tax obligations. Session and Grand Session recordings used for the marketing purposes described in Section 4 may be retained longer where consent was given, subject to a User's right to request review under Section 9.`}
+          </p>
+        </div>
+      </section>
+
+      <section id="section-7" className="scroll-mt-12 border-b border-gray-300 pb-8">
+        <h2 className="text-xl font-bold text-gray-950 mb-4 flex items-start gap-3">
+          <span className="text-primary-600 font-mono">7.</span>
+          <span>Children's Privacy</span>
+        </h2>
+        <div className="space-y-4 text-gray-700 leading-relaxed">
+          <p>
+            {`The Platform is intended for Mentees who are at least eighteen (18) years old, or at least thirteen (13) years old with the verified consent of a parent or legal guardian who agrees to these Terms on the minor's behalf, as described in our Terms & Conditions. Certain Grand Sessions may be open to attendees under 18 with such parental consent. We do not knowingly collect personal information from children under 13. If we learn we have inadvertently collected such information, we will delete it promptly. Parents or guardians who believe their child has provided us information without consent should contact us at `}
+            <a href="mailto:contact@mentorick.com" className="text-primary-600 hover:text-primary-700 hover:underline font-medium">contact@mentorick.com</a>
+            {`.`}
+          </p>
+        </div>
+      </section>
+
+      <section id="section-8" className="scroll-mt-12 border-b border-gray-300 pb-8">
+        <h2 className="text-xl font-bold text-gray-950 mb-4 flex items-start gap-3">
+          <span className="text-primary-600 font-mono">8.</span>
+          <span>International Users and Data Transfers</span>
+        </h2>
+        <div className="space-y-4 text-gray-700 leading-relaxed">
+          <p>
+            {`Mentorick LLC is a New Mexico, USA limited liability company, and our Mentors currently operate from Pakistan; Mentees may be located anywhere in the world. By using the Platform, you acknowledge that your personal information may be transferred to, stored, and processed in the United States, Pakistan, and other countries whose data protection laws may differ from those of your home jurisdiction. We take reasonable steps to protect personal information consistent with this Policy regardless of where it is processed.`}
+          </p>
+        </div>
+      </section>
+
+      <section id="section-9" className="scroll-mt-12 border-b border-gray-300 pb-8">
+        <h2 className="text-xl font-bold text-gray-950 mb-4 flex items-start gap-3">
+          <span className="text-primary-600 font-mono">9.</span>
+          <span>Your Privacy Rights</span>
+        </h2>
+        <div className="space-y-6 text-gray-700 leading-relaxed">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">9.1 General</h3>
+            <p>
+              {`Depending on your location, you may have rights to access, correct, delete, or export your personal information, and to object to or restrict certain processing. To exercise these rights, contact us at `}
+              <a href="mailto:contact@mentorick.com" className="text-primary-600 hover:text-primary-700 hover:underline font-medium">contact@mentorick.com</a>
+              {`. We may need to verify your identity before fulfilling a request.`}
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">9.2 California Residents (CCPA)</h3>
+            <p>
+              {`California residents have the right to know what personal information we collect, request deletion of that information, and not be discriminated against for exercising these rights. As stated in Section 5.6, we do not sell personal information.`}
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">9.3 EEA/UK Residents (GDPR)</h3>
+            <p>
+              {`If you are located in the EEA or UK, you have rights of access, rectification, erasure, restriction, portability, and objection under the GDPR. You may also lodge a complaint with your local data protection authority.`}
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">9.4 Recording and Marketing Consent</h3>
+            <p>
+              {`If you consented to Mentorick's use of Session or Grand Session recordings for marketing purposes, you may withdraw that consent for future Sessions at any time in your account settings, and may request that Mentorick review removal of specific previously-published content by contacting `}
+              <a href="mailto:contact@mentorick.com" className="text-primary-600 hover:text-primary-700 hover:underline font-medium">contact@mentorick.com</a>
+              {`. Withdrawal of consent does not affect the lawfulness of use prior to withdrawal.`}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="section-10" className="scroll-mt-12 border-b border-gray-300 pb-8">
+        <h2 className="text-xl font-bold text-gray-950 mb-4 flex items-start gap-3">
+          <span className="text-primary-600 font-mono">10.</span>
+          <span>Data Security</span>
+        </h2>
+        <div className="space-y-4 text-gray-700 leading-relaxed">
+          <p>
+            {`We use reasonable administrative, technical, and physical safeguards, including encryption in transit, to protect personal information. However, no method of transmission or storage is completely secure, and we cannot guarantee absolute security. Any transmission of information to us is at your own risk.`}
+          </p>
+        </div>
+      </section>
+
+      <section id="section-11" className="scroll-mt-12 border-b border-gray-300 pb-8">
+        <h2 className="text-xl font-bold text-gray-950 mb-4 flex items-start gap-3">
+          <span className="text-primary-600 font-mono">11.</span>
+          <span>Cookies and Tracking</span>
+        </h2>
+        <div className="space-y-4 text-gray-700 leading-relaxed">
+          <p>
+            {`We may use cookies and similar technologies to operate and improve the Platform and understand usage patterns. You can control cookies through your browser settings; disabling cookies may affect Platform functionality.`}
+          </p>
+        </div>
+      </section>
+
+      <section id="section-12" className="scroll-mt-12 border-b border-gray-300 pb-8">
+        <h2 className="text-xl font-bold text-gray-950 mb-4 flex items-start gap-3">
+          <span className="text-primary-600 font-mono">12.</span>
+          <span>Third-Party Links</span>
+        </h2>
+        <div className="space-y-4 text-gray-700 leading-relaxed">
+          <p>
+            {`The Platform may contain links to third-party websites or services. We are not responsible for the privacy practices of any third party, and we encourage you to review their policies directly.`}
+          </p>
+        </div>
+      </section>
+
+      <section id="section-13" className="scroll-mt-12 border-b border-gray-300 pb-8">
+        <h2 className="text-xl font-bold text-gray-950 mb-4 flex items-start gap-3">
+          <span className="text-primary-600 font-mono">13.</span>
+          <span>Changes to This Policy</span>
+        </h2>
+        <div className="space-y-4 text-gray-700 leading-relaxed">
+          <p>
+            {`We may update this Privacy Policy from time to time. Material changes will be communicated via email or a prominent notice on the Platform. Continued use of the Platform after changes take effect constitutes acceptance of the revised Policy.`}
+          </p>
+        </div>
+      </section>
+
+      <section id="section-14" className="scroll-mt-12 pb-8">
+        <h2 className="text-xl font-bold text-gray-950 mb-4 flex items-start gap-3">
+          <span className="text-primary-600 font-mono">14.</span>
+          <span>Contact Us</span>
+        </h2>
+        <div className="space-y-4 text-gray-700 leading-relaxed">
+          <p className="font-semibold text-gray-950">Mentorick LLC</p>
+          <p>Registered Address: 2105 VISTA OESTE NW E STE 3584 ALBUQUERQUE, NM 87120</p>
+          <p>
+            Privacy inquiries:{' '}
+            <a href="mailto:contact@mentorick.com" className="text-primary-600 hover:text-primary-700 hover:underline font-medium">contact@mentorick.com</a>
+          </p>
+        </div>
+      </section>
+    </div>
   </LegalPageLayout>
 );
 
