@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import MainLayout from "../components/layout/MainLayout";
 import MobileMenuButton from "../components/layout/MobileMenuButton";
@@ -7,6 +7,7 @@ import Button from "../components/shared/Button";
 import FormInput from "../components/shared/FormInput";
 import MentorSlider from "../components/shared/MentorSlider";
 import Footer from "../components/shared/Footer";
+import BrandLogo from "../components/shared/BrandLogo";
 import Seo from "../components/seo/Seo";
 import { mentorService } from "../api/services";
 import currencyService from "../api/currencyService";
@@ -297,7 +298,7 @@ const Mentors = () => {
         <header className="bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
-              <Link to="/" className="text-2xl font-bold text-primary-600">Mentorick</Link>
+              <BrandLogo className="h-10 w-auto object-contain" />
               <div className="flex items-center gap-3">
                 {!user && (
                   <Button onClick={() => navigate('/login')} variant="solid" size="sm">

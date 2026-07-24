@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AiOutlineMenu } from 'react-icons/ai';
 import Sidebar from './Sidebar';
+import BrandLogo from '../shared/BrandLogo';
 import { MobileMenuProvider } from '../../context/MobileMenuContext';
 
 const MainLayout = ({ children, hideMobileHeader = false }) => {
@@ -25,7 +26,7 @@ const MainLayout = ({ children, hideMobileHeader = false }) => {
         {!hideMobileHeader && (
           <div className="lg:hidden sticky top-0 z-20 bg-white border-b border-gray-100">
             <div className="flex items-center justify-between h-14 px-4">
-              <span className="font-bold text-lg text-primary-600">Mentorick</span>
+              <BrandLogo className="h-8 w-auto object-contain" />
               <button
                 type="button"
                 onClick={toggleMobileMenu}

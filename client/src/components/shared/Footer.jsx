@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import BrandLogo from './BrandLogo';
 import {
   FaCcVisa,
   FaCcMastercard,
@@ -16,11 +17,11 @@ const Footer = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <span className="font-bold text-lg text-primary-600">Mentorick</span>
+              <BrandLogo className="h-12 w-auto object-contain" />
             </div>
             <p className="text-gray-400 text-sm">
-              Connecting ambitious individuals with world-class mentors for
-              transformative 1:1 guidance.
+              World-class wisdom, Accessibly yours. Connecting ambitious
+              individuals with world-class mentors for transformative 1:1 guidance.
             </p>
           </div>
 

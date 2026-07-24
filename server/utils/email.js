@@ -1,9 +1,17 @@
 const { Resend } = require('resend');
+const fs = require('fs');
+const path = require('path');
 const env = require('dotenv')
 env.config({path:'./.env'})
 
 // Initialize Resend with API key
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+const MENTORICK_LOGO_PATH = path.resolve(
+  __dirname,
+  '../../client/public/mentorick-logo.png'
+);
+const MENTORICK_LOGO_CID = 'mentorick-logo';
 
 // Function to create beautiful HTML email template for OTP
 const createOTPEmailHTML = (otp, firstName = 'User') => {
@@ -340,6 +348,147 @@ const createForgotPasswordEmailHTML = (resetUrl, firstName = 'User') => {
   `;
 };
 
+// Clean & professional HTML email for Booking Confirmation
+const createBookingConfirmationEmailHTML = (bookingDetails = {}) => {
+  const {
+    firstName = 'there',
+    mentorName,
+    menteeName,
+    sessionDate,
+    sessionTime,
+    timezone,
+    duration,
+    meetingLink,
+    bookingId,
+  } = bookingDetails;
+
+  const logoUrl =
+    bookingDetails.logoUrl ||
+    `${(process.env.CLIENT_URL || '').replace(/\/$/, '')}/mentorick-logo.png`;
+
+  const detailRows = [
+    mentorName && { label: 'Mentor', value: mentorName },
+    menteeName && { label: 'Mentee', value: menteeName },
+    sessionDate && { label: 'Session Date', value: sessionDate },
+    sessionTime && { label: 'Session Time', value: sessionTime },
+    timezone && { label: 'Timezone', value: timezone },
+    duration && { label: 'Duration', value: duration },
+    bookingId && { label: 'Booking ID', value: bookingId },
+  ].filter(Boolean);
+
+  const detailsHtml = detailRows
+    .map(
+      (row, index) => `
+        <tr>
+          <td style="padding: 12px 0; color: #6b7280; font-size: 14px; width: 38%; vertical-align: top; ${
+            index < detailRows.length - 1 ? 'border-bottom: 1px solid #eef2f7;' : ''
+          }">
+            ${row.label}
+          </td>
+          <td style="padding: 12px 0; color: #111827; font-size: 14px; font-weight: 600; vertical-align: top; ${
+            index < detailRows.length - 1 ? 'border-bottom: 1px solid #eef2f7;' : ''
+          }">
+            ${row.value}
+          </td>
+        </tr>`
+    )
+    .join('');
+
+  const meetingSection = meetingLink
+    ? `
+      <div style="padding: 20px; margin: 24px 0 8px; text-align: center;">
+        <p style="margin: 0 0 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #166534;">
+          Your session link is ready
+        </p>
+        <p style="margin: 0 0 18px; font-size: 14px; color: #4b5563; line-height: 1.5;">
+          Join on time from a quiet space so you can make the most of your mentorship.
+        </p>
+        <a href="${meetingLink}"
+           style="display: inline-block; background: #16a34a; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-size: 15px; font-weight: 600;">
+          Join Meeting
+        </a>
+        <p style="margin: 16px 0 0; font-size: 12px; color: #6b7280; word-break: break-all; line-height: 1.5;">
+          ${meetingLink}
+        </p>
+      </div>`
+    : '';
+
+  return `
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Booking Confirmed — Mentorick</title>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;">
+    <div style="max-width: 600px; margin: 32px auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
+      <div style="background: #0b4627; padding: 28px 24px 22px; text-align: center;">
+        <img src="${logoUrl}" alt="Mentorick" width="180" style="display: block; margin: 0 auto 12px; max-width: 180px; height: auto; border: 0;" />
+      </div>
+
+      <div style="height: 4px; background: linear-gradient(90deg, #d4af37 0%, #16a34a 50%, #0b4627 100%);"></div>
+
+      <div style="padding: 32px 28px 12px; color: #374151;">
+
+        <div style="margin: 0 0 16px;">
+          <span style="display: inline-block; background: #ecfdf5; color: #166534; border: 1px solid #86efac; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;">
+            Booking Confirmed
+          </span>
+        </div>
+
+        <p style="font-size: 15px; line-height: 1.65; margin: 0 0 8px; color: #4b5563;">
+          Hello ${firstName},
+        </p>
+        <p style="font-size: 15px; line-height: 1.65; margin: 0 0 24px; color: #4b5563;">
+          Your Mentorick session is locked in. Below is everything you need for a focused,
+          high-signal conversation with your mentor.
+        </p>
+
+        <p style="margin: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #0b4627;">
+          Session details
+        </p>
+        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 20px 8px 18px; margin-bottom: 8px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
+            ${detailsHtml}
+          </table>
+        </div>
+
+        ${meetingSection}
+
+        <div style="background: #f9fafb; border: 1px solid #f9fafb; border-radius: 10px; padding: 16px 18px; margin: 24px 0 8px;">
+          <p style="margin: 0 0 6px; font-size: 14px; font-weight: 600; color: #121212;">
+            Make the most of your session
+          </p>
+          <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #121212;">
+            Come prepared with your top questions, join a few minutes early, and keep video on
+            for a clearer, more productive conversation.
+          </p>
+        </div>
+
+        <p style="font-size: 14px; line-height: 1.65; margin: 28px 0 0; color: #4b5563;">
+          Thank you for trusting Mentorick with your growth. We’re glad you’re here.
+        </p>
+      </div>
+
+      <div style="padding: 22px 28px; text-align: center; background: #f9fafb; border-top: 1px solid #e5e7eb;">
+        <p style="margin: 0 0 6px; font-size: 13px; font-weight: 600; color: #0b4627;">
+          Mentorick
+        </p>
+        <p style="margin: 0 0 10px; font-size: 12px; color: #b45309;">
+          World-class wisdom, Accessibly yours.
+        </p>
+        <p style="margin: 0; font-size: 12px; color: #6b7280; line-height: 1.5;">
+          © ${new Date().getFullYear()} Mentorick. All rights reserved.<br />
+          1:1 video mentorship with world-class leaders.
+        </p>
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+};
+
 
 const sendEmailWithResend = async (option) => {
     try {
@@ -360,6 +509,25 @@ const sendEmailWithResend = async (option) => {
         // If it's a forgot password email, add beautiful HTML template
         if (option.isForgotPassword && option.resetUrl && option.firstName) {
             emailOptions.html = createForgotPasswordEmailHTML(option.resetUrl, option.firstName);
+        }
+
+        // If it's a booking confirmation email, add professional HTML template
+        if (option.isBookingConfirmation && option.bookingDetails) {
+            const bookingDetails = {
+                ...option.bookingDetails,
+                logoUrl: `cid:${MENTORICK_LOGO_CID}`,
+            };
+            emailOptions.html = createBookingConfirmationEmailHTML(bookingDetails);
+
+            if (fs.existsSync(MENTORICK_LOGO_PATH)) {
+                emailOptions.attachments = [
+                    {
+                        filename: 'mentorick-logo.png',
+                        content: fs.readFileSync(MENTORICK_LOGO_PATH),
+                        contentId: MENTORICK_LOGO_CID,
+                    },
+                ];
+            }
         }
 
         // Send email using Resend

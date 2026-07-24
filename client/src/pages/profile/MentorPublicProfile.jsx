@@ -15,6 +15,7 @@ import MegaSessionCard from '../../components/megaSession/MegaSessionCard';
 import MentorReviewsPreview from '../../components/reviews/MentorReviewsPreview';
 import { megaSessionService, reviewService } from '../../api/services';
 import Seo from '../../components/seo/Seo';
+import BrandLogo from '../../components/shared/BrandLogo';
 import JsonLd from '../../components/seo/JsonLd';
 import { resolveMediaUrl } from '../../utils/siteUrl';
 import { buildPersonSchema, buildBreadcrumbSchema } from '../../utils/structuredData';
@@ -259,7 +260,7 @@ const MentorPublicProfile = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <Link to="/" className="text-xl font-bold text-primary">Mentorick</Link>
+              <BrandLogo className="h-10 w-auto object-contain" />
             </div>
             <div className="flex items-center space-x-4">
               <button className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">

@@ -1,8 +1,10 @@
 const Booking = require('../models/Booking');
 const User = require('../models/User');
+const { DateTime } = require('luxon');
 const { createCalendarEvent, updateMegaSessionAttendees } = require('../utils/calendar.util');
 const paypalService = require('../services/paypalService');
 const MentorProfile = require('../models/MentorProfile');
+const sendEmailWithResend = require('../utils/email');
 
 const sendError = (res, statusCode, message, extra = {}) =>
   res.status(statusCode).json({ status: 'error', message, ...extra });
@@ -17,6 +19,103 @@ const buildCaptureMetadata = (captureResponse) => {
     payerEmail: payer?.email_address,
     captureStatus: capture?.status
   };
+};
+
+const formatPersonName = (person) => {
+  if (!person) return null;
+  const name = [person.firstName, person.lastName].filter(Boolean).join(' ').trim();
+  return name || null;
+};
+
+const buildBookingConfirmationDetails = (booking, recipientFirstName) => {
+  const timezone = booking.menteeTimezone || booking.mentorTimezone || 'UTC';
+  let sessionDate = null;
+  let sessionTime = null;
+
+  if (booking.startTimeUTC) {
+    const start = DateTime.fromJSDate(new Date(booking.startTimeUTC)).setZone(timezone);
+    if (start.isValid) {
+      sessionDate = start.toFormat('cccc, LLLL d, yyyy');
+      sessionTime = start.toFormat('h:mm a');
+      if (booking.endTimeUTC) {
+        const end = DateTime.fromJSDate(new Date(booking.endTimeUTC)).setZone(timezone);
+        if (end.isValid) {
+          sessionTime = `${sessionTime} – ${end.toFormat('h:mm a')}`;
+        }
+      }
+    }
+  }
+
+  return {
+    firstName: recipientFirstName || 'there',
+    mentorName: formatPersonName(booking.mentor),
+    menteeName: formatPersonName(booking.mentee),
+    sessionDate,
+    sessionTime,
+    timezone,
+    duration: booking.durationMinutes ? `${booking.durationMinutes} minutes` : null,
+    meetingLink: booking.meeting?.meetingLink || null,
+    bookingId: booking._id ? booking._id.toString() : null,
+  };
+};
+
+const sendBookingConfirmationEmails = async (booking) => {
+  if (booking.status !== 'confirmed' || booking.payment?.status !== 'paid') {
+    return;
+  }
+
+  const recipients = [];
+  if (booking.mentee?.email) {
+    recipients.push({
+      email: booking.mentee.email,
+      firstName: booking.mentee.firstName || 'there',
+    });
+  }
+  if (booking.mentor?.email) {
+    recipients.push({
+      email: booking.mentor.email,
+      firstName: booking.mentor.firstName || 'there',
+    });
+  }
+
+  for (const recipient of recipients) {
+    const bookingDetails = buildBookingConfirmationDetails(booking, recipient.firstName);
+    const summaryLines = [
+      bookingDetails.mentorName && `Mentor: ${bookingDetails.mentorName}`,
+      bookingDetails.menteeName && `Mentee: ${bookingDetails.menteeName}`,
+      bookingDetails.sessionDate && `Date: ${bookingDetails.sessionDate}`,
+      bookingDetails.sessionTime && `Time: ${bookingDetails.sessionTime}`,
+      bookingDetails.timezone && `Timezone: ${bookingDetails.timezone}`,
+      bookingDetails.duration && `Duration: ${bookingDetails.duration}`,
+      bookingDetails.meetingLink && `Meeting link: ${bookingDetails.meetingLink}`,
+      bookingDetails.bookingId && `Booking ID: ${bookingDetails.bookingId}`,
+    ].filter(Boolean);
+
+    await sendEmailWithResend({
+      email: recipient.email,
+      subject: 'Booking Confirmed – Mentorick',
+      isBookingConfirmation: true,
+      bookingDetails,
+      message: `
+Your mentorship session has been confirmed.
+
+${summaryLines.join('\n')}
+
+Thank you for choosing Mentorick.
+      `.trim(),
+    });
+  }
+};
+
+const sendBookingConfirmationEmailsSafely = async (booking) => {
+  try {
+    await sendBookingConfirmationEmails(booking);
+  } catch (emailError) {
+    console.error(
+      `Failed to send booking confirmation email for booking ${booking?._id}:`,
+      emailError
+    );
+  }
 };
 
 exports.createOrder = async (req, res) => {
@@ -258,6 +357,8 @@ exports.captureOrder = async (req, res) => {
       booking.meeting = megaSession.meeting; // Link participant booking to the mega session's meeting
       await booking.save(); // Save participant booking updates
 
+      await sendBookingConfirmationEmailsSafely(booking);
+
       return res.status(200).json({
         success: true,
         booking,
@@ -274,6 +375,7 @@ exports.captureOrder = async (req, res) => {
       await booking.save();
     }
 
+    await sendBookingConfirmationEmailsSafely(booking);
 
     return res.status(200).json({
       success: true,

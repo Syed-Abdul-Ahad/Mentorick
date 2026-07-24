@@ -6,6 +6,7 @@ import MobileMenuButton from "../components/layout/MobileMenuButton";
 import Button from "../components/shared/Button";
 import MentorSlider from "../components/shared/MentorSlider";
 import Footer from "../components/shared/Footer";
+import BrandLogo from "../components/shared/BrandLogo";
 import Seo from "../components/seo/Seo";
 import JsonLd from "../components/seo/JsonLd";
 import { HOMEPAGE_FAQS } from "../config/homepageFaqs";
@@ -80,9 +81,7 @@ const Homepage = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo - left side */}
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <span className="font-bold text-lg text-primary-600">Mentorick</span>
-              </div>
+              <BrandLogo className="h-10 w-auto object-contain" />
             </div>
 
             {/* Desktop Search Bar */}
