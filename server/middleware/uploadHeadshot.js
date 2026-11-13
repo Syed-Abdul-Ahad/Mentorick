@@ -48,4 +48,8 @@ function headshotUpload(folder) {
   return [upload.single('headshot'), uploadToCloudinary(folder)];
 }
 
-module.exports = { headshotUpload };
+function paymentProofUpload() {
+  return [upload.single('proof'), uploadToCloudinary('payment-proofs')];
+}
+
+module.exports = { headshotUpload, paymentProofUpload };

@@ -5,13 +5,14 @@ import {
   HiOutlineCheck,
   HiOutlineXMark,
 } from 'react-icons/hi2';
-import { megaSessionService, paymentService } from '../api';
+import { megaSessionService } from '../api';
 import { toast } from 'react-hot-toast';
 import MainLayout from '../components/layout/MainLayout';
 import Button from '../components/shared/Button';
 import MegaSessionCard from '../components/megaSession/MegaSessionCard';
 import MegaSessionPaymentModal from '../components/megaSession/MegaSessionPaymentModal';
 import Seo from '../components/seo/Seo';
+import { isMegaSessionBookableByLeadTime, getMinLeadHours } from '../utils/bookingLeadTime';
 
 const MegaSessions = () => {
   const { user } = useSelector((state) => state.auth);
@@ -20,6 +21,7 @@ const MegaSessions = () => {
   const [joiningSession, setJoiningSession] = useState(null);
   const [paymentSession, setPaymentSession] = useState(null);
   const [pendingParticipantBooking, setPendingParticipantBooking] = useState(null);
+  const [bankDetails, setBankDetails] = useState(null);
 
   // Fetch mega sessions
   useEffect(() => {
@@ -38,20 +40,21 @@ const MegaSessions = () => {
     fetchMegaSessions();
   }, []);
 
-  const handleOpenPayment = (session) => {
-    setPaymentSession(session);
-  };
-
   const handleCancelPayment = () => {
     setPaymentSession(null);
     setPendingParticipantBooking(null);
+    setBankDetails(null);
   };
 
-  // Join mega session
-  const handleCreateJoinOrder = async (session) => {
+  const handleJoinSession = async (session) => {
     if (!user) {
       toast.error('Please log in to join sessions');
-      throw new Error('Please log in to join sessions');
+      return;
+    }
+
+    if (!isMegaSessionBookableByLeadTime(session.startTimeUTC)) {
+      toast.error(`Sessions must be booked at least ${getMinLeadHours()} hours in advance`);
+      return;
     }
 
     setJoiningSession(session._id);
@@ -60,51 +63,26 @@ const MegaSessions = () => {
       const response = await megaSessionService.joinMegaSession(session._id, { timezone });
 
       if (!response.success) {
-        throw new Error(response.error || 'Failed to start payment for this session');
+        throw new Error(response.error || 'Failed to join this session');
       }
 
       setPendingParticipantBooking(response.participantBooking);
-
-      const orderResponse = await paymentService.createOrder({
-        bookingId: response.participantBooking._id
-      });
-
-      if (!orderResponse.success) {
-        throw new Error(orderResponse.error || 'Failed to create PayPal order');
-      }
-
-      return orderResponse.orderID;
+      setBankDetails(response.bankDetails || null);
+      setPaymentSession(session);
     } catch (error) {
       console.error('Join session error:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to join session';
       toast.error(errorMessage);
-      throw error;
     } finally {
       setJoiningSession(null);
     }
   };
 
-  const handleCaptureJoinOrder = async (orderId) => {
-    if (!pendingParticipantBooking?._id) {
-      throw new Error('Participant booking is missing');
-    }
-
-    const response = await paymentService.captureOrder({
-      bookingId: pendingParticipantBooking._id,
-      orderId
-    });
-
-    if (!response.success) {
-      throw new Error(response.error || 'Failed to complete session payment');
-    }
-
-    toast.success('Successfully joined the mega session!');
-
+  const handlePaymentComplete = async () => {
+    toast.success('Payment screenshot submitted. Waiting for admin verification.');
     const sessionsResponse = await megaSessionService.getMegaSessions({ upcoming: true });
     setMegaSessions(sessionsResponse.megaSessions || []);
     handleCancelPayment();
-
-    return response;
   };
 
 
@@ -197,10 +175,14 @@ const MegaSessions = () => {
                     >
                       Log in to Join
                     </Button>
+                  ) : !isMegaSessionBookableByLeadTime(session.startTimeUTC) ? (
+                    <p className="text-xs text-amber-700 text-center py-2">
+                      Bookable from {getMinLeadHours()}+ hours before the session
+                    </p>
                   ) : (
                     <Button
                       className="w-full !bg-gradient-to-r !from-violet-600 !to-indigo-600 hover:!from-violet-700 hover:!to-indigo-700 !border-0"
-                      onClick={() => handleOpenPayment(session)}
+                      onClick={() => handleJoinSession(session)}
                       disabled={joiningSession === session._id}
                     >
                       {joiningSession === session._id ? 'Preparing...' : 'Join Session'}
@@ -214,14 +196,12 @@ const MegaSessions = () => {
       </div>
 
       <MegaSessionPaymentModal
-        isOpen={!!paymentSession}
+        isOpen={!!paymentSession && !!pendingParticipantBooking}
         session={paymentSession}
+        booking={pendingParticipantBooking}
+        bankDetails={bankDetails}
         onClose={handleCancelPayment}
-        onCreateOrder={() => handleCreateJoinOrder(paymentSession)}
-        onApprove={async (data) => {
-          await handleCaptureJoinOrder(data.orderID);
-        }}
-        onCancel={handleCancelPayment}
+        onComplete={handlePaymentComplete}
       />
     </MainLayout>
   );

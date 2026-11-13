@@ -7,14 +7,9 @@ import DurationSelector from './DurationSelector';
 import BookingSummary from './BookingSummary';
 import { useMentorAvailability } from '../../hooks/useMentorAvailability';
 import { useCreateBooking } from '../../hooks/useCreateBooking';
-import { paymentService } from '../../api';
 
 /**
- * Main booking modal component that orchestrates the entire booking flow
- * Step 1: Date Selection
- * Step 2: Time Selection  
- * Step 3: Duration Selection
- * Step 4: Booking Summary & Confirmation
+ * Main booking modal — date/time/duration → bank transfer payment
  */
 const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -22,16 +17,11 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedDuration, setSelectedDuration] = useState(null);
   const [description, setDescription] = useState('');
-  const [draftBooking, setDraftBooking] = useState(null);
   const [paymentError, setPaymentError] = useState('');
 
-  // Fetch mentor availability
   const { availability, loading: availabilityLoading, error: availabilityError, timezone } = useMentorAvailability(mentorId);
-  
-  // Booking creation
   const { createBooking, loading: bookingLoading, error: bookingError, clearError } = useCreateBooking();
 
-  // Reset state when modal opens/closes
   React.useEffect(() => {
     if (!isOpen) {
       setCurrentStep(1);
@@ -39,7 +29,6 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
       setSelectedSlot(null);
       setSelectedDuration(null);
       setDescription('');
-      setDraftBooking(null);
       setPaymentError('');
       clearError();
     }
@@ -49,7 +38,6 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
     setSelectedDate(date);
     setSelectedSlot(null);
     setSelectedDuration(null);
-    setDraftBooking(null);
     setPaymentError('');
     setCurrentStep(2);
   };
@@ -57,85 +45,49 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
   const handleSlotSelect = (slot) => {
     setSelectedSlot(slot);
     setSelectedDuration(null);
-    setDraftBooking(null);
     setPaymentError('');
     setCurrentStep(3);
   };
 
   const handleDurationSelect = (duration) => {
     setSelectedDuration(duration);
-    setDraftBooking(null);
     setPaymentError('');
     setCurrentStep(4);
   };
 
   const handleDescriptionNext = () => {
-    setDraftBooking(null);
     setPaymentError('');
     setCurrentStep(5);
   };
 
-  const handleCreateOrder = async () => {
+  const handleReserveBooking = async () => {
     if (!selectedDate || !selectedSlot || !selectedDuration) {
       throw new Error('Please complete your booking selection first');
     }
 
-    // Format the startTime as ISO string (without timezone offset)
     const startTime = `${selectedDate}T${selectedSlot.start}`;
-
-    const bookingData = {
+    const bookingResult = await createBooking({
       mentorId,
       startTime,
       duration: selectedDuration,
-      currency: 'USD', // Default currency, could be made configurable
-      description: description.trim()
-    };
-
-    const bookingResult = await createBooking(bookingData);
+      currency: 'USD',
+      description: description.trim(),
+    });
 
     if (!bookingResult.success) {
-      setPaymentError(bookingResult.error || 'Failed to create booking draft');
-      throw new Error(bookingResult.error || 'Failed to create booking draft');
+      setPaymentError(bookingResult.error || 'Failed to create booking');
+      throw new Error(bookingResult.error || 'Failed to create booking');
     }
 
-    setDraftBooking(bookingResult.booking);
-
-    const orderResult = await paymentService.createOrder({
-      bookingId: bookingResult.booking._id
-    });
-
-    if (!orderResult.success) {
-      setPaymentError(orderResult.error || 'Failed to create PayPal order');
-      throw new Error(orderResult.error || 'Failed to create PayPal order');
-    }
-
-    return orderResult.orderID;
-  };
-
-  const handleCaptureOrder = async (orderId) => {
-    if (!draftBooking?._id) {
-      throw new Error('Booking draft is missing');
-    }
-
-    const result = await paymentService.captureOrder({
-      bookingId: draftBooking._id,
-      orderId
-    });
-
-    if (!result.success) {
-      setPaymentError(result.error || 'Failed to capture PayPal payment');
-      throw new Error(result.error || 'Failed to capture PayPal payment');
-    }
-
-    return result;
+    return {
+      booking: bookingResult.booking,
+      bankDetails: bookingResult.bankDetails,
+    };
   };
 
   const handleBack = () => {
     if (currentStep > 1) {
-      if (currentStep === 5) {
-        setDraftBooking(null);
-        setPaymentError('');
-      }
+      setPaymentError('');
       setCurrentStep(currentStep - 1);
       if (currentStep === 2) {
         setSelectedSlot(null);
@@ -146,12 +98,10 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
     }
   };
 
-  // Get available slots for selected date
-  const selectedDateSlots = selectedDate 
-    ? availability.find(day => day.date === selectedDate)?.slots || []
+  const selectedDateSlots = selectedDate
+    ? availability.find((day) => day.date === selectedDate)?.slots || []
     : [];
 
-  // Get available durations for selected slot
   const availableDurations = selectedSlot?.durations || [];
 
   const stepTitles = {
@@ -159,7 +109,7 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
     2: 'Select Time',
     3: 'Select Duration',
     4: 'Add Description',
-    5: 'Complete Payment'
+    5: 'Pay by bank transfer',
   };
 
   if (!isOpen) return null;
@@ -172,13 +122,13 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
         exit={{ opacity: 0, scale: 0.95 }}
         className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
       >
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
             <h2 className="text-xl font-bold text-gray-900">Book Session</h2>
             <p className="text-gray-600">with {mentorName}</p>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
@@ -186,7 +136,6 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
           </button>
         </div>
 
-        {/* Progress Indicator */}
         <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
           <div className="flex items-center space-x-2">
             {[1, 2, 3, 4, 5].map((step) => (
@@ -215,7 +164,6 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
           </div>
         </div>
 
-        {/* Content */}
         <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 200px)' }}>
           <AnimatePresence mode="wait">
             {currentStep === 1 && (
@@ -245,10 +193,12 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
                   slots={selectedDateSlots}
                   selectedSlot={selectedSlot}
                   onSlotSelect={handleSlotSelect}
+                  selectedDate={selectedDate}
                   loading={false}
                 />
                 <div className="px-6 pb-4">
                   <button
+                    type="button"
                     onClick={handleBack}
                     className="text-primary-600 hover:text-primary-700 text-sm font-medium"
                   >
@@ -273,6 +223,7 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
                 />
                 <div className="px-6 pb-4">
                   <button
+                    type="button"
                     onClick={handleBack}
                     className="text-primary-600 hover:text-primary-700 text-sm font-medium"
                   >
@@ -316,12 +267,14 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
                   </div>
                   <div className="flex space-x-3 mt-6">
                     <button
+                      type="button"
                       onClick={handleBack}
                       className="flex-1 px-4 py-2 text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 transition-colors"
                     >
                       ← Back
                     </button>
                     <button
+                      type="button"
                       onClick={handleDescriptionNext}
                       className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
                     >
@@ -346,13 +299,10 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
                   mentorName={mentorName}
                   timezone={timezone}
                   description={description}
-                  onCreateOrder={handleCreateOrder}
-                  onCaptureOrder={handleCaptureOrder}
+                  onReserveBooking={handleReserveBooking}
                   onPaymentSuccess={(booking) => {
                     setPaymentError('');
-                    if (onBookingSuccess) {
-                      onBookingSuccess(booking);
-                    }
+                    if (onBookingSuccess) onBookingSuccess(booking);
                     onClose();
                   }}
                   onBack={handleBack}
@@ -364,7 +314,6 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
           </AnimatePresence>
         </div>
 
-        {/* Error Display for availability loading */}
         {availabilityError && (
           <div className="px-6 py-4 bg-red-50 border-t border-red-200">
             <p className="text-red-700 text-sm">{availabilityError}</p>

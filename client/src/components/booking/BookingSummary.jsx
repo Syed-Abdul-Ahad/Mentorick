@@ -1,27 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Button from '../shared/Button';
-import PayPalCheckout from '../shared/PayPalCheckout';
+import BankTransferPaymentPanel from '../payments/BankTransferPaymentPanel';
 import { formatTimeTo12Hour } from '../../utils/timezone';
 import { formatDurationLabel } from '../../utils/durationDisplay';
 
 /**
- * Booking summary component for booking flow
- * Shows final booking details before confirmation
+ * Booking summary + bank transfer payment step
  */
-const BookingSummary = ({ 
-  selectedDate, 
-  selectedSlot, 
-  selectedDuration, 
-  mentorName, 
+const BookingSummary = ({
+  selectedDate,
+  selectedSlot,
+  selectedDuration,
+  mentorName,
   timezone,
-  description, 
-  onCreateOrder,
-  onCaptureOrder,
+  description,
+  onReserveBooking,
   onPaymentSuccess,
-  onBack, 
+  onBack,
   loading,
-  error 
+  error,
 }) => {
+  const [draftBooking, setDraftBooking] = useState(null);
+  const [bankDetails, setBankDetails] = useState(null);
+  const [localError, setLocalError] = useState('');
+  const [reserving, setReserving] = useState(false);
+
   if (!selectedDate || !selectedSlot || !selectedDuration) {
     return (
       <div className="p-6 text-center">
@@ -30,45 +33,60 @@ const BookingSummary = ({
     );
   }
 
-  // Format the date for display
   const dateObj = new Date(selectedDate + 'T00:00:00');
   const formattedDate = dateObj.toLocaleDateString('en-US', {
     weekday: 'long',
-    year: 'numeric', 
+    year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   });
+
+  const handleConfirmBooking = async () => {
+    try {
+      setLocalError('');
+      setReserving(true);
+      const result = await onReserveBooking();
+      if (!result?.booking) {
+        throw new Error(result?.error || 'Failed to create booking');
+      }
+      setDraftBooking(result.booking);
+      setBankDetails(result.bankDetails || null);
+    } catch (err) {
+      setLocalError(err.message || 'Failed to create booking');
+    } finally {
+      setReserving(false);
+    }
+  };
+
+  const displayError = localError || error;
 
   return (
     <div className="p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Booking Summary</h3>
-      
+      <h3 className="text-lg font-semibold text-gray-900 mb-6">
+        {draftBooking ? 'Complete payment' : 'Booking Summary'}
+      </h3>
+
       <div className="space-y-4 mb-6">
         <div className="flex justify-between py-3 border-b border-gray-100">
           <span className="text-gray-600">Mentor</span>
           <span className="font-medium text-gray-900">{mentorName}</span>
         </div>
-        
         <div className="flex justify-between py-3 border-b border-gray-100">
           <span className="text-gray-600">Date</span>
           <span className="font-medium text-gray-900">{formattedDate}</span>
         </div>
-        
         <div className="flex justify-between py-3 border-b border-gray-100">
           <span className="text-gray-600">Time</span>
           <span className="font-medium text-gray-900">{formatTimeTo12Hour(selectedSlot.start)}</span>
         </div>
-        
         <div className="flex justify-between py-3 border-b border-gray-100">
           <span className="text-gray-600">Duration</span>
           <span className="font-medium text-gray-900">{formatDurationLabel(selectedDuration)}</span>
         </div>
-        
         <div className="flex justify-between py-3 border-b border-gray-100">
           <span className="text-gray-600">Timezone</span>
           <span className="font-medium text-gray-900">{timezone}</span>
         </div>
-        
         {description && (
           <div className="py-3 border-b border-gray-100">
             <span className="text-gray-600 block mb-2">Session Agenda</span>
@@ -79,34 +97,32 @@ const BookingSummary = ({
         )}
       </div>
 
-      {error && (
+      {displayError && !draftBooking && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-700 text-sm">{error}</p>
+          <p className="text-red-700 text-sm">{displayError}</p>
         </div>
       )}
 
-      <div className="space-y-4">
-        <PayPalCheckout
-          onCreateOrder={onCreateOrder}
-          onApprove={async (data) => {
-            const result = await onCaptureOrder(data.orderID);
-            if (onPaymentSuccess) {
-              onPaymentSuccess(result.booking);
-            }
-          }}
-          onError={() => {}}
-          helperText="Pay securely with PayPal to confirm this booking."
+      {!draftBooking ? (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Confirm to reserve this slot for 30 minutes while you transfer payment and upload a screenshot.
+          </p>
+          <Button onClick={handleConfirmBooking} disabled={loading || reserving} className="w-full">
+            {loading || reserving ? 'Reserving…' : 'Confirm & show bank details'}
+          </Button>
+          <Button variant="secondary" onClick={onBack} disabled={loading || reserving} className="w-full">
+            Back
+          </Button>
+        </div>
+      ) : (
+        <BankTransferPaymentPanel
+          booking={draftBooking}
+          bankDetails={bankDetails}
+          onComplete={(booking) => onPaymentSuccess?.(booking)}
+          onCancel={onBack}
         />
-
-        <Button
-          variant="secondary"
-          onClick={onBack}
-          disabled={loading}
-          className="w-full"
-        >
-          Back
-        </Button>
-      </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,9 @@
 const { DateTime } = require('luxon');
+
+jest.mock('../../paymentConfig', () => ({
+  getBookingMinLeadHours: () => 0,
+}));
+
 const {
   mergeConsecutiveHoursToWindows,
   subtractBookingsFromWindows,
@@ -116,7 +121,6 @@ describe('non-consecutive hours cannot bridge gaps', () => {
 describe('mentor duration filtering', () => {
   const baseProfile = {
     timezone: TZ,
-    paypal: { isConnected: true },
     sessionDurations: [
       { duration: '30 min', priceUSD: 10, pricePKR: 2800 },
       { duration: '60 min', priceUSD: 20, pricePKR: 5600 },
@@ -178,7 +182,6 @@ describe('mentor duration filtering', () => {
 describe('booking validation uses the same engine as availability API', () => {
   const mentorProfile = {
     timezone: TZ,
-    paypal: { isConnected: true },
     sessionDurations: [
       { duration: '30 min', priceUSD: 10, pricePKR: 2800 },
       { duration: '60 min', priceUSD: 20, pricePKR: 5600 },
@@ -195,18 +198,20 @@ describe('booking validation uses the same engine as availability API', () => {
     },
   };
 
-  const friday = DateTime.fromObject({ year: 2026, month: 7, day: 3 }, { zone: TZ });
+  // Next Friday from "now" so validation (which regenerates availability from now) still matches
+  const friday = DateTime.now().setZone(TZ).plus({ days: (5 - DateTime.now().setZone(TZ).weekday + 7) % 7 || 7 }).startOf('day');
 
   test('accepts every slot the availability API generated', () => {
     const availability = generateAvailability({
       mentorProfile,
       bookings: [],
       menteeTimezone: TZ,
-      daysAhead: 1,
+      daysAhead: 14,
       startFrom: friday,
     });
 
-    const day = availability[0];
+    const day = availability.find((d) => d.date === friday.toISODate()) || availability[0];
+    expect(day).toBeTruthy();
     for (const slot of day.slots) {
       for (const duration of slot.durations) {
         const startTimeISO = `${day.date}T${slot.start}:00`;

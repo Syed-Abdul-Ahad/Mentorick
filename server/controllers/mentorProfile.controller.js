@@ -1,6 +1,5 @@
 const MentorProfile = require('../models/MentorProfile');
 const User = require('../models/User');
-const paypalService = require('../services/paypalService');
 
 const {
   isValidDuration,
@@ -164,24 +163,6 @@ exports.getMyMentorProfile = async (req, res, next) => {
   try {
     const profile = await MentorProfile.findOne({ user: req.user._id });
     if (!profile) return res.status(404).json({ success: false, message: 'Profile not found' });
-
-    // Self-healing: if onboarding is pending or connected is false but we have trackingId
-    if (profile.paypal && !profile.paypal.isConnected && profile.paypal.trackingId) {
-      try {
-        const integrationStatus = await paypalService.getMerchantIntegrationStatus({ trackingId: profile.paypal.trackingId });
-        if (integrationStatus && integrationStatus.active) {
-          profile.paypal.isConnected = true;
-          profile.paypal.merchantId = integrationStatus.merchantId;
-          profile.paypal.payments_receivable = true;
-          profile.paypal.onboardingPending = false;
-          profile.paypal.connectedAt = profile.paypal.connectedAt || new Date();
-          await profile.save();
-        }
-      } catch (verifyError) {
-        console.error('Self-healing PayPal verification failed during profile load:', verifyError);
-        // Do not fail the request - fail silently and log it
-      }
-    }
 
     res.json({ success: true, data: profile });
   } catch (err) {

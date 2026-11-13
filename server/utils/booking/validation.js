@@ -4,6 +4,7 @@ const { parseDurationMinutes, isValidDuration } = require('./duration');
 const { generateAvailability } = require('./availabilityEngine');
 const { findOverlappingBooking } = require('./overlap');
 const { resolvePrice } = require('./pricing');
+const { getBookingMinLeadHours } = require('../paymentConfig');
 
 function parseBookingWindow(startTimeISO, durationMinutes, requestTimezone) {
   const startUTC = DateTime.fromISO(startTimeISO, { zone: requestTimezone }).toUTC();
@@ -15,6 +16,22 @@ function parseBookingWindow(startTimeISO, durationMinutes, requestTimezone) {
     menteeDate: DateTime.fromISO(startTimeISO, { zone: requestTimezone }).toISODate(),
     startLocal: DateTime.fromISO(startTimeISO, { zone: requestTimezone }).toFormat('HH:mm'),
   };
+}
+
+function validateMinLeadTime(startUTC) {
+  const minLeadHours = getBookingMinLeadHours();
+  const earliestAllowed = DateTime.now().toUTC().plus({ hours: minLeadHours });
+  const start = DateTime.fromJSDate(startUTC).toUTC();
+
+  if (start < earliestAllowed) {
+    return {
+      valid: false,
+      reason: `Sessions must be booked at least ${minLeadHours} hours in advance`,
+      statusCode: 400,
+    };
+  }
+
+  return { valid: true };
 }
 
 function validateBookableSlot({
@@ -69,12 +86,7 @@ function validateCreateBooking({
   duration,
   timezone,
   currency,
-  requirePayPalConnected = true,
 }) {
-  if (requirePayPalConnected && !mentorProfile.paypal?.isConnected) {
-    return { valid: false, reason: 'Mentor has not connected PayPal account', statusCode: 400 };
-  }
-
   const slotValidation = validateBookableSlot({
     mentorProfile,
     bookings,
@@ -88,6 +100,11 @@ function validateCreateBooking({
   }
 
   const { startUTC, endUTC, durationMinutes } = slotValidation;
+
+  const leadTime = validateMinLeadTime(startUTC);
+  if (!leadTime.valid) {
+    return leadTime;
+  }
 
   const overlap = findOverlappingBooking(bookings, startUTC, endUTC);
   if (overlap) {
@@ -134,6 +151,11 @@ function validateCreateMegaSession({
 
   const { startUTC, endUTC, durationMinutes } = slotValidation;
 
+  const leadTime = validateMinLeadTime(startUTC);
+  if (!leadTime.valid) {
+    return leadTime;
+  }
+
   const overlap = findOverlappingBooking(bookings, startUTC, endUTC);
   if (overlap) {
     return {
@@ -167,4 +189,5 @@ module.exports = {
   validateBookableSlot,
   validateCreateBooking,
   validateCreateMegaSession,
+  validateMinLeadTime,
 };

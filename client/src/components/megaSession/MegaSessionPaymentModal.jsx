@@ -1,15 +1,15 @@
 import { HiX } from 'react-icons/hi';
-import PayPalCheckout from '../shared/PayPalCheckout';
+import BankTransferPaymentPanel from '../payments/BankTransferPaymentPanel';
 
 const MegaSessionPaymentModal = ({
   isOpen,
   session,
+  booking,
+  bankDetails,
   onClose,
-  onCreateOrder,
-  onApprove,
-  onCancel,
+  onComplete,
 }) => {
-  if (!isOpen || !session) return null;
+  if (!isOpen || !session || !booking) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/40">
@@ -43,13 +43,11 @@ const MegaSessionPaymentModal = ({
             )}
           </div>
 
-          <PayPalCheckout
-            amount={session.price.amount}
-            currency={session.price.currency}
-            helperText="Pay securely to reserve your seat in this mega session."
-            onCreateOrder={onCreateOrder}
-            onApprove={onApprove}
-            onCancel={onCancel}
+          <BankTransferPaymentPanel
+            booking={booking}
+            bankDetails={bankDetails}
+            onComplete={onComplete}
+            onCancel={onClose}
           />
         </div>
       </div>
