@@ -5,7 +5,6 @@ import {
   FaCcVisa,
   FaCcMastercard,
   FaCcAmex,
-  FaCcPaypal,
   FaCcApplePay,
   FaGooglePay,
 } from "react-icons/fa";
@@ -101,7 +100,6 @@ const Footer = () => {
                 <FaCcVisa className="h-6 w-8 text-gray-400" />
                 <FaCcMastercard className="h-6 w-8 text-gray-400" />
                 <FaCcAmex className="h-6 w-8 text-gray-400" />
-                <FaCcPaypal className="h-6 w-8 text-gray-400" />
                 <FaCcApplePay className="h-6 w-8 text-gray-400" />
                 <FaGooglePay className="h-6 w-8 text-gray-400" />
               </div>

@@ -234,12 +234,28 @@ const BookingCard = ({ booking, timeInfo, utcTimeInfo, userTimezone }) => {
           <p className="text-[26px] font-bold leading-none text-[#1A1A1A] tabular-nums">
             {formatPrice(booking.price.amount, booking.price.currency)}
           </p>
+          {isMentorView && booking.payment?.mentorPayoutAmount != null && (
+            <p className="mt-1 text-[11px] text-emerald-700 tabular-nums">
+              You get {formatPrice(booking.payment.mentorPayoutAmount, booking.payment.currency || booking.price.currency)}
+              {booking.payment?.platformFee != null && (
+                <span className="text-[#AAAAAA]">
+                  {' '}
+                  (fee {formatPrice(booking.payment.platformFee, booking.payment.currency || booking.price.currency)})
+                </span>
+              )}
+            </p>
+          )}
+          {!isMentorView && booking.payment?.status && booking.payment.status !== 'paid' && booking.status === 'pending' && (
+            <p className="mt-1 text-[11px] text-amber-700 tabular-nums">
+              Due {formatPrice(booking.payment.amount ?? booking.price.amount, booking.payment.currency || booking.price.currency)}
+            </p>
+          )}
           <p className="mt-2 flex items-center gap-1 text-[12px] text-[#AAAAAA]">
             <HiOutlineClock className="h-[14px] w-[14px] shrink-0" strokeWidth={1.8} />
             <span>{formatDurationLabel(booking.durationMinutes)}</span>
           </p>
 
-          {booking.meeting?.meetingLink ? (
+          {booking.status === 'confirmed' && booking.meeting?.meetingLink ? (
             <button
               type="button"
               onClick={() => window.open(booking.meeting.meetingLink, '_blank')}
@@ -289,12 +305,15 @@ const BookingCard = ({ booking, timeInfo, utcTimeInfo, userTimezone }) => {
           <p className="line-clamp-2 text-[11px] leading-[1.45] text-[#888888]">{agendaText}</p>
         </div>
 
-        {booking.status === 'pending' && booking.userRole === 'mentee' && !booking.meeting?.meetingLink && (
+        {booking.status === 'pending' && (
           <p
             className="mt-1 truncate text-[10px] text-amber-600"
-            title="Waiting for confirmation — meeting link will appear once confirmed."
+            title="Waiting for confirmation — meeting link appears after admin verifies payment."
           >
-            Waiting for confirmation
+            {booking.payment?.status === 'awaiting_proof' && 'Awaiting payment screenshot'}
+            {booking.payment?.status === 'awaiting_verification' && 'Payment under review'}
+            {booking.payment?.status === 'rejected' && 'Proof rejected — please book again'}
+            {!booking.payment?.status && 'Waiting for confirmation'}
           </p>
         )}
       </div>

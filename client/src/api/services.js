@@ -274,6 +274,15 @@ class BookingService extends ApiService {
       throw this.handleError(error);
     }
   }
+
+  async getPaymentHistory(params = {}) {
+    try {
+      const response = await apiClient.get('/booking/payment-history', { params });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
 }
 
 class PaymentService extends ApiService {
@@ -281,18 +290,49 @@ class PaymentService extends ApiService {
     super('/payments');
   }
 
-  async createOrder(payload) {
+  async getBankDetails() {
     try {
-      const response = await apiClient.post('/payments/orders', payload);
+      const response = await apiClient.get('/payments/bank-details');
       return response.data;
     } catch (error) {
       throw this.handleError(error);
     }
   }
 
-  async captureOrder(payload) {
+  async uploadProof(bookingId, file) {
     try {
-      const response = await apiClient.post('/payments/orders/capture', payload);
+      const formData = new FormData();
+      formData.append('proof', file);
+      const response = await apiClient.post(`/payments/bookings/${bookingId}/proof`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async verifyPayment(bookingId) {
+    try {
+      const response = await apiClient.post(`/payments/bookings/${bookingId}/verify`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async rejectPayment(bookingId, reason) {
+    try {
+      const response = await apiClient.post(`/payments/bookings/${bookingId}/reject`, { reason });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getPendingVerifications() {
+    try {
+      const response = await apiClient.get('/payments/pending-verifications');
       return response.data;
     } catch (error) {
       throw this.handleError(error);

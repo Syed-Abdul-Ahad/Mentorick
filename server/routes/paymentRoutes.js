@@ -1,37 +1,49 @@
 const express = require('express');
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 const validateRequest = require('../middleware/validation');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, authorize } = require('../middleware/auth');
+const { paymentProofUpload } = require('../middleware/uploadHeadshot');
 const paymentController = require('../controllers/paymentController');
 
 const router = express.Router();
 
-router.post(
-  '/orders',
+router.get('/bank-details', authenticate, paymentController.getBankDetails);
+
+router.get(
+  '/pending-verifications',
   authenticate,
-  [body('bookingId').isMongoId().withMessage('Valid booking ID is required')],
-  validateRequest,
-  paymentController.createOrder
+  authorize('admin'),
+  paymentController.getPendingVerifications
 );
 
 router.post(
-  '/orders/capture',
+  '/bookings/:id/proof',
   authenticate,
+  [param('id').isMongoId().withMessage('Valid booking ID is required')],
+  validateRequest,
+  ...paymentProofUpload(),
+  paymentController.uploadPaymentProof
+);
+
+router.post(
+  '/bookings/:id/verify',
+  authenticate,
+  authorize('admin'),
+  [param('id').isMongoId().withMessage('Valid booking ID is required')],
+  validateRequest,
+  paymentController.verifyPayment
+);
+
+router.post(
+  '/bookings/:id/reject',
+  authenticate,
+  authorize('admin'),
   [
-    body('bookingId').isMongoId().withMessage('Valid booking ID is required'),
-    body('orderId').notEmpty().withMessage('PayPal order ID is required')
+    param('id').isMongoId().withMessage('Valid booking ID is required'),
+    body('reason').optional().isString().trim(),
   ],
   validateRequest,
-  paymentController.captureOrder
+  paymentController.rejectPayment
 );
-
-// PayPal Connect Flow
-router.get('/connect', authenticate, paymentController.connectPayPal);
-router.get('/connect/callback', paymentController.connectPayPalCallback); // Public callback (secured on backend via Merchant Integrations verification)
-router.get('/verify-merchant', authenticate, paymentController.verifyMerchant); // Manual verification fallback (GET)
-router.post('/verify-merchant', authenticate, paymentController.verifyMerchant); // Manual verification fallback (POST)
-
-// Webhook
-router.post('/webhook', paymentController.paypalWebhook);
 
 module.exports = router;

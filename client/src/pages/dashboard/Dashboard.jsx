@@ -5,20 +5,17 @@ import {
   HiOutlineArrowRight,
   HiOutlineCalendarDays,
   HiOutlineChartBar,
-  HiOutlineCreditCard,
   HiOutlineAcademicCap,
   HiOutlineSparkles,
-  HiOutlineCheckCircle,
-  HiOutlineExclamationCircle,
 } from 'react-icons/hi2';
 import { useUser } from '../../store/hooks';
 import { clearUser } from '../../store/slices/authSlice';
-import { authService, bookingService, megaSessionService } from '../../api';
-import apiClient from '../../api/axiosConfig';
+import { authService, bookingService, megaSessionService, paymentService } from '../../api';
 import MainLayout from '../../components/layout/MainLayout';
 import toast from 'react-hot-toast';
 import { formatDurationLabel } from '../../utils/durationDisplay';
 import Seo from '../../components/seo/Seo';
+import DashboardPaymentsTab from '../../components/dashboard/DashboardPaymentsTab';
 
 const STATUS_DOT = {
   completed: 'bg-blue-500',
@@ -173,8 +170,6 @@ const Dashboard = () => {
 
   const currentTab = searchParams.get('tab') || 'overview';
 
-  const [mentorProfile, setMentorProfile] = useState(null);
-  const [loadingProfile, setLoadingProfile] = useState(false);
   const [analytics, setAnalytics] = useState(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(true);
   const [pendingMegaSessions, setPendingMegaSessions] = useState([]);
@@ -254,25 +249,6 @@ const Dashboard = () => {
     }
   };
 
-  useEffect(() => {
-    if (user?.role === 'mentor' && currentTab === 'payments') {
-      const fetchProfile = async () => {
-        setLoadingProfile(true);
-        try {
-          const res = await apiClient.get('/mentor/my-profile');
-          if (res.data?.data) {
-            setMentorProfile(res.data.data);
-          }
-        } catch (error) {
-          console.error('Error fetching mentor profile:', error);
-        } finally {
-          setLoadingProfile(false);
-        }
-      };
-      fetchProfile();
-    }
-  }, [user, currentTab]);
-
   const handleLogout = async () => {
     try {
       await authService.logout();
@@ -284,15 +260,35 @@ const Dashboard = () => {
     }
   };
 
-  const handleConnectPayPal = async () => {
+  const [verifyingId, setVerifyingId] = useState(null);
+
+  const handleVerifyPayment = async (bookingId) => {
     try {
-      const res = await apiClient.get('/payments/connect');
-      if (res.data?.url) {
-        window.location.href = res.data.url;
-      }
+      setVerifyingId(bookingId);
+      const res = await paymentService.verifyPayment(bookingId);
+      if (!res.success) throw new Error(res.error || 'Verification failed');
+      toast.success('Payment verified — booking confirmed');
+      const response = await bookingService.getBookingAnalytics();
+      setAnalytics(response.analytics);
     } catch (error) {
-      console.error('Error connecting PayPal:', error);
-      toast.error('Failed to initiate PayPal connection');
+      toast.error(error.message || 'Failed to verify payment');
+    } finally {
+      setVerifyingId(null);
+    }
+  };
+
+  const handleRejectPayment = async (bookingId) => {
+    try {
+      setVerifyingId(bookingId);
+      const res = await paymentService.rejectPayment(bookingId, 'Payment proof rejected — please book again with a clearer screenshot');
+      if (!res.success) throw new Error(res.error || 'Rejection failed');
+      toast.success('Payment rejected — slot released');
+      const response = await bookingService.getBookingAnalytics();
+      setAnalytics(response.analytics);
+    } catch (error) {
+      toast.error(error.message || 'Failed to reject payment');
+    } finally {
+      setVerifyingId(null);
     }
   };
 
@@ -328,33 +324,35 @@ const Dashboard = () => {
           </button>
         </div>
 
-        {/* Mentor tabs */}
-        {user?.role === 'mentor' && (
-          <div className="flex gap-6 border-b border-gray-200 mb-8 overflow-x-auto">
-            {[
-              { id: 'overview', label: 'Overview' },
-              { id: 'mega-sessions', label: 'Mega sessions', count: pendingMegaSessions.length },
-              { id: 'payments', label: 'Payment settings' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setSearchParams({ tab: tab.id })}
-                className={`pb-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex items-center gap-1.5 ${
-                  currentTab === tab.id
-                    ? 'text-gray-900 border-primary-500'
-                    : 'text-gray-400 border-transparent hover:text-gray-600'
-                }`}
-              >
-                {tab.label}
-                {tab.count > 0 && (
-                  <span className="text-[11px] font-semibold text-amber-600 tabular-nums">
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Dashboard tabs — overview stays default; Payments is additive for all roles */}
+        <div className="flex gap-6 border-b border-gray-200 mb-8 overflow-x-auto">
+          {[
+            { id: 'overview', label: 'Overview' },
+            { id: 'payments', label: 'Payments' },
+            ...(user?.role === 'mentor'
+              ? [{ id: 'mega-sessions', label: 'Mega sessions', count: pendingMegaSessions.length }]
+              : []),
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setSearchParams({ tab: tab.id })}
+              className={`pb-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex items-center gap-1.5 ${
+                currentTab === tab.id
+                  ? 'text-gray-900 border-primary-500'
+                  : 'text-gray-400 border-transparent hover:text-gray-600'
+              }`}
+            >
+              {tab.label}
+              {tab.count > 0 && (
+                <span className="text-[11px] font-semibold text-amber-600 tabular-nums">
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {currentTab === 'payments' && <DashboardPaymentsTab role={user?.role} />}
 
         {currentTab === 'overview' && (
           <div className="space-y-8">
@@ -405,10 +403,19 @@ const Dashboard = () => {
             {!loadingAnalytics && user?.role === 'mentor' && earnings && (
               <div className="rounded-2xl border border-gray-200/80 bg-white px-6 py-4 flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Total earnings</p>
-                  <p className="text-lg font-bold text-gray-900 mt-0.5 tabular-nums">
-                    {earnings.total} <span className="text-sm font-semibold text-gray-400">{earnings._id}</span>
+                  <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+                    Your earnings (80% after platform fee)
                   </p>
+                  <p className="text-lg font-bold text-gray-900 mt-0.5 tabular-nums">
+                    {Number(earnings.total).toFixed(2)}{' '}
+                    <span className="text-sm font-semibold text-gray-400">{earnings._id}</span>
+                  </p>
+                  {earnings.gross != null && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Gross {Number(earnings.gross).toFixed(2)} · Platform fee{' '}
+                      {Number(earnings.platformFees || 0).toFixed(2)}
+                    </p>
+                  )}
                 </div>
                 <HiOutlineChartBar className="w-5 h-5 text-gray-300" />
               </div>
@@ -418,7 +425,8 @@ const Dashboard = () => {
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Total invested</p>
                   <p className="text-lg font-bold text-gray-900 mt-0.5 tabular-nums">
-                    {spending.total} <span className="text-sm font-semibold text-gray-400">{spending._id}</span>
+                    {Number(spending.total).toFixed(2)}{' '}
+                    <span className="text-sm font-semibold text-gray-400">{spending._id}</span>
                   </p>
                 </div>
                 <HiOutlineChartBar className="w-5 h-5 text-gray-300" />
@@ -435,10 +443,69 @@ const Dashboard = () => {
                   <p className="text-xl font-bold text-gray-900 mt-1 tabular-nums">{analytics.platformStats.confirmedBookings}</p>
                 </div>
                 <div className="rounded-2xl border border-gray-200/80 bg-white px-5 py-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Upcoming mega sessions</p>
-                  <p className="text-xl font-bold text-gray-900 mt-1 tabular-nums">{analytics.platformStats.upcomingMegaSessions}</p>
+                  <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Awaiting payment review</p>
+                  <p className="text-xl font-bold text-gray-900 mt-1 tabular-nums">
+                    {analytics.platformStats.awaitingVerificationCount ?? analytics.awaitingVerification?.length ?? 0}
+                  </p>
                 </div>
               </div>
+            )}
+
+            {/* Admin payment verification queue */}
+            {user?.role === 'admin' && analytics?.awaitingVerification?.length > 0 && (
+              <section className="rounded-2xl border border-amber-200/80 bg-white p-6">
+                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
+                  Payment proofs to review
+                </h3>
+                <ul className="space-y-4">
+                  {analytics.awaitingVerification.map((item) => (
+                    <li
+                      key={item.id}
+                      className="rounded-xl border border-gray-100 p-4 flex flex-col sm:flex-row sm:items-center gap-4 justify-between"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {item.menteeName} → {item.mentorName}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {item.amount} {item.currency}
+                          {item.platformFee != null && (
+                            <> · fee {item.platformFee} · mentor {item.mentorPayoutAmount}</>
+                          )}
+                        </p>
+                        {item.proofImageUrl && (
+                          <a
+                            href={item.proofImageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary-600 hover:underline mt-1 inline-block"
+                          >
+                            View screenshot
+                          </a>
+                        )}
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button
+                          type="button"
+                          disabled={verifyingId === item.id}
+                          onClick={() => handleVerifyPayment(item.id)}
+                          className="px-3 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-50"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          type="button"
+                          disabled={verifyingId === item.id}
+                          onClick={() => handleRejectPayment(item.id)}
+                          className="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-50"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             )}
 
             {/* Activity + Upcoming */}
@@ -669,68 +736,6 @@ const Dashboard = () => {
           </div>
         )}
 
-        {currentTab === 'payments' && user?.role === 'mentor' && (
-          <div className="rounded-2xl border border-gray-200/80 bg-white p-6 sm:p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <HiOutlineCreditCard className="w-5 h-5 text-gray-400" />
-              <h2 className="text-lg font-bold text-gray-900">Payment settings</h2>
-            </div>
-
-            {loadingProfile ? (
-              <p className="text-sm text-gray-400">Loading your profile…</p>
-            ) : mentorProfile?.paypal?.isConnected ? (
-              <div className="border border-emerald-200/80 bg-emerald-50/40 rounded-xl p-6">
-                <div className="flex items-start gap-3 mb-5">
-                  <HiOutlineCheckCircle className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
-                  <div>
-                    <h3 className="text-sm font-semibold text-emerald-800">PayPal connected</h3>
-                    <p className="text-sm text-emerald-700/80 mt-0.5">You are ready to receive payments.</p>
-                  </div>
-                </div>
-                <dl className="space-y-2 text-sm border-t border-emerald-200/60 pt-4">
-                  <div className="flex gap-2">
-                    <dt className="text-gray-500 w-28 shrink-0">Email</dt>
-                    <dd className="text-gray-800 font-medium">{mentorProfile.paypal.email}</dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="text-gray-500 w-28 shrink-0">Merchant ID</dt>
-                    <dd className="text-gray-800 font-medium break-all">{mentorProfile.paypal.merchantId}</dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="text-gray-500 w-28 shrink-0">Connected</dt>
-                    <dd className="text-gray-800 font-medium">
-                      {new Date(mentorProfile.paypal.connectedAt).toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-            ) : (
-              <div>
-                <div className="border border-amber-200/80 bg-amber-50/40 rounded-xl p-6 mb-6">
-                  <div className="flex items-start gap-3">
-                    <HiOutlineExclamationCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
-                    <div>
-                      <h3 className="text-sm font-semibold text-amber-800">PayPal not connected</h3>
-                      <p className="text-sm text-amber-700/80 mt-0.5 leading-relaxed">
-                        Connect your PayPal account to receive payments for your sessions.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={handleConnectPayPal}
-                  className="bg-[#0070ba] text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-[#003087] transition-colors"
-                >
-                  Connect PayPal
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </MainLayout>
   );

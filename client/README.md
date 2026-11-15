@@ -8,7 +8,7 @@ Create a local `.env` file with:
 
 ```env
 VITE_API_BASE_URL=http://localhost:5000/api
-VITE_PAYPAL_CLIENT_ID=your_paypal_client_id
+VITE_SITE_URL=http://localhost:5173
 ```
 
 Currently, two official plugins are available:

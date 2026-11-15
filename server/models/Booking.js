@@ -4,15 +4,15 @@ const BookingSchema = new mongoose.Schema({
   mentor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   mentee: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Optional for mega sessions
   mentorProfile: { type: mongoose.Schema.Types.ObjectId, ref: 'MentorProfile', required: true },
-  
+
   // Mega session fields
   isMegaSession: { type: Boolean, default: false },
-  title: { type: String }, // Title for mega session
-  description: { type: String }, // Description for mega session  
-  maxParticipants: { type: Number, default: 1 }, // Max number of mentees (1 for individual, >1 for mega)
-  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Array of mentees who joined
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Admin who created mega session
-  parentMegaSession: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking' }, // Link to parent mega session for individual tracking
+  title: { type: String },
+  description: { type: String },
+  maxParticipants: { type: Number, default: 1 },
+  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  parentMegaSession: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking' },
 
   startTimeUTC: { type: Date, required: true },
   endTimeUTC: { type: Date, required: true },
@@ -28,18 +28,30 @@ const BookingSchema = new mongoose.Schema({
   },
 
   payment: {
-    provider: { type: String, default: 'paypal' },
-    orderId: { type: String },
-    captureId: { type: String },
-    transactionId: { type: String },
-    payerEmail: { type: String },
-    payerId: { type: String },
+    provider: {
+      type: String,
+      enum: ['bank_transfer', 'payfast'],
+      default: 'bank_transfer'
+    },
+    status: {
+      type: String,
+      enum: ['awaiting_proof', 'awaiting_verification', 'paid', 'expired', 'failed', 'rejected'],
+      default: 'awaiting_proof'
+    },
     amount: { type: Number },
     currency: { type: String, enum: ['USD', 'PKR'] },
-    status: { type: String, default: 'pending' },
-    capturedAt: { type: Date },
     platformFee: { type: Number },
-    mentorPayoutAmount: { type: Number }
+    mentorPayoutAmount: { type: Number },
+    proofImageUrl: { type: String },
+    proofUploadedAt: { type: Date },
+    proofDueAt: { type: Date },
+    verifiedAt: { type: Date },
+    verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    rejectionReason: { type: String },
+    // Reserved for PayFast later
+    externalOrderId: { type: String },
+    externalPaymentId: { type: String },
+    metadata: { type: mongoose.Schema.Types.Mixed }
   },
 
   status: {
@@ -58,6 +70,6 @@ const BookingSchema = new mongoose.Schema({
 
 BookingSchema.index({ mentor: 1, startTimeUTC: 1, endTimeUTC: 1 });
 BookingSchema.index({ parentMegaSession: 1, mentee: 1, status: 1 });
-BookingSchema.index({ 'payment.orderId': 1 }, { sparse: true });
+BookingSchema.index({ status: 1, 'payment.status': 1, 'payment.proofDueAt': 1 });
 
 module.exports = mongoose.model('Booking', BookingSchema);

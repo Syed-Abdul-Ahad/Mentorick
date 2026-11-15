@@ -93,9 +93,13 @@ server/
    JWT_SECRET=your_super_secret_jwt_key_here
    JWT_EXPIRE=30d
    CLIENT_URL=http://localhost:5173
-   PAYPAL_CLIENT_ID=your_paypal_client_id
-   PAYPAL_CLIENT_SECRET=your_paypal_client_secret
-   PAYPAL_ENV=sandbox
+   BANK_ACCOUNT_TITLE=Mentorick LLC
+   BANK_NAME=Your Bank Name
+   BANK_ACCOUNT_NUMBER=0000000000
+   PAYMENT_PROOF_MINUTES=30
+   BOOKING_MIN_LEAD_HOURS=24
+   WHATSAPP_SUPPORT_NUMBER=923196943953
+   PLATFORM_FEE_RATE=0.20
    ```
 
 4. **Start MongoDB**
@@ -156,8 +160,11 @@ The server will start on `http://localhost:5000`
 - `GET /api/sessions/stats` - Get session statistics (Admin only)
 
 ### Payments
-- `POST /api/payments/orders` - Create a PayPal order for a pending booking
-- `POST /api/payments/orders/capture` - Capture a PayPal order and finalize the booking
+- `GET /api/payments/bank-details` - Bank transfer display details (auth)
+- `POST /api/payments/bookings/:id/proof` - Upload payment screenshot
+- `POST /api/payments/bookings/:id/verify` - Admin confirm payment (Meet + email)
+- `POST /api/payments/bookings/:id/reject` - Admin reject proof
+- `GET /api/payments/pending-verifications` - Admin verification queue
 
 ## Data Models
 

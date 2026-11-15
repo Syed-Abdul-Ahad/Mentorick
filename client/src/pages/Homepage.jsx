@@ -30,12 +30,6 @@ import {
   AiOutlineDown,
 } from "react-icons/ai";
 import {
-  FaCcVisa,
-  FaCcMastercard,
-  FaCcAmex,
-  FaCcPaypal,
-  FaCcApplePay,
-  FaGooglePay,
   FaInstagram,
   FaYoutube,
   FaFacebook,

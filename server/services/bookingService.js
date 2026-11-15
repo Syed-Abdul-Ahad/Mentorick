@@ -12,6 +12,8 @@ const {
   ACTIVE_BOOKING_STATUSES,
   ALL_DURATIONS,
 } = require('../utils/booking');
+const { buildInitialBankPayment, getBankDetails } = require('../utils/paymentConfig');
+const { expireUnpaidProofBookings } = require('./paymentExpiryService');
 
 function loadMentorBookings(mentorUserId, daysAhead = DEFAULT_AVAILABILITY_DAYS) {
   const rangeStart = DateTime.now().toUTC().toJSDate();
@@ -26,6 +28,8 @@ function loadMentorBookings(mentorUserId, daysAhead = DEFAULT_AVAILABILITY_DAYS)
 }
 
 async function getMenteeAvailability(mentorUserId, menteeTimezone) {
+  await expireUnpaidProofBookings();
+
   const mentorProfile = await MentorProfile.findOne({ user: mentorUserId });
 
   if (!mentorProfile) {
@@ -122,6 +126,8 @@ async function createBookingRecord({
   currency,
   description,
 }) {
+  await expireUnpaidProofBookings();
+
   const durationMinutes = parseDurationMinutes(duration);
   if (durationMinutes === null) {
     return { ok: false, statusCode: 400, message: 'Invalid duration' };
@@ -144,6 +150,7 @@ async function createBookingRecord({
       statusCode: 200,
       booking: exactBooking,
       paymentRequired: exactBooking.status !== 'confirmed',
+      bankDetails: getBankDetails(),
     };
   }
 
@@ -173,12 +180,10 @@ async function createBookingRecord({
       amount: prepared.price.amount,
       currency,
     },
-    payment: {
-      provider: 'paypal',
+    payment: buildInitialBankPayment({
       amount: prepared.price.amount,
       currency,
-      status: 'pending',
-    },
+    }),
     status: 'pending',
   });
 
@@ -187,6 +192,7 @@ async function createBookingRecord({
     statusCode: 201,
     booking,
     paymentRequired: true,
+    bankDetails: getBankDetails(),
   };
 }
 
