@@ -280,4 +280,4 @@ All API responses follow a consistent format:
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License..
