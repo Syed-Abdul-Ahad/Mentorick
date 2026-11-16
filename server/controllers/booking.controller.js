@@ -785,7 +785,8 @@ exports.getPaymentHistory = async (req, res) => {
       page = '1',
     } = req.query;
 
-    const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
+    // Cap at 1000 — Payments tab loads a month-sized batch for client-side status filter/pagination
+    const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 1000);
     const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
     const skip = (parsedPage - 1) * parsedLimit;
 
@@ -936,6 +937,25 @@ exports.getPaymentHistory = async (req, res) => {
       ]),
     ]);
 
+    const mentorIds = [...new Set(items.map((b) => b.mentor?._id?.toString()).filter(Boolean))];
+    const menteeIds = [...new Set(items.map((b) => b.mentee?._id?.toString()).filter(Boolean))];
+
+    const [mentorProfiles, menteeProfiles] = await Promise.all([
+      mentorIds.length
+        ? MentorProfile.find({ user: { $in: mentorIds } }).select('user headshot').lean()
+        : [],
+      menteeIds.length
+        ? MenteeProfile.find({ user: { $in: menteeIds } }).select('user headshot').lean()
+        : [],
+    ]);
+
+    const mentorHeadshotByUser = Object.fromEntries(
+      mentorProfiles.map((p) => [p.user.toString(), p.headshot || null])
+    );
+    const menteeHeadshotByUser = Object.fromEntries(
+      menteeProfiles.map((p) => [p.user.toString(), p.headshot || null])
+    );
+
     const payments = items.map((b) => {
       const amount = b.payment?.amount ?? b.price?.amount ?? 0;
       const curr = b.payment?.currency || b.price?.currency || null;
@@ -943,6 +963,8 @@ exports.getPaymentHistory = async (req, res) => {
         b.payment?.platformFee ?? Math.round(amount * 0.2 * 100) / 100;
       const mentorPayout =
         b.payment?.mentorPayoutAmount ?? Math.round(amount * 0.8 * 100) / 100;
+      const mentorId = b.mentor?._id?.toString();
+      const menteeId = b.mentee?._id?.toString();
 
       return {
         id: b._id,
@@ -965,6 +987,7 @@ exports.getPaymentHistory = async (req, res) => {
               id: b.mentor._id,
               name: `${b.mentor.firstName || ''} ${b.mentor.lastName || ''}`.trim(),
               email: b.mentor.email,
+              headshot: mentorId ? mentorHeadshotByUser[mentorId] || null : null,
             }
           : null,
         mentee: b.mentee
@@ -972,6 +995,7 @@ exports.getPaymentHistory = async (req, res) => {
               id: b.mentee._id,
               name: `${b.mentee.firstName || ''} ${b.mentee.lastName || ''}`.trim(),
               email: b.mentee.email,
+              headshot: menteeId ? menteeHeadshotByUser[menteeId] || null : null,
             }
           : null,
       };
