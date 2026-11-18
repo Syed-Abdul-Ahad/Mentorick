@@ -239,6 +239,9 @@ exports.rejectMegaSession = async (req, res) => {
 ====================================================== */
 exports.getMegaSessions = async (req, res) => {
   try {
+    const { completePastConfirmedBookings } = require('../services/bookingCompletionService');
+    await completePastConfirmedBookings();
+
     const { upcoming = true, limit = 50 } = req.query;
 
     const baseQuery = {
@@ -379,6 +382,9 @@ exports.joinMegaSession = async (req, res) => {
 ====================================================== */
 exports.getMyBookings = async (req, res) => {
   try {
+    const { completePastConfirmedBookings } = require('../services/bookingCompletionService');
+    await completePastConfirmedBookings();
+
     const userId = req.user.id;
     const { status, upcoming, limit = 50 } = req.query;
 
@@ -525,6 +531,9 @@ const buildRecentActivity = (bookings, userId) =>
 
 exports.getBookingAnalytics = async (req, res) => {
   try {
+    const { completePastConfirmedBookings } = require('../services/bookingCompletionService');
+    await completePastConfirmedBookings();
+
     const userId = req.user.id;
     const userRole = req.user.role;
     const userObjectId = new mongoose.Types.ObjectId(userId);
@@ -856,24 +865,44 @@ exports.getPaymentHistory = async (req, res) => {
         .limit(parsedLimit)
         .lean(),
       Booking.countDocuments(match),
+      // Money fields (grossBooked / fees / payouts) count paid only.
+      // Rejected / awaiting / expired rows stay in the list + mix, but add $0.
       Booking.aggregate([
         { $match: match },
         {
           $group: {
             _id: { $ifNull: ['$payment.currency', '$price.currency'] },
             grossBooked: {
-              $sum: { $ifNull: ['$payment.amount', '$price.amount'] },
+              $sum: {
+                $cond: [
+                  { $eq: ['$payment.status', 'paid'] },
+                  { $ifNull: ['$payment.amount', '$price.amount'] },
+                  0,
+                ],
+              },
             },
             platformFees: {
               $sum: {
-                $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', 0.2] }],
+                $cond: [
+                  { $eq: ['$payment.status', 'paid'] },
+                  {
+                    $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', 0.2] }],
+                  },
+                  0,
+                ],
               },
             },
             mentorPayouts: {
               $sum: {
-                $ifNull: [
-                  '$payment.mentorPayoutAmount',
-                  { $multiply: ['$price.amount', 0.8] },
+                $cond: [
+                  { $eq: ['$payment.status', 'paid'] },
+                  {
+                    $ifNull: [
+                      '$payment.mentorPayoutAmount',
+                      { $multiply: ['$price.amount', 0.8] },
+                    ],
+                  },
+                  0,
                 ],
               },
             },

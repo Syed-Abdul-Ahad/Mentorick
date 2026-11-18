@@ -71,5 +71,6 @@ const BookingSchema = new mongoose.Schema({
 BookingSchema.index({ mentor: 1, startTimeUTC: 1, endTimeUTC: 1 });
 BookingSchema.index({ parentMegaSession: 1, mentee: 1, status: 1 });
 BookingSchema.index({ status: 1, 'payment.status': 1, 'payment.proofDueAt': 1 });
+BookingSchema.index({ status: 1, endTimeUTC: 1 });
 
 module.exports = mongoose.model('Booking', BookingSchema);

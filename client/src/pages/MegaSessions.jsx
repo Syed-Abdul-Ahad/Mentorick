@@ -4,6 +4,7 @@ import {
   HiOutlineVideoCamera,
   HiOutlineCheck,
   HiOutlineXMark,
+  HiOutlineSparkles,
 } from 'react-icons/hi2';
 import { megaSessionService } from '../api';
 import { toast } from 'react-hot-toast';
@@ -13,6 +14,70 @@ import MegaSessionCard from '../components/megaSession/MegaSessionCard';
 import MegaSessionPaymentModal from '../components/megaSession/MegaSessionPaymentModal';
 import Seo from '../components/seo/Seo';
 import { isMegaSessionBookableByLeadTime, getMinLeadHours } from '../utils/bookingLeadTime';
+
+/** Same layout language as Bookings banner — violet for mega sessions */
+const MegaSessionsBannerArt = () => (
+  <svg
+    viewBox="0 0 280 160"
+    className="h-full w-full max-h-40"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <ellipse cx="188" cy="122" rx="80" ry="16" fill="#c4b5fd" opacity="0.32" />
+    <path
+      d="M40 118c34-18 70-12 104 2 32 12 64 4 96-14"
+      stroke="#a78bfa"
+      strokeWidth="10"
+      strokeLinecap="round"
+      opacity="0.28"
+    />
+    <g transform="translate(98 28) rotate(-6 70 48)">
+      <rect x="0" y="0" width="140" height="96" rx="16" fill="#5b21b6" />
+      <rect x="10" y="10" width="120" height="76" rx="10" fill="#6d28d9" />
+      <rect x="18" y="18" width="104" height="52" rx="8" fill="#8b5cf6" opacity="0.35" />
+      <circle cx="46" cy="44" r="12" fill="#ede9fe" />
+      <circle cx="70" cy="44" r="12" fill="#ddd6fe" />
+      <circle cx="94" cy="44" r="12" fill="#c4b5fd" />
+      <rect x="28" y="72" width="84" height="8" rx="4" fill="#ddd6fe" opacity="0.7" />
+    </g>
+    <g transform="translate(58 58) rotate(12 28 28)">
+      <rect x="0" y="0" width="56" height="56" rx="14" fill="#7c3aed" />
+      <path
+        d="M28 14l2.4 7.4H38l-6.2 4.5 2.4 7.3L28 28.7l-6.2 4.5 2.4-7.3L18 21.4h7.6L28 14z"
+        fill="#f5f3ff"
+      />
+    </g>
+  </svg>
+);
+
+const MegaSessionsHeroBanner = () => (
+  <section className="relative overflow-hidden rounded-2xl border border-violet-200 bg-[#f3e8ff]">
+    <div
+      className="pointer-events-none absolute inset-0"
+      style={{
+        backgroundImage:
+          'linear-gradient(90deg,rgb(172, 155, 245) 0%,rgb(139, 79, 203) 50%,rgb(98, 70, 222) 100%), radial-gradient(circle at 20% 30%, rgba(167,139,250,0.22), transparent 45%)',
+      }}
+    />
+    <div className="relative flex items-center gap-4 sm:gap-6 px-5 sm:px-8 py-6 sm:py-7">
+      <div className="flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl bg-[#7c3aed] text-white shadow-sm shadow-violet-900/20">
+        <HiOutlineSparkles className="h-7 w-7 sm:h-8 sm:w-8" strokeWidth={1.5} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white drop-shadow-sm">
+          Mega Sessions
+        </h1>
+        <p className="mt-1.5 text-sm sm:text-[15px] text-violet-50 max-w-xl leading-relaxed">
+          Join group mentorship sessions with industry experts and connect with fellow learners.
+        </p>
+      </div>
+      <div className="hidden md:block w-52 lg:w-64 shrink-0 self-stretch">
+        <MegaSessionsBannerArt />
+      </div>
+    </div>
+  </section>
+);
 
 const MegaSessions = () => {
   const { user } = useSelector((state) => state.auth);
@@ -94,12 +159,9 @@ const MegaSessions = () => {
         canonical="/mega-sessions"
         noindex
       />
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-2">Mega Sessions</h1>
-          <p className="text-gray-500 text-base leading-relaxed max-w-2xl">
-            Join group mentorship sessions with industry experts and connect with fellow learners.
-          </p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <div className="mb-8">
+          <MegaSessionsHeroBanner />
         </div>
 
         {loading ? (

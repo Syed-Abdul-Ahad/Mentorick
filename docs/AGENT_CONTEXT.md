@@ -200,6 +200,8 @@ Mentee picks slot (≥24h lead time) on MentorPublicProfile
 
 **Expiry:** `paymentExpiryService` interval from `server.js` + lazy expire on availability / create.
 
+**Session completion:** `bookingCompletionService` marks `confirmed` → `completed` when `endTimeUTC < now` (interval + lazy on my-bookings / analytics / mega list / availability). Pending unpaid bookings are never auto-completed.
+
 ---
 
 ## 9. Mega Sessions Flow

@@ -90,7 +90,7 @@ const UtcInfoTooltip = ({ text }) => (
 const STATUS_BADGE = {
   pending: 'bg-[#F59E0B]',
   confirmed: 'bg-[#28B463]',
-  completed: 'bg-[#3B82F6]',
+  completed: 'bg-[#166534]',
   cancelled: 'bg-[#EF4444]',
   'no-show': 'bg-[#9CA3AF]',
 };

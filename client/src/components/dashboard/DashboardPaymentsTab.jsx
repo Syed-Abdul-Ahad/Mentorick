@@ -404,7 +404,9 @@ const SplitBars = ({ paidGross = 0, paidPlatformFees = 0, paidMentorPayouts = 0,
 const VolumeAreaChart = ({ payments = [], currency }) => {
   const series = useMemo(() => {
     const buckets = new Map();
+    // Money volume = paid only (rejected / pending contribute $0)
     payments.forEach((p) => {
+      if (p.paymentStatus !== 'paid') return;
       const d = new Date(p.verifiedAt || p.createdAt || p.startTimeUTC);
       if (Number.isNaN(d.getTime())) return;
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -690,7 +692,13 @@ const DashboardPaymentsTab = ({ role }) => {
       if (role === 'mentor') return formatMoney(primaryTotal.paidMentorPayouts, primaryTotal.currency);
       return formatMoney(primaryTotal.paidGross, primaryTotal.currency);
     }
-    if (key === 'secondary') return formatMoney(primaryTotal.grossBooked, primaryTotal.currency);
+    // Gross / total booked = paid money only (rejected / pending add $0)
+    if (key === 'secondary') {
+      return formatMoney(
+        primaryTotal.paidGross ?? primaryTotal.grossBooked,
+        primaryTotal.currency
+      );
+    }
     if (key === 'tertiary') {
       if (role === 'admin') return formatMoney(primaryTotal.paidMentorPayouts, primaryTotal.currency);
       if (role === 'mentor') return formatMoney(primaryTotal.paidPlatformFees, primaryTotal.currency);
@@ -808,7 +816,7 @@ const DashboardPaymentsTab = ({ role }) => {
               <div className="mb-2">
                 <h3 className="text-base font-semibold text-gray-900 tracking-tight">Payment volume</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Gross from recent rows in this view (by confirm/book date).
+                  Paid gross only (by confirm/book date). Rejected attempts are excluded.
                 </p>
               </div>
               <VolumeAreaChart

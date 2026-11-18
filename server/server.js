@@ -2,6 +2,8 @@ require('dotenv').config();
 const app = require('./app');
 const connectDB = require('./config/database');
 const { startPaymentExpiryScheduler } = require('./services/paymentExpiryService');
+const { startBookingCompletionScheduler } = require('./services/bookingCompletionService');
+const { startKeepAliveScheduler } = require('./services/keepAliveService');
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
@@ -18,6 +20,8 @@ const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT} in ${process.env.NODE_ENV} mode`);
   startPaymentExpiryScheduler();
+  startBookingCompletionScheduler();
+  startKeepAliveScheduler();
 });
 
 // Handle unhandled promise rejections
