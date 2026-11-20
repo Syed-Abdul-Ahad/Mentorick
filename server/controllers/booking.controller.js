@@ -5,6 +5,7 @@ const { createCalendarEvent, createMegaSessionCalendarEvent } = require('../util
 const User = require('../models/User');
 const mongoose = require('mongoose');
 const bookingService = require('../services/bookingService');
+const { getPlatformFeeRate, computeFeeSplit } = require('../utils/paymentConfig');
 
 exports.createBooking = async (req, res) => {
   try {
@@ -12,6 +13,12 @@ exports.createBooking = async (req, res) => {
 
     if (!mentorId || !startTime || !duration || !timezone || !currency) {
       return res.status(400).json({ message: 'Missing required booking fields' });
+    }
+
+    if (typeof description === 'string' && description.length > 1500) {
+      return res.status(400).json({
+        message: 'Session description cannot exceed 1500 characters',
+      });
     }
 
     const result = await bookingService.createBookingRecord({
@@ -239,6 +246,9 @@ exports.rejectMegaSession = async (req, res) => {
 ====================================================== */
 exports.getMegaSessions = async (req, res) => {
   try {
+    const { completePastConfirmedBookings } = require('../services/bookingCompletionService');
+    await completePastConfirmedBookings();
+
     const { upcoming = true, limit = 50 } = req.query;
 
     const baseQuery = {
@@ -379,6 +389,9 @@ exports.joinMegaSession = async (req, res) => {
 ====================================================== */
 exports.getMyBookings = async (req, res) => {
   try {
+    const { completePastConfirmedBookings } = require('../services/bookingCompletionService');
+    await completePastConfirmedBookings();
+
     const userId = req.user.id;
     const { status, upcoming, limit = 50 } = req.query;
 
@@ -525,6 +538,9 @@ const buildRecentActivity = (bookings, userId) =>
 
 exports.getBookingAnalytics = async (req, res) => {
   try {
+    const { completePastConfirmedBookings } = require('../services/bookingCompletionService');
+    await completePastConfirmedBookings();
+
     const userId = req.user.id;
     const userRole = req.user.role;
     const userObjectId = new mongoose.Types.ObjectId(userId);
@@ -587,7 +603,9 @@ exports.getBookingAnalytics = async (req, res) => {
     ]);
     const uniqueMentors = uniqueMentorsResult[0]?.count || 0;
 
-    // Mentor earnings = 80% share on confirmed/completed paid sessions
+    // Mentor earnings = mentor share on confirmed/completed paid sessions
+    const feeRate = getPlatformFeeRate();
+    const mentorRate = 1 - feeRate;
     const mentorEarnings = await Booking.aggregate([
       {
         $match: {
@@ -601,13 +619,13 @@ exports.getBookingAnalytics = async (req, res) => {
           _id: { $ifNull: ['$payment.currency', '$price.currency'] },
           total: {
             $sum: {
-              $ifNull: ['$payment.mentorPayoutAmount', { $multiply: ['$price.amount', 0.8] }],
+              $ifNull: ['$payment.mentorPayoutAmount', { $multiply: ['$price.amount', mentorRate] }],
             },
           },
           gross: { $sum: { $ifNull: ['$payment.amount', '$price.amount'] } },
           platformFees: {
             $sum: {
-              $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', 0.2] }],
+              $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', feeRate] }],
             },
           },
         },
@@ -695,12 +713,12 @@ exports.getBookingAnalytics = async (req, res) => {
             gross: { $sum: { $ifNull: ['$payment.amount', '$price.amount'] } },
             platformFees: {
               $sum: {
-                $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', 0.2] }],
+                $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', feeRate] }],
               },
             },
             mentorPayouts: {
               $sum: {
-                $ifNull: ['$payment.mentorPayoutAmount', { $multiply: ['$price.amount', 0.8] }],
+                $ifNull: ['$payment.mentorPayoutAmount', { $multiply: ['$price.amount', mentorRate] }],
               },
             },
           },
@@ -785,7 +803,8 @@ exports.getPaymentHistory = async (req, res) => {
       page = '1',
     } = req.query;
 
-    const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
+    // Cap at 1000 — Payments tab loads a month-sized batch for client-side status filter/pagination
+    const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 1000);
     const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
     const skip = (parsedPage - 1) * parsedLimit;
 
@@ -846,6 +865,9 @@ exports.getPaymentHistory = async (req, res) => {
       match.createdAt = range;
     }
 
+    const feeRate = getPlatformFeeRate();
+    const mentorRate = 1 - feeRate;
+
     const [items, totalCount, totalsAgg, statusBreakdown] = await Promise.all([
       Booking.find(match)
         .populate('mentor', 'firstName lastName email')
@@ -855,24 +877,44 @@ exports.getPaymentHistory = async (req, res) => {
         .limit(parsedLimit)
         .lean(),
       Booking.countDocuments(match),
+      // Money fields (grossBooked / fees / payouts) count paid only.
+      // Rejected / awaiting / expired rows stay in the list + mix, but add $0.
       Booking.aggregate([
         { $match: match },
         {
           $group: {
             _id: { $ifNull: ['$payment.currency', '$price.currency'] },
             grossBooked: {
-              $sum: { $ifNull: ['$payment.amount', '$price.amount'] },
+              $sum: {
+                $cond: [
+                  { $eq: ['$payment.status', 'paid'] },
+                  { $ifNull: ['$payment.amount', '$price.amount'] },
+                  0,
+                ],
+              },
             },
             platformFees: {
               $sum: {
-                $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', 0.2] }],
+                $cond: [
+                  { $eq: ['$payment.status', 'paid'] },
+                  {
+                    $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', feeRate] }],
+                  },
+                  0,
+                ],
               },
             },
             mentorPayouts: {
               $sum: {
-                $ifNull: [
-                  '$payment.mentorPayoutAmount',
-                  { $multiply: ['$price.amount', 0.8] },
+                $cond: [
+                  { $eq: ['$payment.status', 'paid'] },
+                  {
+                    $ifNull: [
+                      '$payment.mentorPayoutAmount',
+                      { $multiply: ['$price.amount', mentorRate] },
+                    ],
+                  },
+                  0,
                 ],
               },
             },
@@ -890,7 +932,7 @@ exports.getPaymentHistory = async (req, res) => {
                 $cond: [
                   { $eq: ['$payment.status', 'paid'] },
                   {
-                    $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', 0.2] }],
+                    $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', feeRate] }],
                   },
                   0,
                 ],
@@ -903,7 +945,7 @@ exports.getPaymentHistory = async (req, res) => {
                   {
                     $ifNull: [
                       '$payment.mentorPayoutAmount',
-                      { $multiply: ['$price.amount', 0.8] },
+                      { $multiply: ['$price.amount', mentorRate] },
                     ],
                   },
                   0,
@@ -936,13 +978,33 @@ exports.getPaymentHistory = async (req, res) => {
       ]),
     ]);
 
+    const mentorIds = [...new Set(items.map((b) => b.mentor?._id?.toString()).filter(Boolean))];
+    const menteeIds = [...new Set(items.map((b) => b.mentee?._id?.toString()).filter(Boolean))];
+
+    const [mentorProfiles, menteeProfiles] = await Promise.all([
+      mentorIds.length
+        ? MentorProfile.find({ user: { $in: mentorIds } }).select('user headshot').lean()
+        : [],
+      menteeIds.length
+        ? MenteeProfile.find({ user: { $in: menteeIds } }).select('user headshot').lean()
+        : [],
+    ]);
+
+    const mentorHeadshotByUser = Object.fromEntries(
+      mentorProfiles.map((p) => [p.user.toString(), p.headshot || null])
+    );
+    const menteeHeadshotByUser = Object.fromEntries(
+      menteeProfiles.map((p) => [p.user.toString(), p.headshot || null])
+    );
+
     const payments = items.map((b) => {
       const amount = b.payment?.amount ?? b.price?.amount ?? 0;
       const curr = b.payment?.currency || b.price?.currency || null;
-      const platformFee =
-        b.payment?.platformFee ?? Math.round(amount * 0.2 * 100) / 100;
-      const mentorPayout =
-        b.payment?.mentorPayoutAmount ?? Math.round(amount * 0.8 * 100) / 100;
+      const split = computeFeeSplit(amount);
+      const platformFee = b.payment?.platformFee ?? split.platformFee;
+      const mentorPayout = b.payment?.mentorPayoutAmount ?? split.mentorPayoutAmount;
+      const mentorId = b.mentor?._id?.toString();
+      const menteeId = b.mentee?._id?.toString();
 
       return {
         id: b._id,
@@ -965,6 +1027,7 @@ exports.getPaymentHistory = async (req, res) => {
               id: b.mentor._id,
               name: `${b.mentor.firstName || ''} ${b.mentor.lastName || ''}`.trim(),
               email: b.mentor.email,
+              headshot: mentorId ? mentorHeadshotByUser[mentorId] || null : null,
             }
           : null,
         mentee: b.mentee
@@ -972,6 +1035,7 @@ exports.getPaymentHistory = async (req, res) => {
               id: b.mentee._id,
               name: `${b.mentee.firstName || ''} ${b.mentee.lastName || ''}`.trim(),
               email: b.mentee.email,
+              headshot: menteeId ? menteeHeadshotByUser[menteeId] || null : null,
             }
           : null,
       };

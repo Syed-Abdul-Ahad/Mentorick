@@ -21,6 +21,7 @@ const BankTransferPaymentPanel = ({
   bankDetails: bankDetailsProp,
   onComplete,
   onCancel,
+  compact = false,
 }) => {
   const [bankDetails, setBankDetails] = useState(bankDetailsProp || null);
   const [file, setFile] = useState(null);
@@ -87,16 +88,17 @@ const BankTransferPaymentPanel = ({
     }
   };
 
-  if (submittedBooking) {
+  if (submittedBooking || booking?.payment?.status === 'awaiting_verification') {
     return (
       <div className="space-y-5">
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-          <p className="text-sm font-semibold text-emerald-800 uppercase tracking-wide mb-1">
-            Awaiting verification
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 sm:p-6">
+          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 mb-2">
+            Screenshot received
           </p>
-          <p className="text-sm text-emerald-900 leading-relaxed">
-            Your screenshot was received. An admin will confirm your booking soon.
-            Meeting link will appear after confirmation.
+          <p className="text-sm sm:text-[15px] text-emerald-950 leading-relaxed">
+            Thank you! Your booking was received and an admin will confirm your booking soon.
+            Meeting link will appear in your Mentorick dashboard right after confirmation and will
+            also be emailed to you.
           </p>
         </div>
 
@@ -105,7 +107,7 @@ const BankTransferPaymentPanel = ({
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center w-full px-4 py-3 rounded-lg bg-[#25D366] text-white font-semibold hover:opacity-95 transition"
+            className="flex items-center justify-center w-full px-4 py-3 rounded-xl bg-[#25D366] text-white font-semibold hover:opacity-95 transition"
           >
             Send on WhatsApp
           </a>
@@ -116,7 +118,7 @@ const BankTransferPaymentPanel = ({
           You can also attach the screenshot from your gallery.
         </p>
 
-        <Button variant="secondary" className="w-full" onClick={() => onComplete?.(submittedBooking)}>
+        <Button variant="secondary" className="w-full" onClick={() => onComplete?.(submittedBooking || booking)}>
           Done
         </Button>
       </div>
@@ -125,15 +127,46 @@ const BankTransferPaymentPanel = ({
 
   return (
     <div className="space-y-5">
+      {!compact && countdown && (
+        <div
+          className={`rounded-2xl border p-5 sm:p-6 ${
+            expired
+              ? 'border-red-200 bg-red-50'
+              : 'border-amber-200 bg-amber-50'
+          }`}
+        >
+          <p
+            className={`text-sm sm:text-[15px] leading-relaxed ${
+              expired ? 'text-red-800' : 'text-amber-950'
+            }`}
+          >
+            {expired ? (
+              <>
+                Payment window expired. This booking will be reverted — please book again to reserve
+                a new slot.
+              </>
+            ) : (
+              <>
+                Please upload payment screenshot within{' '}
+                <span className="inline-flex items-center rounded-lg bg-white/80 px-2 py-0.5 font-bold tabular-nums text-amber-900 shadow-sm">
+                  {countdown}
+                </span>{' '}
+                to reserve the slot. Failure to do so will result in your booking being reverted.
+              </>
+            )}
+          </p>
+        </div>
+      )}
+
       <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-        <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-center justify-between gap-3 mb-1">
           <p className="text-sm font-semibold text-gray-900">Transfer amount</p>
           <p className="text-lg font-bold text-gray-900 tabular-nums">
             {amount} {currency}
           </p>
         </div>
-        {countdown && (
-          <p className={`text-sm ${expired ? 'text-red-600' : 'text-amber-700'}`}>
+        {compact && countdown && (
+          <p className={`text-sm mt-2 ${expired ? 'text-red-600' : 'text-amber-700'}`}>
             {expired
               ? 'Proof window expired'
               : `Upload screenshot within ${countdown}`}

@@ -275,6 +275,7 @@ const AdminMegaSessions = () => {
                 slots={selectedDateSlots}
                 selectedSlot={selectedSlot}
                 onSlotSelect={handleSlotSelect}
+                selectedDate={selectedDate}
                 loading={false}
               />
             </Card>

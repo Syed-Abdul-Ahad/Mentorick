@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '../shared/Button';
-import BankTransferPaymentPanel from '../payments/BankTransferPaymentPanel';
 import { formatTimeTo12Hour } from '../../utils/timezone';
 import { formatDurationLabel } from '../../utils/durationDisplay';
 
 /**
- * Booking summary + bank transfer payment step
+ * Booking summary step — confirms selection, then opens dedicated payment page.
  */
 const BookingSummary = ({
   selectedDate,
@@ -15,13 +15,12 @@ const BookingSummary = ({
   timezone,
   description,
   onReserveBooking,
-  onPaymentSuccess,
+  onLeaveToPayment,
   onBack,
   loading,
   error,
 }) => {
-  const [draftBooking, setDraftBooking] = useState(null);
-  const [bankDetails, setBankDetails] = useState(null);
+  const navigate = useNavigate();
   const [localError, setLocalError] = useState('');
   const [reserving, setReserving] = useState(false);
 
@@ -49,8 +48,22 @@ const BookingSummary = ({
       if (!result?.booking) {
         throw new Error(result?.error || 'Failed to create booking');
       }
-      setDraftBooking(result.booking);
-      setBankDetails(result.bankDetails || null);
+
+      const bookingId = String(result.booking._id || result.booking.id || '');
+      if (!bookingId || bookingId === 'undefined') {
+        throw new Error('Booking created but missing id');
+      }
+
+      // Navigate BEFORE closing the modal — closing unmounts this component
+      // and can cancel navigation (shows NotFound until hard refresh).
+      navigate(`/booking/payment/${bookingId}`, {
+        replace: false,
+        state: {
+          booking: result.booking,
+          bankDetails: result.bankDetails || null,
+        },
+      });
+      onLeaveToPayment?.(result.booking);
     } catch (err) {
       setLocalError(err.message || 'Failed to create booking');
     } finally {
@@ -62,9 +75,7 @@ const BookingSummary = ({
 
   return (
     <div className="p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">
-        {draftBooking ? 'Complete payment' : 'Booking Summary'}
-      </h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-6">Booking Summary</h3>
 
       <div className="space-y-4 mb-6">
         <div className="flex justify-between py-3 border-b border-gray-100">
@@ -97,32 +108,23 @@ const BookingSummary = ({
         )}
       </div>
 
-      {displayError && !draftBooking && (
+      {displayError && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-700 text-sm">{displayError}</p>
         </div>
       )}
 
-      {!draftBooking ? (
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">
-            Confirm to reserve this slot for 30 minutes while you transfer payment and upload a screenshot.
-          </p>
-          <Button onClick={handleConfirmBooking} disabled={loading || reserving} className="w-full">
-            {loading || reserving ? 'Reserving…' : 'Confirm & show bank details'}
-          </Button>
-          <Button variant="secondary" onClick={onBack} disabled={loading || reserving} className="w-full">
-            Back
-          </Button>
-        </div>
-      ) : (
-        <BankTransferPaymentPanel
-          booking={draftBooking}
-          bankDetails={bankDetails}
-          onComplete={(booking) => onPaymentSuccess?.(booking)}
-          onCancel={onBack}
-        />
-      )}
+      <div className="space-y-4">
+        <p className="text-sm text-gray-600">
+          Confirm to reserve this slot for 30 minutes while you transfer payment and upload a screenshot.
+        </p>
+        <Button onClick={handleConfirmBooking} disabled={loading || reserving} className="w-full">
+          {loading || reserving ? 'Reserving…' : 'Confirm & continue to payment'}
+        </Button>
+        <Button variant="secondary" onClick={onBack} disabled={loading || reserving} className="w-full">
+          Back
+        </Button>
+      </div>
     </div>
   );
 };

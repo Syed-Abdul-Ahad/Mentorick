@@ -8,7 +8,7 @@ const BookingSchema = new mongoose.Schema({
   // Mega session fields
   isMegaSession: { type: Boolean, default: false },
   title: { type: String },
-  description: { type: String },
+  description: { type: String, maxlength: [1500, 'Session description cannot exceed 1500 characters'] },
   maxParticipants: { type: Number, default: 1 },
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -71,5 +71,6 @@ const BookingSchema = new mongoose.Schema({
 BookingSchema.index({ mentor: 1, startTimeUTC: 1, endTimeUTC: 1 });
 BookingSchema.index({ parentMegaSession: 1, mentee: 1, status: 1 });
 BookingSchema.index({ status: 1, 'payment.status': 1, 'payment.proofDueAt': 1 });
+BookingSchema.index({ status: 1, endTimeUTC: 1 });
 
 module.exports = mongoose.model('Booking', BookingSchema);

@@ -29,10 +29,11 @@ exports.createCalendarEvent = async ({
   const auth = await getAuthClient(mentorId);
   const calendar = google.calendar({ version: 'v3', auth });
 
+  // sendUpdates: 'none' — no Google invite emails; Mentorick Resend notifies both parties
   const response = await calendar.events.insert({
     calendarId: 'primary',
     conferenceDataVersion: 1,
-    sendUpdates: 'all',
+    sendUpdates: 'none',
     requestBody: {
       summary: 'Mentorship Session',
       description: 'Mentor–Mentee 1:1 Session',
@@ -67,10 +68,11 @@ exports.createMegaSessionCalendarEvent = async ({
   const auth = await getAuthClient(mentorId);
   const calendar = google.calendar({ version: 'v3', auth });
 
+  // sendUpdates: 'none' — no Google invite emails; Mentorick Resend notifies both parties
   const response = await calendar.events.insert({
     calendarId: 'primary',
     conferenceDataVersion: 1,
-    sendUpdates: 'all',
+    sendUpdates: 'none',
     requestBody: {
       summary: title,
       description: description,
@@ -103,10 +105,11 @@ exports.updateMegaSessionAttendees = async ({
 
   const attendees = attendeeEmails.map(email => ({ email }));
 
+  // sendUpdates: 'none' — no Google invite emails when attendees are added
   const response = await calendar.events.patch({
     calendarId: 'primary',
     eventId: calendarEventId,
-    sendUpdates: 'all',
+    sendUpdates: 'none',
     requestBody: {
       summary: title,
       description: description,

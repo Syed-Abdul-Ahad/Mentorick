@@ -14,6 +14,7 @@ const {
 } = require('../utils/booking');
 const { buildInitialBankPayment, getBankDetails } = require('../utils/paymentConfig');
 const { expireUnpaidProofBookings } = require('./paymentExpiryService');
+const { completePastConfirmedBookings } = require('./bookingCompletionService');
 
 function loadMentorBookings(mentorUserId, daysAhead = DEFAULT_AVAILABILITY_DAYS) {
   const rangeStart = DateTime.now().toUTC().toJSDate();
@@ -29,6 +30,7 @@ function loadMentorBookings(mentorUserId, daysAhead = DEFAULT_AVAILABILITY_DAYS)
 
 async function getMenteeAvailability(mentorUserId, menteeTimezone) {
   await expireUnpaidProofBookings();
+  await completePastConfirmedBookings();
 
   const mentorProfile = await MentorProfile.findOne({ user: mentorUserId });
 

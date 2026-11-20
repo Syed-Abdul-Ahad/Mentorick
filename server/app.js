@@ -33,12 +33,13 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Rate limiting
+// Rate limiting (skip /health so keep-alive pings are never throttled)
 const limiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
   validate: { trustProxy: false },
+  skip: (req) => req.path === '/health',
 });
 app.use(limiter);
 

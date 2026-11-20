@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  HiOutlineAcademicCap,
   HiOutlineArrowRight,
   HiOutlineBanknotes,
   HiOutlineCalendarDays,
@@ -10,10 +9,9 @@ import {
   HiOutlineClock,
   HiOutlineCurrencyDollar,
   HiOutlineDocumentText,
-  HiOutlineExclamationCircle,
-  HiOutlinePhoto,
-  HiOutlineSparkles,
+  HiOutlineGlobeAlt,
   HiOutlineUsers,
+  HiOutlineWallet,
 } from 'react-icons/hi2';
 import {
   Area,
@@ -67,74 +65,79 @@ const formatReadableDate = (value) => {
   });
 };
 
-const bookingTypeVisual = (item) => {
-  if (item.parentMegaSession) {
-    return {
-      Icon: HiOutlineSparkles,
-      tile: 'bg-violet-50 text-violet-600',
-    };
-  }
-  if (item.paymentStatus === 'paid') {
-    return {
-      Icon: HiOutlineCheckBadge,
-      tile: 'bg-emerald-50 text-emerald-600',
-    };
-  }
-  if (item.paymentStatus === 'rejected' || item.paymentStatus === 'expired') {
-    return {
-      Icon: HiOutlineExclamationCircle,
-      tile: 'bg-rose-50 text-rose-600',
-    };
-  }
-  if (item.paymentStatus === 'awaiting_verification' || item.paymentStatus === 'awaiting_proof') {
-    return {
-      Icon: HiOutlineClock,
-      tile: 'bg-amber-50 text-amber-700',
-    };
-  }
-  return {
-    Icon: HiOutlineAcademicCap,
-    tile: 'bg-sky-50 text-sky-600',
-  };
+const resolveImageUrl = (src) => {
+  if (!src) return null;
+  if (src.startsWith('http') || src.startsWith('data:')) return src;
+  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api').replace(/\/api$/, '');
+  return `${base}${src.startsWith('/') ? src : `/${src}`}`;
 };
 
+const getInitials = (name = '') => {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase();
+};
+
+const PersonAvatar = ({ name, headshot }) => {
+  const src = resolveImageUrl(headshot);
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name || 'Profile'}
+        className="h-11 w-11 shrink-0 rounded-full object-cover ring-1 ring-gray-200/80"
+      />
+    );
+  }
+  return (
+    <div
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-600 ring-1 ring-gray-200/80"
+      aria-hidden="true"
+    >
+      {getInitials(name)}
+    </div>
+  );
+};
+
+/** Single status chip — one icon max (paid uses check; others use text-only style cues) */
 const paymentStatusPill = (status) => {
   switch (status) {
     case 'paid':
       return {
         label: 'Confirmed',
         className: 'bg-emerald-50 text-emerald-700',
-        Icon: HiOutlineCheckCircle,
+        showCheck: true,
       };
     case 'rejected':
       return {
         label: 'Rejected',
         className: 'bg-rose-50 text-rose-700',
-        Icon: HiOutlineExclamationCircle,
+        showCheck: false,
       };
     case 'awaiting_verification':
       return {
         label: 'In review',
         className: 'bg-amber-50 text-amber-800',
-        Icon: HiOutlineClock,
+        showCheck: false,
       };
     case 'awaiting_proof':
       return {
         label: 'Awaiting proof',
         className: 'bg-orange-50 text-orange-800',
-        Icon: HiOutlinePhoto,
+        showCheck: false,
       };
     case 'expired':
       return {
         label: 'Expired',
         className: 'bg-gray-100 text-gray-600',
-        Icon: HiOutlineExclamationCircle,
+        showCheck: false,
       };
     default:
       return {
         label: (status || 'Unknown').replace(/_/g, ' '),
         className: 'bg-gray-100 text-gray-600',
-        Icon: HiOutlineExclamationCircle,
+        showCheck: false,
       };
   }
 };
@@ -157,7 +160,7 @@ const labelForRole = (role) => {
   if (role === 'mentor') {
     return {
       title: 'Payments',
-      subtitle: 'Your session payouts (80%) and booking payment status.',
+      subtitle: 'Your session payouts (70%) and booking payment status.',
       listTitle: 'Recent payments & bookings',
       listSubtitle: 'Payouts and payment status on your sessions.',
       stats: [
@@ -182,12 +185,92 @@ const labelForRole = (role) => {
   };
 };
 
+const PAGE_SIZE = 10;
+
 const emptyFilters = () => ({
-  paymentStatus: 'all',
   currency: 'all',
   from: '',
   to: '',
 });
+
+const matchesQuickStatus = (paymentStatus, quickStatus) => {
+  if (!quickStatus || quickStatus === 'all') return true;
+  if (quickStatus === 'paid') return paymentStatus === 'paid';
+  if (quickStatus === 'rejected') return paymentStatus === 'rejected' || paymentStatus === 'failed';
+  if (quickStatus === 'awaiting_verification') {
+    return paymentStatus === 'awaiting_verification' || paymentStatus === 'awaiting_proof';
+  }
+  return paymentStatus === quickStatus;
+};
+
+/** Decorative card art for the payments hero — pure SVG, no assets */
+const PaymentsBannerArt = () => (
+  <svg
+    viewBox="0 0 280 160"
+    className="h-full w-full max-h-40"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <ellipse cx="190" cy="118" rx="78" ry="18" fill="#86efac" opacity="0.35" />
+    <path
+      d="M40 108c28-22 56-18 84-6 30 12 58 8 86-10"
+      stroke="#4ade80"
+      strokeWidth="10"
+      strokeLinecap="round"
+      opacity="0.35"
+    />
+    <path
+      d="M28 128c36-16 70-8 104 4 34 12 68 6 100-14"
+      stroke="#22c55e"
+      strokeWidth="8"
+      strokeLinecap="round"
+      opacity="0.25"
+    />
+    <g transform="translate(118 28) rotate(-18 70 44)">
+      <rect x="0" y="0" width="140" height="88" rx="14" fill="#166534" />
+      <rect x="10" y="10" width="120" height="68" rx="10" fill="#15803d" />
+      <rect x="18" y="22" width="36" height="26" rx="5" fill="#86efac" opacity="0.9" />
+      <circle cx="104" cy="34" r="10" fill="#bbf7d0" opacity="0.85" />
+      <circle cx="118" cy="34" r="10" fill="#4ade80" opacity="0.75" />
+      <rect x="18" y="58" width="52" height="8" rx="4" fill="#bbf7d0" opacity="0.7" />
+      <rect x="78" y="58" width="34" height="8" rx="4" fill="#86efac" opacity="0.55" />
+    </g>
+    <g transform="translate(78 48) rotate(12 56 36)">
+      <rect x="0" y="0" width="112" height="72" rx="12" fill="#22c55e" />
+      <rect x="10" y="12" width="28" height="20" rx="4" fill="#dcfce7" />
+      <rect x="10" y="44" width="40" height="7" rx="3.5" fill="#bbf7d0" opacity="0.85" />
+      <rect x="58" y="44" width="28" height="7" rx="3.5" fill="#86efac" opacity="0.7" />
+      <circle cx="86" cy="24" r="8" fill="#f0fdf4" opacity="0.9" />
+    </g>
+  </svg>
+);
+
+const PaymentsHeroBanner = ({ title, subtitle }) => (
+  <section className="relative overflow-hidden rounded-2xl border border-primary-100 bg-gradient-to-r from-primary-50 via-primary-50/90 to-emerald-100/80">
+    <div
+      className="pointer-events-none absolute inset-0 opacity-40"
+      style={{
+        backgroundImage:
+          'radial-gradient(circle at 18% 20%, rgba(74,222,128,0.35), transparent 42%), radial-gradient(circle at 88% 30%, rgba(34,197,94,0.22), transparent 40%)',
+      }}
+    />
+    <div className="relative flex items-center gap-4 sm:gap-6 px-5 sm:px-8 py-6 sm:py-7">
+      <div className="flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl bg-primary-500 text-white shadow-sm shadow-primary-500/25">
+        <HiOutlineWallet className="h-7 w-7 sm:h-8 sm:w-8" strokeWidth={1.5} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">{title}</h2>
+        <p className="mt-1.5 text-sm sm:text-[15px] text-gray-600 max-w-xl leading-relaxed">
+          {subtitle}
+        </p>
+      </div>
+      <div className="hidden md:block w-52 lg:w-64 shrink-0 self-stretch">
+        <PaymentsBannerArt />
+      </div>
+    </div>
+  </section>
+);
 
 const STATUS_COLORS = {
   paid: '#059669',
@@ -321,7 +404,9 @@ const SplitBars = ({ paidGross = 0, paidPlatformFees = 0, paidMentorPayouts = 0,
 const VolumeAreaChart = ({ payments = [], currency }) => {
   const series = useMemo(() => {
     const buckets = new Map();
+    // Money volume = paid only (rejected / pending contribute $0)
     payments.forEach((p) => {
+      if (p.paymentStatus !== 'paid') return;
       const d = new Date(p.verifiedAt || p.createdAt || p.startTimeUTC);
       if (Number.isNaN(d.getTime())) return;
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -397,11 +482,13 @@ const VolumeAreaChart = ({ payments = [], currency }) => {
 };
 
 const PaymentRow = ({ item, role }) => {
-  const type = bookingTypeVisual(item);
-  const TypeIcon = type.Icon;
   const status = paymentStatusPill(item.paymentStatus);
-  const StatusIcon = status.Icon;
-  const highlighted = item.paymentStatus === 'paid';
+
+  // Avatar = the "other" person for mentor/mentee; mentee for admin (primary actor)
+  const avatarPerson =
+    role === 'mentee'
+      ? { name: item.mentor?.name || 'Mentor', headshot: item.mentor?.headshot }
+      : { name: item.mentee?.name || 'Mentee', headshot: item.mentee?.headshot };
 
   const primaryName =
     role === 'mentor'
@@ -412,20 +499,15 @@ const PaymentRow = ({ item, role }) => {
       ? item.mentor?.name || 'Mentor'
       : item.mentor?.name || 'Mentor';
 
-  const grossLabel = formatMoney(item.amount, item.currency);
   const focusAmount =
     role === 'mentor' && item.paymentStatus === 'paid'
       ? formatMoney(item.mentorPayoutAmount, item.currency)
-      : grossLabel;
+      : formatMoney(item.amount, item.currency);
 
   return (
     <li>
-      <div className="relative flex items-center gap-3 sm:gap-4 rounded-2xl bg-gray-50 px-3 sm:px-4 py-3.5 transition-colors hover:bg-gray-100/80">
-        <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${type.tile}`}
-        >
-          <TypeIcon className="h-5 w-5" strokeWidth={1.7} />
-        </div>
+      <div className="flex items-center gap-3 sm:gap-4 rounded-2xl bg-gray-50 px-3 sm:px-4 py-3.5 transition-colors hover:bg-gray-100/80">
+        <PersonAvatar name={avatarPerson.name} headshot={avatarPerson.headshot} />
 
         <div className="min-w-0 flex-1">
           {role === 'admin' ? (
@@ -443,11 +525,9 @@ const PaymentRow = ({ item, role }) => {
               {primaryName}
             </p>
           ) : (
-            <div className="min-w-0">
-              <p className="truncate text-[15px] sm:text-base font-semibold tracking-tight text-gray-900">
-                Session with {secondaryName}
-              </p>
-            </div>
+            <p className="truncate text-[15px] sm:text-base font-semibold tracking-tight text-gray-900">
+              Session with {secondaryName}
+            </p>
           )}
 
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
@@ -457,38 +537,22 @@ const PaymentRow = ({ item, role }) => {
             </span>
 
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${status.className}`}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${status.className}`}
             >
-              <StatusIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
+              {status.showCheck && (
+                <HiOutlineCheckCircle className="h-3.5 w-3.5" strokeWidth={1.8} />
+              )}
               {status.label}
             </span>
 
-            {item.verifiedAt && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
-                <HiOutlineClock className="h-3.5 w-3.5" />
-                Confirmed {formatReadableDate(item.verifiedAt)}
-              </span>
-            )}
-
             {item.parentMegaSession && (
-              <span className="inline-flex items-center gap-0.5 rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">
-                <HiOutlineSparkles className="h-3 w-3" />
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-violet-600">
                 Mega
               </span>
             )}
           </div>
 
-          {item.paymentStatus === 'rejected' && item.rejectionReason && (
-            <p className="mt-1 text-xs text-rose-600 truncate max-w-xl">{item.rejectionReason}</p>
-          )}
         </div>
-
-        {highlighted && (
-          <HiOutlineCheckCircle
-            className="hidden md:block h-7 w-7 shrink-0 text-emerald-500"
-            strokeWidth={1.5}
-          />
-        )}
 
         <div className="shrink-0 text-right min-w-[6.5rem] sm:min-w-[7.5rem]">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400">
@@ -517,7 +581,7 @@ const PaymentRow = ({ item, role }) => {
                 rel="noopener noreferrer"
                 aria-label="View payment receipt"
                 title="View payment receipt"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
               >
                 <HiOutlineDocumentText className="h-5 w-5" strokeWidth={1.6} />
               </a>
@@ -541,41 +605,43 @@ const DashboardPaymentsTab = ({ role }) => {
   const copy = useMemo(() => labelForRole(role), [role]);
   const [filters, setFilters] = useState(emptyFilters);
   const [applied, setApplied] = useState(emptyFilters);
+  const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [data, setData] = useState(null);
 
+  // Server: date/currency only. Status pills + row paging are client-side.
   const fetchHistory = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
       const params = {
-        paymentStatus: applied.paymentStatus,
+        paymentStatus: 'all',
         currency: applied.currency,
-        page,
-        limit: 20,
+        page: 1,
+        limit: 1000,
       };
       if (applied.from) params.from = applied.from;
       if (applied.to) params.to = applied.to;
 
       const response = await bookingService.getPaymentHistory(params);
       setData(response);
+      setPage(1);
     } catch (err) {
       setError(err.message || 'Failed to load payment history');
       setData(null);
     } finally {
       setLoading(false);
     }
-  }, [applied, page]);
+  }, [applied]);
 
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
 
   const setQuickStatus = (value) => {
-    setFilters((f) => ({ ...f, paymentStatus: value }));
-    setApplied((f) => ({ ...f, paymentStatus: value }));
+    setStatusFilter(value);
     setPage(1);
   };
 
@@ -589,12 +655,30 @@ const DashboardPaymentsTab = ({ role }) => {
     const cleared = emptyFilters();
     setFilters(cleared);
     setApplied(cleared);
+    setStatusFilter('all');
     setPage(1);
   };
 
+  const allPayments = data?.payments || [];
+
+  const filteredPayments = useMemo(
+    () => allPayments.filter((p) => matchesQuickStatus(p.paymentStatus, statusFilter)),
+    [allPayments, statusFilter]
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredPayments.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedPayments = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return filteredPayments.slice(start, start + PAGE_SIZE);
+  }, [filteredPayments, safePage]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
   const totalsByCurrency = data?.totals || [];
   const primaryTotal = totalsByCurrency[0];
-  const pagination = data?.pagination;
   const breakdown = data?.paymentStatusBreakdown || {};
 
   const statValue = (key) => {
@@ -608,7 +692,13 @@ const DashboardPaymentsTab = ({ role }) => {
       if (role === 'mentor') return formatMoney(primaryTotal.paidMentorPayouts, primaryTotal.currency);
       return formatMoney(primaryTotal.paidGross, primaryTotal.currency);
     }
-    if (key === 'secondary') return formatMoney(primaryTotal.grossBooked, primaryTotal.currency);
+    // Gross / total booked = paid money only (rejected / pending add $0)
+    if (key === 'secondary') {
+      return formatMoney(
+        primaryTotal.paidGross ?? primaryTotal.grossBooked,
+        primaryTotal.currency
+      );
+    }
     if (key === 'tertiary') {
       if (role === 'admin') return formatMoney(primaryTotal.paidMentorPayouts, primaryTotal.currency);
       if (role === 'mentor') return formatMoney(primaryTotal.paidPlatformFees, primaryTotal.currency);
@@ -621,14 +711,7 @@ const DashboardPaymentsTab = ({ role }) => {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-gray-200/80 bg-white p-6 sm:p-8">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">{copy.title}</h2>
-            <p className="mt-2 text-sm text-gray-500 max-w-2xl leading-relaxed">{copy.subtitle}</p>
-          </div>
-        </div>
-      </section>
+      <PaymentsHeroBanner title={copy.title} subtitle={copy.subtitle} />
 
       <form
         onSubmit={handleApply}
@@ -636,7 +719,10 @@ const DashboardPaymentsTab = ({ role }) => {
       >
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <label className="block">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Currency</span>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider inline-flex items-center gap-1.5">
+              <HiOutlineGlobeAlt className="h-3.5 w-3.5 text-gray-400" />
+              Currency
+            </span>
             <select
               value={filters.currency}
               onChange={(e) => setFilters((f) => ({ ...f, currency: e.target.value }))}
@@ -650,7 +736,10 @@ const DashboardPaymentsTab = ({ role }) => {
             </select>
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">From</span>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider inline-flex items-center gap-1.5">
+              <HiOutlineCalendarDays className="h-3.5 w-3.5 text-gray-400" />
+              From
+            </span>
             <input
               type="date"
               value={filters.from}
@@ -659,7 +748,10 @@ const DashboardPaymentsTab = ({ role }) => {
             />
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">To</span>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider inline-flex items-center gap-1.5">
+              <HiOutlineCalendarDays className="h-3.5 w-3.5 text-gray-400" />
+              To
+            </span>
             <input
               type="date"
               value={filters.to}
@@ -689,7 +781,7 @@ const DashboardPaymentsTab = ({ role }) => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="rounded-2xl border border-gray-100 bg-white p-5 animate-pulse">
-              <div className="h-10 w-10 rounded-xl bg-gray-100 mb-4" />
+              <div className="h-6 w-6 rounded bg-gray-100 mb-4" />
               <div className="h-3 bg-gray-100 rounded w-24 mb-3" />
               <div className="h-7 bg-gray-100 rounded w-20" />
             </div>
@@ -705,9 +797,9 @@ const DashboardPaymentsTab = ({ role }) => {
               return (
                 <div
                   key={stat.key}
-                  className="rounded-2xl border border-gray-200/80 bg-white p-4 sm:p-5"
+                  className="rounded-2xl border border-gray-200/80 bg-white p-4 sm:p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
                 >
-                  <Icon className={`h-6 w-6 ${stat.tone}`} strokeWidth={1.6} />
+                  <Icon className={`h-6 w-6 ${stat.tone}`} strokeWidth={1.5} />
                   <p className="mt-3 text-xs font-medium uppercase tracking-wider text-gray-400">
                     {stat.label}
                   </p>
@@ -724,7 +816,7 @@ const DashboardPaymentsTab = ({ role }) => {
               <div className="mb-2">
                 <h3 className="text-base font-semibold text-gray-900 tracking-tight">Payment volume</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Gross from recent rows in this view (by confirm/book date).
+                  Paid gross only (by confirm/book date). Rejected attempts are excluded.
                 </p>
               </div>
               <VolumeAreaChart
@@ -776,7 +868,7 @@ const DashboardPaymentsTab = ({ role }) => {
               <div className="flex flex-wrap items-center gap-2">
                 <div className="inline-flex rounded-full bg-gray-100 p-1">
                   {QUICK_STATUS_FILTERS.map((opt) => {
-                    const active = applied.paymentStatus === opt.value;
+                    const active = statusFilter === opt.value;
                     return (
                       <button
                         key={opt.value}
@@ -794,40 +886,40 @@ const DashboardPaymentsTab = ({ role }) => {
                   })}
                 </div>
                 <p className="text-xs text-gray-400 tabular-nums sm:ml-1">
-                  {pagination?.total ?? 0} total
+                  {filteredPayments.length} total
                 </p>
               </div>
             </div>
 
-            {(data?.payments || []).length === 0 ? (
+            {filteredPayments.length === 0 ? (
               <p className="py-12 text-sm text-gray-500 text-center">
                 No payments match these filters.
               </p>
             ) : (
               <ul className="space-y-2.5">
-                {data.payments.map((item) => (
+                {pagedPayments.map((item) => (
                   <PaymentRow key={item.id} item={item} role={role} />
                 ))}
               </ul>
             )}
 
-            {pagination && pagination.totalPages > 1 && (
+            {filteredPayments.length > PAGE_SIZE && (
               <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
                 <button
                   type="button"
-                  disabled={page <= 1 || loading}
+                  disabled={safePage <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   className="text-sm font-medium text-gray-600 hover:text-gray-900 disabled:opacity-40"
                 >
                   Previous
                 </button>
                 <p className="text-xs text-gray-400 tabular-nums">
-                  Page {pagination.page} of {pagination.totalPages}
+                  Page {safePage} of {totalPages}
                 </p>
                 <button
                   type="button"
-                  disabled={page >= pagination.totalPages || loading}
-                  onClick={() => setPage((p) => p + 1)}
+                  disabled={safePage >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   className="text-sm font-medium text-gray-600 hover:text-gray-900 disabled:opacity-40"
                 >
                   Next
