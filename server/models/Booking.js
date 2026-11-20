@@ -8,7 +8,7 @@ const BookingSchema = new mongoose.Schema({
   // Mega session fields
   isMegaSession: { type: Boolean, default: false },
   title: { type: String },
-  description: { type: String },
+  description: { type: String, maxlength: [1500, 'Session description cannot exceed 1500 characters'] },
   maxParticipants: { type: Number, default: 1 },
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

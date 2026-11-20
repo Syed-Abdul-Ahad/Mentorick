@@ -16,6 +16,7 @@ import Sessions from "./pages/Sessions";
 import MyBookings from "./pages/MyBookings";
 import MegaSessions from "./pages/MegaSessions";
 import AdminMegaSessions from "./pages/admin/AdminMegaSessions";
+import BookingPaymentPage from "./pages/BookingPaymentPage";
 import NotFound from "./pages/NotFound";
 import MentorProfileForm from "./pages/profile/MentorProfileForm";
 import MenteeProfileForm from "./pages/profile/MenteeProfileForm";
@@ -135,6 +136,13 @@ function AuthenticatedApp() {
           path="/my-bookings"
           element={
             isAuthenticated ? <MyBookings /> : <Navigate to="/login" />
+          }
+        />
+        {/* Bank transfer + screenshot after booking confirm */}
+        <Route
+          path="/booking/payment/:bookingId"
+          element={
+            isAuthenticated ? <BookingPaymentPage /> : <Navigate to="/login" />
           }
         />
         {/* Profile edit - different forms based on user role */}

@@ -404,7 +404,7 @@ const Dashboard = () => {
               <div className="rounded-2xl border border-gray-200/80 bg-white px-6 py-4 flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
-                    Your earnings (80% after platform fee)
+                    Your earnings (70% after platform fee)
                   </p>
                   <p className="text-lg font-bold text-gray-900 mt-0.5 tabular-nums">
                     {Number(earnings.total).toFixed(2)}{' '}

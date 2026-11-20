@@ -144,6 +144,37 @@ exports.getBankDetails = async (req, res) => {
   }
 };
 
+/** Mentee-owned booking + bank details for the dedicated payment page */
+exports.getBookingPayment = async (req, res) => {
+  try {
+    await expireUnpaidProofBookings();
+
+    const { id } = req.params;
+    const booking = await Booking.findById(id)
+      .populate('mentor', 'firstName lastName email')
+      .populate('mentee', 'firstName lastName email')
+      .populate('mentorProfile', 'fullName title headshot');
+
+    if (!booking) {
+      return sendError(res, 404, 'Booking not found');
+    }
+
+    const menteeId = booking.mentee?._id?.toString() || booking.mentee?.toString();
+    if (!menteeId || menteeId !== req.user.id.toString()) {
+      return sendError(res, 403, 'You are not allowed to view this payment');
+    }
+
+    return res.status(200).json({
+      success: true,
+      booking: sanitizeMeetingForViewer(booking.toObject(), 'mentee'),
+      bankDetails: getBankDetails(),
+    });
+  } catch (error) {
+    console.error('Error fetching booking payment:', error);
+    return sendError(res, 500, 'Failed to load booking payment');
+  }
+};
+
 exports.uploadPaymentProof = async (req, res) => {
   try {
     await expireUnpaidProofBookings();

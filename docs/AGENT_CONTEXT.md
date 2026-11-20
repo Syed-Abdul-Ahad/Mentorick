@@ -19,7 +19,7 @@ Marketplace for **paid 1:1 video mentorship** (and group “mega sessions”) wi
 - Mentees browsing mentors and booking slots  
 - Mentors setting availability and pricing  
 - Mentees paying Mentorick via **bank transfer + screenshot** (admin verifies)  
-- Platform fee **20%**; mentors receive **80%** via **manual offline payout**  
+- Platform fee **30%**; mentors receive **70%** via **manual offline payout**  
 - Sessions held on **Google Meet** (via Google Calendar API), not hosted natively  
 - Payment model is shaped for future **PayFast** beside bank transfer (not replacing)  
 
@@ -172,7 +172,7 @@ Location: `server/utils/booking/*` (+ `bookingService.js`)
 ```
 Mentee picks slot (≥24h lead time) on MentorPublicProfile
   → BookingModal createBooking → Booking pending, payment.awaiting_proof
-       payment: bank_transfer, amount, platformFee 20%, mentorPayoutAmount 80%, proofDueAt = now+30m
+       payment: bank_transfer, amount, platformFee 30%, mentorPayoutAmount 70%, proofDueAt = now+30m
   → UI shows bank details (from env) + countdown
   → POST /api/payments/bookings/:id/proof (Cloudinary screenshot)
        → payment.awaiting_verification + WhatsApp deep-link for mentee
@@ -250,7 +250,7 @@ Reject deletes mega only when safe (no participants/children).
 
 **Role UX:**
 - Mentee: book, bank proof + WhatsApp, mega join, bookings, profile  
-- Mentor: availability (`/sessions`), mega approve, 80% earnings display  
+- Mentor: availability (`/sessions`), mega approve, 70% earnings display  
 - Admin: `/admin/mega-sessions`, dashboard verification queue (confirm/reject proofs)  
 
 ---

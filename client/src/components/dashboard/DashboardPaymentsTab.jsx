@@ -160,7 +160,7 @@ const labelForRole = (role) => {
   if (role === 'mentor') {
     return {
       title: 'Payments',
-      subtitle: 'Your session payouts (80%) and booking payment status.',
+      subtitle: 'Your session payouts (70%) and booking payment status.',
       listTitle: 'Recent payments & bookings',
       listSubtitle: 'Payouts and payment status on your sessions.',
       stats: [

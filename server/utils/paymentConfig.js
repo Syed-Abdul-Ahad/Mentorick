@@ -1,7 +1,7 @@
 const getPlatformFeeRate = () => {
   const raw = Number(process.env.PLATFORM_FEE_RATE);
   if (Number.isFinite(raw) && raw >= 0 && raw <= 1) return raw;
-  return 0.2;
+  return 0.3;
 };
 
 const getPaymentProofMinutes = () => {

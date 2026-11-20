@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   HiOutlineVideoCamera,
   HiOutlineCheck,
@@ -11,7 +12,6 @@ import { toast } from 'react-hot-toast';
 import MainLayout from '../components/layout/MainLayout';
 import Button from '../components/shared/Button';
 import MegaSessionCard from '../components/megaSession/MegaSessionCard';
-import MegaSessionPaymentModal from '../components/megaSession/MegaSessionPaymentModal';
 import Seo from '../components/seo/Seo';
 import { isMegaSessionBookableByLeadTime, getMinLeadHours } from '../utils/bookingLeadTime';
 
@@ -80,13 +80,11 @@ const MegaSessionsHeroBanner = () => (
 );
 
 const MegaSessions = () => {
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const [megaSessions, setMegaSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [joiningSession, setJoiningSession] = useState(null);
-  const [paymentSession, setPaymentSession] = useState(null);
-  const [pendingParticipantBooking, setPendingParticipantBooking] = useState(null);
-  const [bankDetails, setBankDetails] = useState(null);
 
   // Fetch mega sessions
   useEffect(() => {
@@ -104,12 +102,6 @@ const MegaSessions = () => {
 
     fetchMegaSessions();
   }, []);
-
-  const handleCancelPayment = () => {
-    setPaymentSession(null);
-    setPendingParticipantBooking(null);
-    setBankDetails(null);
-  };
 
   const handleJoinSession = async (session) => {
     if (!user) {
@@ -131,9 +123,19 @@ const MegaSessions = () => {
         throw new Error(response.error || 'Failed to join this session');
       }
 
-      setPendingParticipantBooking(response.participantBooking);
-      setBankDetails(response.bankDetails || null);
-      setPaymentSession(session);
+      const booking = response.participantBooking;
+      const bookingId = String(booking?._id || booking?.id || '');
+      if (!bookingId || bookingId === 'undefined') {
+        throw new Error('Booking created but missing id');
+      }
+
+      navigate(`/booking/payment/${bookingId}`, {
+        replace: false,
+        state: {
+          booking,
+          bankDetails: response.bankDetails || null,
+        },
+      });
     } catch (error) {
       console.error('Join session error:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to join session';
@@ -141,13 +143,6 @@ const MegaSessions = () => {
     } finally {
       setJoiningSession(null);
     }
-  };
-
-  const handlePaymentComplete = async () => {
-    toast.success('Payment screenshot submitted. Waiting for admin verification.');
-    const sessionsResponse = await megaSessionService.getMegaSessions({ upcoming: true });
-    setMegaSessions(sessionsResponse.megaSessions || []);
-    handleCancelPayment();
   };
 
 
@@ -257,14 +252,6 @@ const MegaSessions = () => {
         )}
       </div>
 
-      <MegaSessionPaymentModal
-        isOpen={!!paymentSession && !!pendingParticipantBooking}
-        session={paymentSession}
-        booking={pendingParticipantBooking}
-        bankDetails={bankDetails}
-        onClose={handleCancelPayment}
-        onComplete={handlePaymentComplete}
-      />
     </MainLayout>
   );
 };

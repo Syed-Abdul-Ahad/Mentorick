@@ -16,6 +16,14 @@ router.get(
   paymentController.getPendingVerifications
 );
 
+router.get(
+  '/bookings/:id',
+  authenticate,
+  [param('id').isMongoId().withMessage('Valid booking ID is required')],
+  validateRequest,
+  paymentController.getBookingPayment
+);
+
 router.post(
   '/bookings/:id/proof',
   authenticate,

@@ -5,6 +5,7 @@ const { createCalendarEvent, createMegaSessionCalendarEvent } = require('../util
 const User = require('../models/User');
 const mongoose = require('mongoose');
 const bookingService = require('../services/bookingService');
+const { getPlatformFeeRate, computeFeeSplit } = require('../utils/paymentConfig');
 
 exports.createBooking = async (req, res) => {
   try {
@@ -12,6 +13,12 @@ exports.createBooking = async (req, res) => {
 
     if (!mentorId || !startTime || !duration || !timezone || !currency) {
       return res.status(400).json({ message: 'Missing required booking fields' });
+    }
+
+    if (typeof description === 'string' && description.length > 1500) {
+      return res.status(400).json({
+        message: 'Session description cannot exceed 1500 characters',
+      });
     }
 
     const result = await bookingService.createBookingRecord({
@@ -596,7 +603,9 @@ exports.getBookingAnalytics = async (req, res) => {
     ]);
     const uniqueMentors = uniqueMentorsResult[0]?.count || 0;
 
-    // Mentor earnings = 80% share on confirmed/completed paid sessions
+    // Mentor earnings = mentor share on confirmed/completed paid sessions
+    const feeRate = getPlatformFeeRate();
+    const mentorRate = 1 - feeRate;
     const mentorEarnings = await Booking.aggregate([
       {
         $match: {
@@ -610,13 +619,13 @@ exports.getBookingAnalytics = async (req, res) => {
           _id: { $ifNull: ['$payment.currency', '$price.currency'] },
           total: {
             $sum: {
-              $ifNull: ['$payment.mentorPayoutAmount', { $multiply: ['$price.amount', 0.8] }],
+              $ifNull: ['$payment.mentorPayoutAmount', { $multiply: ['$price.amount', mentorRate] }],
             },
           },
           gross: { $sum: { $ifNull: ['$payment.amount', '$price.amount'] } },
           platformFees: {
             $sum: {
-              $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', 0.2] }],
+              $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', feeRate] }],
             },
           },
         },
@@ -704,12 +713,12 @@ exports.getBookingAnalytics = async (req, res) => {
             gross: { $sum: { $ifNull: ['$payment.amount', '$price.amount'] } },
             platformFees: {
               $sum: {
-                $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', 0.2] }],
+                $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', feeRate] }],
               },
             },
             mentorPayouts: {
               $sum: {
-                $ifNull: ['$payment.mentorPayoutAmount', { $multiply: ['$price.amount', 0.8] }],
+                $ifNull: ['$payment.mentorPayoutAmount', { $multiply: ['$price.amount', mentorRate] }],
               },
             },
           },
@@ -856,6 +865,9 @@ exports.getPaymentHistory = async (req, res) => {
       match.createdAt = range;
     }
 
+    const feeRate = getPlatformFeeRate();
+    const mentorRate = 1 - feeRate;
+
     const [items, totalCount, totalsAgg, statusBreakdown] = await Promise.all([
       Booking.find(match)
         .populate('mentor', 'firstName lastName email')
@@ -886,7 +898,7 @@ exports.getPaymentHistory = async (req, res) => {
                 $cond: [
                   { $eq: ['$payment.status', 'paid'] },
                   {
-                    $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', 0.2] }],
+                    $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', feeRate] }],
                   },
                   0,
                 ],
@@ -899,7 +911,7 @@ exports.getPaymentHistory = async (req, res) => {
                   {
                     $ifNull: [
                       '$payment.mentorPayoutAmount',
-                      { $multiply: ['$price.amount', 0.8] },
+                      { $multiply: ['$price.amount', mentorRate] },
                     ],
                   },
                   0,
@@ -920,7 +932,7 @@ exports.getPaymentHistory = async (req, res) => {
                 $cond: [
                   { $eq: ['$payment.status', 'paid'] },
                   {
-                    $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', 0.2] }],
+                    $ifNull: ['$payment.platformFee', { $multiply: ['$price.amount', feeRate] }],
                   },
                   0,
                 ],
@@ -933,7 +945,7 @@ exports.getPaymentHistory = async (req, res) => {
                   {
                     $ifNull: [
                       '$payment.mentorPayoutAmount',
-                      { $multiply: ['$price.amount', 0.8] },
+                      { $multiply: ['$price.amount', mentorRate] },
                     ],
                   },
                   0,
@@ -988,10 +1000,9 @@ exports.getPaymentHistory = async (req, res) => {
     const payments = items.map((b) => {
       const amount = b.payment?.amount ?? b.price?.amount ?? 0;
       const curr = b.payment?.currency || b.price?.currency || null;
-      const platformFee =
-        b.payment?.platformFee ?? Math.round(amount * 0.2 * 100) / 100;
-      const mentorPayout =
-        b.payment?.mentorPayoutAmount ?? Math.round(amount * 0.8 * 100) / 100;
+      const split = computeFeeSplit(amount);
+      const platformFee = b.payment?.platformFee ?? split.platformFee;
+      const mentorPayout = b.payment?.mentorPayoutAmount ?? split.mentorPayoutAmount;
       const mentorId = b.mentor?._id?.toString();
       const menteeId = b.mentee?._id?.toString();
 

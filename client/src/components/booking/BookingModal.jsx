@@ -249,18 +249,18 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
                       </label>
                       <textarea
                         value={description}
-                        onChange={(e) => setDescription(e.target.value.slice(0, 200))}
+                        onChange={(e) => setDescription(e.target.value.slice(0, 1500))}
                         placeholder="In which topic area you want to discuss and what would be the agenda of the meeting?"
                         className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                        rows={4}
-                        maxLength={200}
+                        rows={6}
+                        maxLength={1500}
                       />
                       <div className="flex justify-between items-center mt-2">
                         <p className="text-sm text-gray-500">
                           This helps your mentor prepare for the session
                         </p>
                         <span className="text-sm text-gray-400">
-                          {description.length}/200
+                          {description.length}/1500
                         </span>
                       </div>
                     </div>
@@ -300,7 +300,7 @@ const BookingModal = ({ isOpen, onClose, mentorId, mentorName, onBookingSuccess 
                   timezone={timezone}
                   description={description}
                   onReserveBooking={handleReserveBooking}
-                  onPaymentSuccess={(booking) => {
+                  onLeaveToPayment={(booking) => {
                     setPaymentError('');
                     if (onBookingSuccess) onBookingSuccess(booking);
                     onClose();

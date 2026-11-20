@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   HiOutlineVideoCamera,
   HiOutlineCalendar,
@@ -306,15 +307,25 @@ const BookingCard = ({ booking, timeInfo, utcTimeInfo, userTimezone }) => {
         </div>
 
         {booking.status === 'pending' && (
-          <p
-            className="mt-1 truncate text-[10px] text-amber-600"
-            title="Waiting for confirmation — meeting link appears after admin verifies payment."
-          >
-            {booking.payment?.status === 'awaiting_proof' && 'Awaiting payment screenshot'}
-            {booking.payment?.status === 'awaiting_verification' && 'Payment under review'}
-            {booking.payment?.status === 'rejected' && 'Proof rejected — please book again'}
-            {!booking.payment?.status && 'Waiting for confirmation'}
-          </p>
+          <div className="mt-1">
+            <p
+              className="truncate text-[10px] text-amber-600"
+              title="Waiting for confirmation — meeting link appears after admin verifies payment."
+            >
+              {booking.payment?.status === 'awaiting_proof' && 'Awaiting payment screenshot'}
+              {booking.payment?.status === 'awaiting_verification' && 'Payment under review'}
+              {booking.payment?.status === 'rejected' && 'Proof rejected — please book again'}
+              {!booking.payment?.status && 'Waiting for confirmation'}
+            </p>
+            {!isMentorView && booking.payment?.status === 'awaiting_proof' && (
+              <Link
+                to={`/booking/payment/${booking._id || booking.id}`}
+                className="mt-1 inline-block text-[11px] font-semibold text-primary-600 hover:text-primary-700"
+              >
+                Continue payment →
+              </Link>
+            )}
+          </div>
         )}
       </div>
     </article>

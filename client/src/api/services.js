@@ -299,15 +299,41 @@ class PaymentService extends ApiService {
     }
   }
 
+  async getBookingPayment(bookingId) {
+    try {
+      const response = await apiClient.get(`/payments/bookings/${bookingId}`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async uploadProof(bookingId, file) {
     try {
       const formData = new FormData();
       formData.append('proof', file);
+      // Uploads go through Cloudinary — allow longer than the default 10s API timeout
       const response = await apiClient.post(`/payments/bookings/${bookingId}/proof`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 90000,
       });
       return response.data;
     } catch (error) {
+      if (error.code === 'ECONNABORTED' || /timeout/i.test(error.message || '')) {
+        throw this.handleError({
+          ...error,
+          message:
+            'Upload timed out. Try a smaller screenshot (under 2 MB) or check your connection, then submit again.',
+          response: {
+            ...(error.response || {}),
+            data: {
+              ...(error.response?.data || {}),
+              message:
+                'Upload timed out. Try a smaller screenshot (under 2 MB) or check your connection, then submit again.',
+            },
+          },
+        });
+      }
       throw this.handleError(error);
     }
   }
