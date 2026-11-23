@@ -118,10 +118,10 @@ class MentorService extends ApiService {
     super('/mentor-profiles');
   }
 
-  // Get all mentor profiles
-  async getAllMentors() {
+  // Get all mentor profiles. Pass { featured: true } for admin-curated featured list.
+  async getAllMentors(params = {}) {
     try {
-      const response = await apiClient.get('/mentor/profiles');
+      const response = await apiClient.get('/mentor/profiles', { params });
       return response.data.data;
     } catch (error) {
       throw this.handleError(error);
@@ -157,6 +157,18 @@ class MentorService extends ApiService {
         },
       });
       return response.data.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Admin: set/unset featured mentor (max 10)
+  async setMentorFeatured(profileId, isFeatured) {
+    try {
+      const response = await apiClient.patch(`/mentor/profiles/${profileId}/featured`, {
+        isFeatured,
+      });
+      return response.data;
     } catch (error) {
       throw this.handleError(error);
     }

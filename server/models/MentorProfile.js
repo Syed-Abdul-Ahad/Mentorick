@@ -117,6 +117,17 @@ const MentorProfileSchema = new mongoose.Schema({
     min: 0,
   },
 
+  /** Admin-curated homepage / mentors slider (max 10 enforced in controller) */
+  isFeatured: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
+  featuredAt: {
+    type: Date,
+    default: null,
+  },
+
 }, { timestamps: true });
 
 

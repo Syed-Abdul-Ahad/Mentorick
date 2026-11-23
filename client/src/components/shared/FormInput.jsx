@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { HiOutlineEye, HiOutlineEyeSlash } from 'react-icons/hi2';
 
 const FormInput = React.memo(({
   type = "text",
@@ -15,6 +16,10 @@ const FormInput = React.memo(({
   className = "",
   ...props
 }) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === 'password';
+  const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
+
   return (
     <div className={className}>
       {label && (
@@ -25,21 +30,40 @@ const FormInput = React.memo(({
           {label}
         </label>
       )}
-      <input
-        type={type}
-        id={id}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
-          error
-            ? "border-red-300 focus:ring-red-500"
-            : "border-gray-300 focus:ring-primary-500"
-        }`}
-        required={required}
-        {...props}
-      />
+      <div className="relative">
+        <input
+          type={inputType}
+          id={id}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
+            isPassword ? 'pr-10' : ''
+          } ${
+            error
+              ? "border-red-300 focus:ring-red-500"
+              : "border-gray-300 focus:ring-primary-500"
+          }`}
+          required={required}
+          {...props}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            tabIndex={-1}
+          >
+            {showPassword ? (
+              <HiOutlineEyeSlash className="h-5 w-5" />
+            ) : (
+              <HiOutlineEye className="h-5 w-5" />
+            )}
+          </button>
+        )}
+      </div>
       {error && (
         <p className="text-sm text-red-600 mt-1">
           {error}

@@ -170,11 +170,71 @@ exports.getMyMentorProfile = async (req, res, next) => {
   }
 };
 
-// Get all mentor profiles (public)
+const MAX_FEATURED_MENTORS = 10;
+
+// Get all mentor profiles (public). Optional ?featured=true for admin-curated list.
 exports.getAllMentorProfiles = async (req, res, next) => {
   try {
-    const profiles = await MentorProfile.find({}).populate('user', 'role').sort({ createdAt: -1 });
+    const featuredOnly = req.query.featured === 'true' || req.query.featured === '1';
+    const filter = featuredOnly ? { isFeatured: true } : {};
+    const sort = featuredOnly
+      ? { featuredAt: -1, createdAt: -1 }
+      : { createdAt: -1 };
+
+    const profiles = await MentorProfile.find(filter)
+      .populate('user', 'role')
+      .sort(sort);
+
     res.json({ success: true, data: profiles });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Admin: toggle featured flag (max MAX_FEATURED_MENTORS)
+exports.setMentorFeatured = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { isFeatured } = req.body;
+
+    if (typeof isFeatured !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'isFeatured (boolean) is required',
+      });
+    }
+
+    const profile = await MentorProfile.findById(id);
+    if (!profile) {
+      return res.status(404).json({ success: false, message: 'Mentor profile not found' });
+    }
+
+    if (isFeatured && !profile.isFeatured) {
+      const featuredCount = await MentorProfile.countDocuments({ isFeatured: true });
+      if (featuredCount >= MAX_FEATURED_MENTORS) {
+        return res.status(400).json({
+          success: false,
+          message: `You can feature at most ${MAX_FEATURED_MENTORS} mentors. Unfeature one first.`,
+        });
+      }
+      profile.isFeatured = true;
+      profile.featuredAt = new Date();
+    } else if (!isFeatured && profile.isFeatured) {
+      profile.isFeatured = false;
+      profile.featuredAt = null;
+    }
+
+    await profile.save();
+    await profile.populate('user', 'role');
+
+    const featuredCount = await MentorProfile.countDocuments({ isFeatured: true });
+
+    res.json({
+      success: true,
+      data: profile,
+      featuredCount,
+      maxFeatured: MAX_FEATURED_MENTORS,
+    });
   } catch (err) {
     next(err);
   }

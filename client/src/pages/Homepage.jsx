@@ -658,6 +658,9 @@ const Homepage = () => {
             {/* Call to Action */}
             <div className="pt-4 animate-fade-in-delayed">
               <Button
+                onClick={() => {
+                  navigate('/login');
+                }}
                 variant="solid"
                 size="lg"
                 className="bg-primary-500 text-primary-600 hover:bg-gray-100 font-bold px-4 py-2 text-lg shadow-2xl transform hover:scale-105 transition-all duration-300"
@@ -928,7 +931,7 @@ const Homepage = () => {
         </div>
       </section>
 
-      {/* Newsletter Section */}
+      {/* Newsletter Section — temporarily hidden
       <section className="bg-primary-50 py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold mb-4">
@@ -955,6 +958,7 @@ const Homepage = () => {
           </div>
         </div>
       </section>
+      */}
 
       </main>
 

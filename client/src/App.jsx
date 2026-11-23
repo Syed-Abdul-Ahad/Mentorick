@@ -16,6 +16,7 @@ import Sessions from "./pages/Sessions";
 import MyBookings from "./pages/MyBookings";
 import MegaSessions from "./pages/MegaSessions";
 import AdminMegaSessions from "./pages/admin/AdminMegaSessions";
+import AdminFeaturedMentors from "./pages/admin/AdminFeaturedMentors";
 import BookingPaymentPage from "./pages/BookingPaymentPage";
 import NotFound from "./pages/NotFound";
 import MentorProfileForm from "./pages/profile/MentorProfileForm";
@@ -173,6 +174,12 @@ function AuthenticatedApp() {
           path="/admin/mega-sessions"
           element={
             isAuthenticated && user?.role === 'admin' ? <AdminMegaSessions /> : <Navigate to="/login" />
+          }
+        />
+        <Route
+          path="/admin/featured-mentors"
+          element={
+            isAuthenticated && user?.role === 'admin' ? <AdminFeaturedMentors /> : <Navigate to="/login" />
           }
         />
 

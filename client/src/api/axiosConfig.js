@@ -3,7 +3,8 @@ import axios from 'axios';
 // Create axios instance with base configuration
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
-  timeout: 10000,
+  // Browser aborts here — unrelated to Vercel. 10s was too low for Render cold starts.
+  timeout: 45000,
   withCredentials: true, // Enable sending cookies with requests
   headers: {
     'Content-Type': 'application/json',

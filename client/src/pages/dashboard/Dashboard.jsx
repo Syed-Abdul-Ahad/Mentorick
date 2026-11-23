@@ -317,8 +317,9 @@ const Dashboard = () => {
             <p className="text-sm text-gray-400 mt-0.5 capitalize">{user?.role} account</p>
           </div>
           <button
+            type="button"
             onClick={handleLogout}
-            className="text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-100"
+            className="text-sm font-semibold text-white bg-[#F05A4E] hover:bg-[#E04A42] active:bg-[#C94038] transition-colors px-3.5 py-1.5 rounded-lg shadow-sm"
           >
             Sign out
           </button>
@@ -591,9 +592,10 @@ const Dashboard = () => {
             {user?.role === 'admin' && (
               <section className="rounded-2xl border border-gray-200/80 bg-white p-6">
                 <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Quick access</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   {[
                     { label: 'Mega sessions', desc: 'Create and manage group sessions', icon: HiOutlineSparkles, href: '/admin/mega-sessions' },
+                    { label: 'Featured mentors', desc: 'Curate homepage featured list', icon: HiOutlineAcademicCap, href: '/admin/featured-mentors' },
                     { label: 'Browse mentors', desc: 'View all mentor profiles', icon: HiOutlineAcademicCap, href: '/mentors' },
                     { label: 'All bookings', desc: 'Review platform bookings', icon: HiOutlineCalendarDays, href: '/my-bookings' },
                   ].map((link) => {

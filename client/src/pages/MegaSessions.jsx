@@ -12,6 +12,7 @@ import { toast } from 'react-hot-toast';
 import MainLayout from '../components/layout/MainLayout';
 import Button from '../components/shared/Button';
 import MegaSessionCard from '../components/megaSession/MegaSessionCard';
+import MegaSessionJoinConfirmModal from '../components/megaSession/MegaSessionJoinConfirmModal';
 import Seo from '../components/seo/Seo';
 import { isMegaSessionBookableByLeadTime, getMinLeadHours } from '../utils/bookingLeadTime';
 
@@ -85,6 +86,7 @@ const MegaSessions = () => {
   const [megaSessions, setMegaSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [joiningSession, setJoiningSession] = useState(null);
+  const [confirmSession, setConfirmSession] = useState(null);
 
   // Fetch mega sessions
   useEffect(() => {
@@ -103,9 +105,14 @@ const MegaSessions = () => {
     fetchMegaSessions();
   }, []);
 
-  const handleJoinSession = async (session) => {
+  const openJoinConfirm = (session) => {
     if (!user) {
       toast.error('Please log in to join sessions');
+      return;
+    }
+
+    if (user.role === 'admin') {
+      toast.error('Admins cannot join mega sessions');
       return;
     }
 
@@ -114,6 +121,18 @@ const MegaSessions = () => {
       return;
     }
 
+    setConfirmSession(session);
+  };
+
+  const closeJoinConfirm = () => {
+    if (joiningSession) return;
+    setConfirmSession(null);
+  };
+
+  const handleConfirmJoinSession = async () => {
+    if (!confirmSession) return;
+
+    const session = confirmSession;
     setJoiningSession(session._id);
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -129,6 +148,7 @@ const MegaSessions = () => {
         throw new Error('Booking created but missing id');
       }
 
+      setConfirmSession(null);
       navigate(`/booking/payment/${bookingId}`, {
         replace: false,
         state: {
@@ -219,6 +239,20 @@ const MegaSessions = () => {
                         </Button>
                       )}
                     </>
+                  ) : user?.role === 'admin' ? (
+                    session.meeting?.meetingLink ? (
+                      <Button
+                        className="w-full flex items-center justify-center gap-2 !bg-gradient-to-r !from-violet-600 !to-indigo-600 hover:!from-violet-700 hover:!to-indigo-700 !border-0"
+                        onClick={() => window.open(session.meeting.meetingLink, '_blank')}
+                      >
+                        <HiOutlineVideoCamera className="w-4 h-4" />
+                        <span>Open Meeting</span>
+                      </Button>
+                    ) : (
+                      <p className="text-xs text-gray-500 text-center py-2">
+                        Meeting link appears after the mentor accepts
+                      </p>
+                    )
                   ) : isFull ? (
                     <p className="text-xs text-red-500 text-center flex items-center justify-center gap-1 py-2">
                       <HiOutlineXMark className="w-3.5 h-3.5" />
@@ -239,10 +273,10 @@ const MegaSessions = () => {
                   ) : (
                     <Button
                       className="w-full !bg-gradient-to-r !from-violet-600 !to-indigo-600 hover:!from-violet-700 hover:!to-indigo-700 !border-0"
-                      onClick={() => handleJoinSession(session)}
+                      onClick={() => openJoinConfirm(session)}
                       disabled={joiningSession === session._id}
                     >
-                      {joiningSession === session._id ? 'Preparing...' : 'Join Session'}
+                      Join Session
                     </Button>
                   )}
                 </MegaSessionCard>
@@ -252,6 +286,13 @@ const MegaSessions = () => {
         )}
       </div>
 
+      <MegaSessionJoinConfirmModal
+        isOpen={Boolean(confirmSession)}
+        session={confirmSession}
+        loading={Boolean(joiningSession)}
+        onConfirm={handleConfirmJoinSession}
+        onClose={closeJoinConfirm}
+      />
     </MainLayout>
   );
 };

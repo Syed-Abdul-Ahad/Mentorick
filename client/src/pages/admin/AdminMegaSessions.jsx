@@ -24,10 +24,25 @@ const AdminMegaSessions = () => {
     title: '',
     description: '',
     maxParticipants: 10,
-    currency: 'USD'
+    currency: 'USD',
+    priceAmount: '',
   });
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Select Mentor, 2: Select Date, 3: Select Time, 4: Select Duration, 5: Create Session
+
+  const mentorOneOnOnePrice = (() => {
+    if (!selectedMentor?.sessionDurations || !selectedDuration) return null;
+    const entry = selectedMentor.sessionDurations.find((d) => {
+      const minutes = typeof d.duration === 'number'
+        ? d.duration
+        : parseInt(String(d.duration).replace(/\D/g, ''), 10);
+      return minutes === selectedDuration;
+    });
+    if (!entry) return null;
+    const amount = sessionForm.currency === 'PKR' ? entry.pricePKR : entry.priceUSD;
+    if (amount === undefined || amount === null || amount === '') return null;
+    return Number(amount);
+  })();
 
   // Use the existing mentor availability hook
   const { 
@@ -103,6 +118,12 @@ const AdminMegaSessions = () => {
     e.preventDefault();
     if (!selectedMentor || !selectedSlot) return;
 
+    const priceAmount = Number(sessionForm.priceAmount);
+    if (!Number.isFinite(priceAmount) || priceAmount <= 0) {
+      toast.error('Enter a valid price per mentee greater than 0');
+      return;
+    }
+
     setLoading(true);
     try {
       // Format the startTime as ISO string (same as BookingModal)
@@ -114,6 +135,7 @@ const AdminMegaSessions = () => {
         duration: selectedDuration,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         currency: sessionForm.currency,
+        priceAmount,
         title: sessionForm.title,
         description: sessionForm.description,
         maxParticipants: sessionForm.maxParticipants
@@ -132,7 +154,8 @@ const AdminMegaSessions = () => {
         title: '',
         description: '',
         maxParticipants: 10,
-        currency: 'USD'
+        currency: 'USD',
+        priceAmount: '',
       });
       
     } catch (error) {
@@ -375,6 +398,31 @@ const AdminMegaSessions = () => {
                     </div>
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Price per mentee
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="0.01"
+                      step="0.01"
+                      value={sessionForm.priceAmount}
+                      onChange={(e) => setSessionForm({ ...sessionForm, priceAmount: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder={`e.g. 5 (${sessionForm.currency})`}
+                    />
+                    {mentorOneOnOnePrice != null && Number.isFinite(mentorOneOnOnePrice) && (
+                      <p className="mt-1.5 text-xs text-gray-500">
+                        Mentor&apos;s 1:1 for this duration:{' '}
+                        <span className="font-medium text-gray-700">
+                          {mentorOneOnOnePrice} {sessionForm.currency}
+                        </span>
+                        {' '}(reference only — mega seat price is independent)
+                      </p>
+                    )}
+                  </div>
+
                   <Button
                     type="submit"
                     className="w-full"
@@ -424,6 +472,18 @@ const AdminMegaSessions = () => {
                   <div>
                     <span className="text-sm font-medium text-gray-600">Max Participants:</span>
                     <p className="font-medium">{sessionForm.maxParticipants} people</p>
+                  </div>
+
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Price per mentee:</span>
+                    <p className="font-medium">
+                      {sessionForm.priceAmount !== '' && Number(sessionForm.priceAmount) > 0
+                        ? `${sessionForm.priceAmount} ${sessionForm.currency}`
+                        : '—'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Platform fee split stays the same (30% / 70%) on each seat.
+                    </p>
                   </div>
                 </div>
               </Card>
