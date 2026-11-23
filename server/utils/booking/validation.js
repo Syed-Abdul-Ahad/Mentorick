@@ -1,6 +1,6 @@
 const { DateTime } = require('luxon');
 const { DEFAULT_AVAILABILITY_DAYS, ALL_DURATIONS } = require('./constants');
-const { parseDurationMinutes, isValidDuration } = require('./duration');
+const { parseDurationMinutes, isValidDuration, getMentorSupportedDurations } = require('./duration');
 const { generateAvailability } = require('./availabilityEngine');
 const { findOverlappingBooking } = require('./overlap');
 const { resolvePrice } = require('./pricing');
@@ -136,6 +136,7 @@ function validateCreateMegaSession({
   duration,
   timezone,
   currency,
+  priceAmount,
 }) {
   const slotValidation = validateBookableSlot({
     mentorProfile,
@@ -166,11 +167,21 @@ function validateCreateMegaSession({
     };
   }
 
-  const price = resolvePrice(mentorProfile.sessionDurations, durationMinutes, currency);
-  if (!price) {
+  // Duration must still be one the mentor offers (availability), but seat price is admin-set.
+  const supportedDurations = getMentorSupportedDurations(mentorProfile.sessionDurations);
+  if (!supportedDurations.includes(durationMinutes)) {
     return {
       valid: false,
       reason: `Session duration of ${durationMinutes} minutes is not available for this mentor`,
+      statusCode: 400,
+    };
+  }
+
+  const amount = Number(priceAmount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return {
+      valid: false,
+      reason: 'A valid price per mentee greater than 0 is required',
       statusCode: 400,
     };
   }
@@ -180,7 +191,10 @@ function validateCreateMegaSession({
     startUTC,
     endUTC,
     durationMinutes,
-    price,
+    price: {
+      amount,
+      durationMinutes,
+    },
   };
 }
 

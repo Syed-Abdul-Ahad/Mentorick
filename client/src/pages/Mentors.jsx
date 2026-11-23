@@ -87,14 +87,17 @@ const Mentors = () => {
             }
 
             return {
-              id: mentor.user.id,
+              id: mentor.user?.id || mentor.user?._id,
               name: mentor.fullName,
               title: mentor.title,
               image: mentor.headshot || `/mentor-signup-${(index % 4) + 1}.jpeg`,
               tags: mentor.topics.slice(0, 3),
               price: priceDisplay,
               priceValue: priceValue,
-              rating: 4.5 + Math.random() * 0.5,
+              rating: Number(mentor.averageRating) || 0,
+              reviewCount: Number(mentor.reviewCount) || 0,
+              isFeatured: Boolean(mentor.isFeatured),
+              featuredAt: mentor.featuredAt ? new Date(mentor.featuredAt).getTime() : 0,
               sessions: Math.floor(Math.random() * 100) + 10,
             };
           })
@@ -114,7 +117,12 @@ const Mentors = () => {
     fetchMentors();
   }, []);
 
-  // Filter and sort mentors
+  // Featured slider = admin-curated; grid below = full mentor list (including featured)
+  const featuredMentors = [...mentors]
+    .filter((m) => m.isFeatured)
+    .sort((a, b) => (b.featuredAt || 0) - (a.featuredAt || 0));
+
+  // Filter and sort all mentors for the list below
   const filteredMentors = mentors.filter(mentor => {
     const matchesSearch = mentor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          mentor.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -132,10 +140,15 @@ const Mentors = () => {
     return matchesSearch && matchesCategory && matchesPrice;
   });
 
+  const sortByRating = (a, b) => {
+    if (b.rating !== a.rating) return b.rating - a.rating;
+    return (b.reviewCount || 0) - (a.reviewCount || 0);
+  };
+
   const sortedMentors = [...filteredMentors].sort((a, b) => {
     switch (sortBy) {
       case "rating":
-        return b.rating - a.rating;
+        return sortByRating(a, b);
       case "price-low":
         return a.priceValue - b.priceValue;
       case "price-high":
@@ -364,10 +377,10 @@ const Mentors = () => {
               className="text-center mb-12"
             >
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Featured Mentors</h2>
-              <p className="text-lg text-gray-600">Top-rated mentors from our community</p>
+              <p className="text-lg text-gray-600">Hand-picked mentors from our community</p>
             </motion.div>
             
-            <MentorSlider mentors={mentors.slice(0, 8)} />
+            <MentorSlider mentors={featuredMentors} sortBy="rating" />
           </div>
         </section>
 

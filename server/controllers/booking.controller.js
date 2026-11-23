@@ -60,6 +60,7 @@ exports.createMegaSession = async (req, res) => {
       duration,
       timezone,
       currency,
+      priceAmount,
       title,
       description,
       maxParticipants = 10,
@@ -69,6 +70,10 @@ exports.createMegaSession = async (req, res) => {
       return res.status(400).json({ message: 'Missing required mega session fields' });
     }
 
+    if (priceAmount === undefined || priceAmount === null || priceAmount === '') {
+      return res.status(400).json({ message: 'Price per mentee (priceAmount) is required' });
+    }
+
     const result = await bookingService.createMegaSessionRecord({
       mentorId,
       adminId: req.user.id,
@@ -76,6 +81,7 @@ exports.createMegaSession = async (req, res) => {
       duration,
       timezone,
       currency,
+      priceAmount,
       title,
       description,
       maxParticipants,
@@ -292,6 +298,10 @@ exports.joinMegaSession = async (req, res) => {
     const { expireUnpaidProofBookings } = require('../services/paymentExpiryService');
     const { buildInitialBankPayment, getBankDetails, getBookingMinLeadHours } = require('../utils/paymentConfig');
     const { DateTime } = require('luxon');
+
+    if (req.user.role === 'admin') {
+      return res.status(403).json({ message: 'Admins cannot join mega sessions' });
+    }
 
     await expireUnpaidProofBookings();
 

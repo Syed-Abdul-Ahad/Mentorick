@@ -103,6 +103,7 @@ Browser (Vite SPA)
 - `timezone` (default `Asia/Karachi`)
 - Nested `availability` (weekly / specificDates / unavailability)
 - `averageRating`, `reviewCount`
+- **Featured (admin):** `isFeatured` + `featuredAt` — max **10** curated for homepage / Mentors page slider (`GET /api/mentor/profiles?featured=true`; `PATCH /api/mentor/profiles/:id/featured`). Mentors page list below still shows **all** mentors (featured included).
 
 ### MenteeProfile
 - Lightweight: about, interests, headshot
@@ -207,11 +208,15 @@ Mentee picks slot (≥24h lead time) on MentorPublicProfile
 ## 9. Mega Sessions Flow
 
 1. **Admin** creates mega session → Booking `isMegaSession`, `pending`  
+   - Admin sets **per-mentee seat price** (`priceAmount`) + currency at create time (independent of mentor 1:1 `sessionDurations` pricing).  
+   - Duration must still be one the mentor offers (availability). Mentor 1:1 price is UI reference only.  
+   - Platform fee split is unchanged (same `PLATFORM_FEE_RATE` / 30–70) on each seat.  
 2. **Mentor** accepts → calendar mega event, status `confirmed` (listed publicly)  
-3. **Mentee** joins → **child** Booking with `parentMegaSession`, same bank-transfer proof path as 1:1  
+3. **Mentee** joins → **child** Booking with `parentMegaSession`, copies parent `price`, same bank-transfer proof path as 1:1  
 4. Admin verify on child → Meet/email as for 1:1; child confirmed; participants updated as before  
 
-Reject deletes mega only when safe (no participants/children).
+Reject deletes mega only when safe (no participants/children).  
+Price is frozen on the parent at create; there is no post-create price edit.
 
 ---
 
@@ -251,7 +256,7 @@ Reject deletes mega only when safe (no participants/children).
 **Role UX:**
 - Mentee: book, bank proof + WhatsApp, mega join, bookings, profile  
 - Mentor: availability (`/sessions`), mega approve, 70% earnings display  
-- Admin: `/admin/mega-sessions`, dashboard verification queue (confirm/reject proofs)  
+- Admin: `/admin/mega-sessions`, `/admin/featured-mentors`, dashboard verification queue (confirm/reject proofs)  
 
 ---
 
@@ -265,7 +270,7 @@ Treat these as landmines when changing money/auth/booking code:
 4. **Email verification unfinished** for local signup.  
 5. **Reviews not booking-gated** — only daily limit.  
 6. **CORS fallback** `A \|\| B` with non-empty `A` makes `B` dead (`app.js`).  
-7. **Frontend fake ratings** on Mentors/MentorSlider (`Math.random`).  
+7. **Featured mentors** are admin-curated (`isFeatured`); sliders no longer invent “top-rated” from random/sort alone. Ratings still come from `averageRating`.  
 8. **Currency in booking modal often hardcoded USD.**  
 9. **`Layout.jsx` dead/broken**; don’t revive without fixing.  
 10. **AdminMegaSessions hooks order** risk when non-admin redirects early.  
@@ -323,6 +328,7 @@ Treat these as landmines when changing money/auth/booking code:
 | Emails | `server/utils/email.js` |
 | Mega sessions | `megaSessionRoutes.js`, booking controller mega methods, `MegaSessions.jsx`, `AdminMegaSessions.jsx` |
 | Profiles / headshots | mentor/mentee profile controllers + Cloudinary middleware |
+| Featured mentors | `MentorProfile.isFeatured`, `setMentorFeatured`, `AdminFeaturedMentors.jsx`, Homepage/`Mentors` sliders |
 | Reviews | `review.controller.js`, `reviewStatsService.js` |
 
 ---

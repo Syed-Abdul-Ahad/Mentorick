@@ -81,7 +81,7 @@ async function prepareBooking({ mentorId, startTime, duration, timezone, currenc
   };
 }
 
-async function prepareMegaSession({ mentorId, startTime, duration, timezone, currency }) {
+async function prepareMegaSession({ mentorId, startTime, duration, timezone, currency, priceAmount }) {
   const mentorProfile = await MentorProfile.findOne({ user: mentorId });
 
   if (!mentorProfile) {
@@ -98,6 +98,7 @@ async function prepareMegaSession({ mentorId, startTime, duration, timezone, cur
     duration,
     timezone,
     currency,
+    priceAmount,
   });
 
   if (!validation.valid) {
@@ -205,6 +206,7 @@ async function createMegaSessionRecord({
   duration,
   timezone,
   currency,
+  priceAmount,
   title,
   description,
   maxParticipants,
@@ -215,6 +217,7 @@ async function createMegaSessionRecord({
     duration,
     timezone,
     currency,
+    priceAmount,
   });
 
   if (!prepared.ok) {

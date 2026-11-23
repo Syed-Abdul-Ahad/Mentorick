@@ -1,6 +1,9 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { useUser, useIsAuthenticated } from '../../store/hooks';
+import { clearUser } from '../../store/slices/authSlice';
+import { authService } from '../../api';
 import Button from '../shared/Button';
 import { 
   AiOutlineHome, 
@@ -11,11 +14,14 @@ import {
   AiOutlineCalendar,
   AiOutlineUsergroupAdd,
   AiOutlineTool,
+  AiOutlineLogout,
+  AiOutlineStar,
 } from 'react-icons/ai';
 
 const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const user = useUser();
   const isAuthenticated = useIsAuthenticated();
 
@@ -30,28 +36,33 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
     }
 
     const baseNavigation = [
-      { name: 'Profile', href: '/profile/edit', icon: AiOutlineUser },
       { name: 'Home', href: '/', icon: AiOutlineHome },
       { name: 'Mentors', href: '/mentors', icon: AiOutlineTeam },
       { name: 'Mega Sessions', href: '/mega-sessions', icon: AiOutlineUsergroupAdd },
+    ];
+
+    const withProfile = [
+      { name: 'Profile', href: '/profile/edit', icon: AiOutlineUser },
+      ...baseNavigation,
     ];
 
     if (user?.role === 'admin') {
       return [
         ...baseNavigation,
         { name: 'Admin: Mega Sessions', href: '/admin/mega-sessions', icon: AiOutlineTool },
+        { name: 'Admin: Featured Mentors', href: '/admin/featured-mentors', icon: AiOutlineStar },
         { name: 'Dashboard', href: '/dashboard', icon: AiOutlineBarChart },
       ];
     } else if (user?.role === 'mentor') {
       return [
-        ...baseNavigation,
+        ...withProfile,
         { name: 'Availability Settings', href: '/sessions', icon: AiOutlineSetting },
         { name: 'My Bookings', href: '/my-bookings', icon: AiOutlineCalendar },
         { name: 'Dashboard', href: '/dashboard', icon: AiOutlineBarChart },
       ];
     } else {
       return [
-        ...baseNavigation,
+        ...withProfile,
         { name: 'My Bookings', href: '/my-bookings', icon: AiOutlineCalendar },
         { name: 'Dashboard', href: '/dashboard', icon: AiOutlineBarChart },
       ];
@@ -61,6 +72,18 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const navigation = getNavigation();
   const isActive = (path) => location.pathname === path;
   const closeMenu = () => setIsMobileMenuOpen(false);
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.log('Logout error:', error);
+    } finally {
+      dispatch(clearUser());
+      closeMenu();
+      navigate('/login');
+    }
+  };
 
   return (
     <>
@@ -72,6 +95,26 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
         <div className="flex flex-col flex-1 min-h-0">
           <div className="p-6 pb-4 flex flex-col flex-1">
             {isAuthenticated ? (
+            user?.role === 'admin' ? (
+              <div className="flex items-center space-x-3 mb-8 rounded-lg p-1 -m-1">
+                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden shrink-0">
+                  {user?.profile?.headshot ? (
+                    <img
+                      src={user.profile.headshot}
+                      loading="lazy"
+                      alt="Profile"
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    <AiOutlineUser className="h-4 w-4 text-gray-400" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-gray-900 truncate">Profile</div>
+                  <div className="text-xs text-gray-500 truncate">{user?.email}</div>
+                </div>
+              </div>
+            ) : (
             <Link
               to="/profile/edit"
               onClick={closeMenu}
@@ -94,6 +137,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                 <div className="text-xs text-gray-500 truncate">{user?.email}</div>
               </div>
             </Link>
+            )
           ) : (
             <Link
               to="/login"
@@ -129,7 +173,18 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           </nav>
           </div>
 
-          {!isAuthenticated && (
+          {isAuthenticated ? (
+            <div className="mt-auto border-t border-gray-200 bg-gray-50 px-3 py-4">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#F05A4E] px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#E04A42] active:bg-[#C94038]"
+              >
+                <AiOutlineLogout className="h-4 w-4" />
+                Sign out
+              </button>
+            </div>
+          ) : (
             <div className="mt-auto border-t border-gray-200 bg-gray-50 px-3 py-4 space-y-2.5">
               <Button
                 variant="solid"
@@ -142,7 +197,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
               >
                 Book a Mentor
               </Button>
-              <Button
+              {/* <Button
                 variant="outline"
                 size="md"
                 className="w-full font-semibold border-2 bg-white shadow-sm"
@@ -152,7 +207,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                 }}
               >
                 Become a Mentor
-              </Button>
+              </Button> */}
             </div>
           )}
         </div>

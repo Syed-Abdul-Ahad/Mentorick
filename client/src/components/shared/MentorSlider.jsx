@@ -20,7 +20,8 @@ const MentorSlider = ({ mentors = [], searchQuery = "", sortBy = "rating" }) => 
   useEffect(() => {
     const fetchMentors = async () => {
       try {
-        const mentorProfiles = await mentorService.getAllMentors();
+        // Homepage (and any caller without mentors prop) uses admin-curated featured list
+        const mentorProfiles = await mentorService.getAllMentors({ featured: true });
         // Transform backend data to match frontend format
         const transformedMentors = await Promise.all(
           mentorProfiles.map(async (mentor, index) => {
@@ -38,13 +39,15 @@ const MentorSlider = ({ mentors = [], searchQuery = "", sortBy = "rating" }) => 
             }
 
             return {
-              id: mentor.user.id,
+              id: mentor.user?.id || mentor.user?._id,
               name: mentor.fullName,
               title: mentor.title,
               image: mentor.headshot || `/mentor-signup-${(index % 4) + 1}.jpeg`, // fallback to mock images
               tags: mentor.topics.slice(0, 2), // Show first 2 topics
               price: priceDisplay,
-              rating: 4.5 + Math.random() * 0.5 // Random rating between 4.5-5.0 (hardcoded as requested)
+              rating: Number(mentor.averageRating) || 0,
+              reviewCount: Number(mentor.reviewCount) || 0,
+              isFeatured: Boolean(mentor.isFeatured),
             };
           })
         );
@@ -87,22 +90,22 @@ const MentorSlider = ({ mentors = [], searchQuery = "", sortBy = "rating" }) => 
     );
   });
 
-  // Sort mentors based on sortBy option
+  // Sort mentors based on sortBy option (rating uses real reviews; ties break on reviewCount)
   const displayMentors = [...filteredMentors].sort((a, b) => {
     switch (sortBy) {
-      case 'price':
-        // Extract price value and sort by it
+      case 'price': {
         const priceA = parseFloat(a.price.replace(/[$\/\w]/g, ''));
         const priceB = parseFloat(b.price.replace(/[$\/\w]/g, ''));
         return priceA - priceB;
+      }
       case 'experience':
-        // Sort by title/experience level (assuming more experienced have longer titles)
         return b.title.length - a.title.length;
       case 'name':
         return a.name.localeCompare(b.name);
       case 'rating':
       default:
-        return b.rating - a.rating;
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        return (b.reviewCount || 0) - (a.reviewCount || 0);
     }
   });
 
@@ -216,7 +219,7 @@ const MentorSlider = ({ mentors = [], searchQuery = "", sortBy = "rating" }) => 
               ? `Try adjusting your search for "${searchQuery}"`
               : fetchError
                 ? 'Unable to load mentors right now. Please try again later.'
-                : 'Check back soon — new mentors are joining regularly.'}
+                : 'Featured mentors will appear here.'}
           </div>
         </div>
       ) : (
